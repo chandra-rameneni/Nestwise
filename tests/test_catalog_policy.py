@@ -18,7 +18,7 @@ def codes(pid, intent=KB):
 def test_prd01_search_tool_called_and_traced(session):
     session.handle_message(KEYBOARD_REQUEST)
     calls = session.tracer.find("tool", "search_catalog")
-    assert len(calls) == 1 and calls[0]["attrs"]["result"]["count"] == 9
+    assert len(calls) == 1 and calls[0]["attrs"]["result"]["matches"] == 9
 
 
 def test_prd02_join_by_product_id_has_no_crossover():
@@ -34,7 +34,7 @@ def test_prd02_join_by_product_id_has_no_crossover():
 
 def test_prd03_unknown_product_not_invented(session):
     r = session.handle_message("Find me a gaming laptop under ₹80,000")
-    assert r.kind == "NOT_IN_CATALOG" and r.recommendations == []
+    assert r.kind == "NOT_AVAILABLE" and r.recommendations == [] and "?" not in r.message
 
 
 def test_prd04_over_budget_rejected():

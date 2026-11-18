@@ -8,10 +8,12 @@ from __future__ import annotations
 import copy
 import json
 import re
-from dataclasses import dataclass
+import sqlite3
+from dataclasses import dataclass, field
 from pathlib import Path
 
-CATALOG_PATH = Path(__file__).parent / "data" / "catalog.json"
+CATALOG_PATH = Path(__file__).parent / "data" / "catalog.json"          # synthetic test fixture
+STORE_DB_PATH = Path(__file__).parent / "data" / "catalog.sqlite"       # real store (build_catalog.py)
 
 # Heuristic flag for instruction-like text inside untrusted product data (BUY-08).
 # Flagging is for the trace only: product text is never used as instructions anywhere.
@@ -22,21 +24,37 @@ _INJECTION_PATTERNS = re.compile(
 
 @dataclass(frozen=True)
 class ProductView:
-    """A join of products + specs + prices + inventory for one product_id at one data version."""
+    """A join of products + specs + prices + inventory for one product_id at one data version.
+
+    `specs` holds the normalised attributes the policy engine checks (seats, width_cm, material, ...).
+    `raw_specs` holds the listing's own key/value pairs exactly as written (used for grounded Q&A).
+    `source_flags` says where each group of fields came from (historical / simulated / synthetic).
+    """
     product_id: str
     title: str
-    brand: str
+    brand: str | None
     category: str
     description: str
     specs: dict
-    list_price_inr: int
+    list_price_inr: int | None
     shipping_inr: int
     stock: int
     delivery_days: int
     version: int
     injection_flag: bool
+    raw_specs: dict = field(default_factory=dict)
+    mrp_inr: int | None = None
+    category_label: str = ""
+    category_path: str = ""
+    url: str | None = None
+    image_url: str | None = None
+    source_flags: dict = field(default_factory=dict)
+    data_notes: dict = field(default_factory=dict)   # attribute -> why its listed value isn't usable
 
-    def total_for(self, qty: int = 1) -> int:
+    def total_for(self, qty: int = 1) -> int | None:
+        """Final payable total. None when the listing has no price (treated as unknown, never as free)."""
+        if self.list_price_inr is None:
+            return None
         return self.list_price_inr * qty + self.shipping_inr
 
 
@@ -68,6 +86,18 @@ class Catalog:
             out.append(pid)
         return out
 
+    def category_labels(self) -> list[str]:
+        return ["keyboard-and-mouse combos", "sofas"]
+
+    def find_products(self, query: str, product_category: str | None = None) -> tuple[list[str], list[str]]:
+        """Fixture version of SqliteCatalog.find_products: by fixture category, else by the head noun in titles."""
+        if product_category:
+            return self.search(product_category), []
+        terms = query_terms(query)
+        if not terms:
+            return [], []
+        return self.search(keywords=[terms[-1]]), []
+
     def get(self, product_id: str) -> ProductView | None:
         p = self._products.get(product_id)
         if p is None:
@@ -90,3 +120,181 @@ class Catalog:
     def set_stock(self, product_id: str, stock: int) -> None:
         self._inventory[product_id]["stock"] = int(stock)
         self._versions[product_id] += 1
+
+
+# ============================================================================ real store catalog
+_STOPWORDS = {"a", "an", "the", "for", "me", "my", "i", "need", "want", "find", "show", "buy", "get", "some",
+              "any", "under", "below", "within", "with", "and", "or", "of", "in", "to", "please", "looking",
+              "something", "good", "cheap", "best", "new", "rs", "inr", "is", "it", "that", "this", "on", "at"}
+
+
+# Leaf categories made of these words hold things *for* a product, not the product itself.
+_ACCESSORY_WORDS = {"cover", "covers", "stand", "stands", "holder", "holders", "case", "cases", "accessories",
+                    "showpiece", "showpieces", "tassel", "tassels", "clip", "clips", "hook", "hooks", "rod", "rods",
+                    "protector", "protectors", "mat", "mats", "organizer", "organizers"}
+
+
+def _word_matches(term: str, word: str) -> bool:
+    """Prefix match with simple plural handling: sofa~sofas, bed~bedsheets, cooker~cookers."""
+    return word.startswith(term) or term.rstrip("s") == word.rstrip("s")
+
+
+def _same_word(a: str, b: str) -> bool:
+    """Equal ignoring a plural ending: sofa/sofas, bedsheet/bedsheets, box/boxes."""
+    norm = lambda w: re.sub(r"(es|s)$", "", w) if len(w) > 3 else w
+    return a == b or norm(a) == norm(b)
+
+
+def _head_noun(text: str, is_category: bool = False) -> str:
+    """The noun that says what a thing is: the last word of its first part.
+    'Comfort Couch 3 Seater Sofa (Finish Color - Brown)' -> sofa; 'Unique Design Mobile Stand Showpiece'
+    -> showpiece; categories also split on '&' and ',': 'Sofas & Sectionals' -> sofas, 'Table Lamps' -> lamps.
+    Product names are not split on '&' because brands contain it ('Bed & Bath ... Bedsheet')."""
+    seps = r"\(| & |,| - | with | for " if is_category else r"\(| - | with | for "
+    first = re.split(seps, text or "", maxsplit=1)[0]
+    words = re.findall(r"[a-z]+", first.lower())
+    return words[-1] if words else ""
+
+
+def query_terms(query: str) -> list[str]:
+    """Words worth searching for. Numbers and filler words are dropped."""
+    return [t for t in re.findall(r"[a-z]+", (query or "").lower()) if t not in _STOPWORDS and len(t) > 1]
+
+
+class SqliteCatalog:
+    """Read-only view of data/catalog.sqlite plus in-memory demo overrides for price and stock.
+
+    Same tool interface as the fixture `Catalog` (search, get, set_price, set_stock), plus
+    `search_text` and `categories` for the storefront. The database file is never modified.
+    """
+
+    def __init__(self, path: Path = STORE_DB_PATH):
+        if not Path(path).exists():
+            raise FileNotFoundError(f"{path} not found. Run: .venv/bin/python build_catalog.py")
+        self._con = sqlite3.connect(f"file:{path}?mode=ro", uri=True, check_same_thread=False)
+        self.meta = dict(self._con.execute("SELECT key, value FROM meta").fetchall())
+        self._price_override: dict[str, int] = {}
+        self._stock_override: dict[str, int] = {}
+        self._versions: dict[str, int] = {}
+
+    # --- storefront helpers -------------------------------------------------------
+    def categories(self) -> list[dict]:
+        rows = self._con.execute("SELECT category, category_label, COUNT(*) FROM products GROUP BY 1, 2 "
+                                 "ORDER BY 3 DESC").fetchall()
+        return [{"slug": s, "label": l, "count": n} for s, l, n in rows]
+
+    def category_labels(self) -> list[str]:
+        return [c["label"] for c in self.categories()]
+
+    def search_text(self, query: str = "", category: str | None = None, min_price: int | None = None,
+                    max_price: int | None = None, limit: int = 24, offset: int = 0) -> tuple[list[str], int]:
+        """Full-text search over name, brand, category path and type. Returns (product ids, total matches).
+
+        All query words must match (prefix match, English stemming), so "air fryer" needs both words.
+        An empty query lists everything in the filters.
+        """
+        terms = query_terms(query)
+        where, args = [], []
+        if terms:
+            where.append("p.pid IN (SELECT pid FROM products_fts WHERE products_fts MATCH ?)")
+            args.append(" AND ".join(f'"{t}"*' for t in terms))
+        if category:
+            where.append("p.category = ?"); args.append(category)
+        if min_price is not None:
+            where.append("pr.price_inr >= ?"); args.append(min_price)
+        if max_price is not None:
+            where.append("pr.price_inr <= ?"); args.append(max_price)
+        sql_where = ("WHERE " + " AND ".join(where)) if where else ""
+        base = f"FROM products p JOIN prices pr USING(pid) {sql_where}"
+        total = self._con.execute(f"SELECT COUNT(*) {base}", args).fetchone()[0]
+        if terms:
+            # Column weights (pid, name, brand, category_path, type): what a product IS (its category and
+            # type) outranks words that only appear in its name, so "sofa" ranks sofas above sofa covers.
+            order = ("ORDER BY (SELECT bm25(products_fts, 0.0, 1.0, 0.5, 4.0, 4.0) FROM products_fts "
+                     "WHERE products_fts.pid = p.pid AND products_fts MATCH ?), p.pid")
+            ids = [r[0] for r in self._con.execute(f"SELECT p.pid {base} {order} LIMIT ? OFFSET ?",
+                                                    args + [args[0], limit, offset])]
+        else:
+            ids = [r[0] for r in self._con.execute(f"SELECT p.pid {base} ORDER BY p.category, p.pid LIMIT ? OFFSET ?",
+                                                    args + [limit, offset])]
+        return ids, total
+
+    def find_products(self, query: str, category: str | None = None, limit: int = 500,
+                      product_category: str | None = None) -> tuple[list[str], list[str]]:
+        """Split search results into (matches, related).
+
+        A *match* is a product that IS what the shopper named: every query word appears in the product's
+        own leaf category or name, and the leaf category isn't an accessory/showpiece category (unless the
+        shopper asked for that accessory). Everything else the full-text search found is *related*:
+        "sofa" -> sofas are matches, sofa covers are related; "mobile" -> mobile-stand showpieces are
+        related only, so the store does not sell mobiles (rule R1).
+        """
+        terms = query_terms(query)
+        if not terms:
+            return [], []
+        ids, _ = self.search_text(query, category=category, limit=limit)
+        if len(terms) > 1:  # "bed sheet" is spelled "Bedsheet" in the data
+            joined, _ = self.search_text("".join(terms), category=category, limit=limit)
+            ids += [i for i in joined if i not in ids]
+        if not ids:
+            return [], []
+        marks = ",".join("?" * len(ids))
+        info = {pid: (path, leaf, name) for pid, path, leaf, name in self._con.execute(
+            f"SELECT pid, category_path, leaf_category, name FROM products WHERE pid IN ({marks})", ids)}
+        heads = {terms[-1], "".join(terms)}                 # what the shopper wants the product to BE
+        modifiers = terms[:-1]
+        asked_accessory = bool(set(terms) & _ACCESSORY_WORDS)
+        matches, related = [], []
+        for pid in ids:
+            path, leaf, name = info[pid]
+            product_heads = {_head_noun(name), _head_noun(leaf, is_category=True)}
+            is_it = any(_same_word(h, ph) for h in heads for ph in product_heads if ph)
+            words = re.findall(r"[a-z]+", f"{leaf} {name}".lower())
+            has_mods = all(any(_word_matches(m, w) for w in words) for m in modifiers) or \
+                any(_same_word("".join(terms), ph) for ph in product_heads if ph)
+            accessory = bool(set(re.findall(r"[a-z]+", leaf.lower())) & _ACCESSORY_WORDS) and not asked_accessory
+            (matches if is_it and has_mods and not accessory else related).append(pid)
+        return matches, related
+
+    # --- agent tools (same interface as Catalog) --------------------------------------
+    def search(self, category: str | None = None, keywords: list[str] | None = None, limit: int = 200) -> list[str]:
+        ids, _ = self.search_text(" ".join(keywords or []), category=category, limit=limit)
+        return ids
+
+    def get(self, product_id: str) -> ProductView | None:
+        row = self._con.execute(
+            "SELECT p.pid, p.name, p.brand, p.category, p.category_label, p.category_path, p.description, p.url, "
+            "p.image_url, pr.price_inr, pr.mrp_inr, i.stock, i.delivery_days, i.shipping_inr "
+            "FROM products p JOIN prices pr USING(pid) JOIN inventory i USING(pid) WHERE p.pid = ?",
+            (product_id,)).fetchone()
+        if row is None:
+            return None
+        (pid, name, brand, cat, label, path, desc, url, img, price, mrp, stock, dd, ship) = row
+        attrs, notes = {}, {}
+        for n, num, text, quality, raw_v in self._con.execute(
+                "SELECT name, value_num, value_text, quality, raw FROM attributes WHERE pid = ?", (pid,)):
+            attrs[n] = (int(num) if n == "seats" and num is not None else num) if text is None else text
+            if quality != "ok":
+                notes[n] = f"listing says '{raw_v}' ({quality})"
+        raw = {}
+        for k, v in self._con.execute("SELECT key, value FROM specs WHERE pid = ?", (pid,)):
+            raw.setdefault(k, v)
+        price = self._price_override.get(pid, price)
+        return ProductView(
+            product_id=pid, title=name, brand=brand, category=cat, description=desc or "", specs=attrs,
+            list_price_inr=price, shipping_inr=ship, stock=self._stock_override.get(pid, stock), delivery_days=dd,
+            version=self._versions.get(pid, 1), injection_flag=bool(_INJECTION_PATTERNS.search(desc or "")),
+            raw_specs=raw, mrp_inr=mrp, category_label=label, category_path=path, url=url, image_url=img,
+            source_flags={"name/brand/specs/description": "Flipkart dataset (2015-16 crawl)",
+                          "price": "historical (2015-16)" + (", changed by demo simulation" if pid in self._price_override else ""),
+                          "stock/delivery/shipping": "simulated"},
+            data_notes=notes)
+
+    # --- simulation hooks (demo only; never written to disk) -----------------------------
+    def set_price(self, product_id: str, list_price_inr: int) -> None:
+        self._price_override[product_id] = int(list_price_inr)
+        self._versions[product_id] = self._versions.get(product_id, 1) + 1
+
+    def set_stock(self, product_id: str, stock: int) -> None:
+        self._stock_override[product_id] = int(stock)
+        self._versions[product_id] = self._versions.get(product_id, 1) + 1

@@ -1,5 +1,8 @@
-# Versions actually installed and tested on 2026-11-17 (Python 3.13.1, macOS)
+# Versions installed and tested on 2026-11-18 (Python 3.13.1, macOS)
 anthropic==2.9.0
+fastapi==0.163.2
+uvicorn==0.54.0
 pydantic==2.14.3
 pytest==9.2.0
-streamlit==1.67.0
+httpx==0.28.1        # FastAPI TestClient (tests/test_api.py)
+kagglehub==1.0.3     # only to download the Flipkart dataset

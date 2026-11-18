@@ -3,3 +3,5 @@ __pycache__/
 .pytest_cache/
 traces/
 .env
+data/raw/
+data/catalog.sqlite

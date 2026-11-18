@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent Inspector · IntentGuard Home</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+<header class="top">
+  <div class="top-inner">
+    <a class="logo" href="/">IntentGuard <span>Home</span><small>demo store</small></a>
+    <nav class="nav-links"><a href="/">Back to the store</a></nav>
+  </div>
+</header>
+<main class="inspector">
+  <div class="results-head">
+    <h1>Agent inspector</h1>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn small" id="refresh" type="button">Refresh</button>
+      <button class="btn small" id="reset" type="button">Start a new session</button>
+    </div>
+  </div>
+  <p class="desc">Every step the assistant took in your session, in order: what it understood, which tools it called, each rule check and its reason code, approvals, and orders. These are the real recorded events, not a mock-up.</p>
+  <p id="summary" class="chips"></p>
+  <div class="chips" id="kinds"></div>
+  <div id="events"></div>
+</main>
+<script src="/static/agent.js"></script>
+<script>
+(function () {
+  const { esc } = window.IGAgent;
+  let events = [], hidden = new Set();
+  function render() {
+    const kinds = [...new Set(events.map((e) => e.kind))];
+    document.getElementById("kinds").innerHTML = kinds.map((k) =>
+      `<button class="btn small" type="button" data-k="${esc(k)}" aria-pressed="${!hidden.has(k)}" style="${hidden.has(k) ? "opacity:.45" : ""}">${esc(k)}</button>`).join("");
+    const blocks = events.filter((e) => ["block", "fail"].includes(e.status)).length;
+    const tools = events.filter((e) => e.kind === "tool").length;
+    const resp = events.filter((e) => e.name === "agent.response").length;
+    document.getElementById("summary").innerHTML = events.length ? `
+      <span class="chip">Trace ${esc(events[0].trace_id)}</span><span class="chip">${events.length} events</span>
+      <span class="chip">${resp} replies</span><span class="chip">${tools} tool calls</span><span class="chip warn">${blocks} blocks or failed checks</span>` :
+      `<span class="chip">No events yet. Use the assistant in the store, then refresh.</span>`;
+    document.getElementById("events").innerHTML = events.filter((e) => !hidden.has(e.kind)).map((e) => {
+      const a = e.attrs || {};
+      const hint = a.response_kind || a.text || a.intent || (a.reason_codes && a.reason_codes.join(", ")) || a.product_id || "";
+      return `<details class="ev"><summary><span class="seq">${e.seq}</span><span class="k">${esc(e.kind)}</span>
+        <strong class="st-${esc(e.status)}">${esc(e.name)}</strong><span class="desc">${esc(String(hint).slice(0, 90))}</span>
+        <span class="dur">${e.duration_ms != null ? e.duration_ms + " ms" : ""}</span></summary>
+        <pre>${esc(JSON.stringify(a, null, 2))}</pre></details>`;
+    }).join("");
+  }
+  async function load() { events = (await fetch("/api/trace").then((r) => r.json())).events; render(); }
+  document.getElementById("kinds").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-k]"); if (!b) return;
+    hidden.has(b.dataset.k) ? hidden.delete(b.dataset.k) : hidden.add(b.dataset.k); render();
+  });
+  document.getElementById("refresh").addEventListener("click", load);
+  document.getElementById("reset").addEventListener("click", async () => { await fetch("/api/session/reset", { method: "POST" }); load(); });
+  load();
+})();
+</script>
+</body>
+</html>

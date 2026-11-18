@@ -44,7 +44,7 @@ def test_e2e03_price_change_recovery(session):
 @pytest.mark.parametrize("msg", ["I want a refund for my sofa.", "Where is my order?"])
 def test_int02_int03_safe_deferral_no_actions(session, msg):
     r = session.handle_message(msg)
-    assert r.kind == "DEFER" and "WORKFLOW_NOT_AVAILABLE_P0" in r.reason_codes
+    assert r.kind == "DEFER" and "WORKFLOW_NOT_AVAILABLE" in r.reason_codes
     assert "refunded" not in r.message.lower().replace("nothing has been refunded", "")
     assert session.tracer.find("tool") == [] and session.orders.orders == {}
 

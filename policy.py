@@ -41,10 +41,16 @@ def evaluate(intent: Intent, p: ProductView, qty: int = 1) -> Eligibility:
     checks.append(Check("in_stock", f">= {qty}", p.stock,
                         PASS if p.stock >= qty else FAIL, None if p.stock >= qty else "OUT_OF_STOCK"))
 
-    if intent.max_total_inr is not None:
-        ok = total <= intent.max_total_inr
-        checks.append(Check("max_total_inr (incl. shipping)", intent.max_total_inr, total,
-                            PASS if ok else FAIL, None if ok else "BUDGET_EXCEEDED"))
+    if total is None:
+        # No listed price: the exact total can't be shown for approval, so it can never be bought (eval BT-06).
+        checks.append(Check("listed price", "a price", None, UNKNOWN, "PRICE_UNKNOWN"))
+    elif intent.max_total_inr is not None:
+        if total is None:
+            checks.append(Check("max_total_inr (incl. shipping)", intent.max_total_inr, None, UNKNOWN, "PRICE_UNKNOWN"))
+        else:
+            ok = total <= intent.max_total_inr
+            checks.append(Check("max_total_inr (incl. shipping)", intent.max_total_inr, total,
+                                PASS if ok else FAIL, None if ok else "BUDGET_EXCEEDED"))
 
     if intent.max_delivery_days is not None:
         ok = p.delivery_days <= intent.max_delivery_days
@@ -68,14 +74,19 @@ def evaluate(intent: Intent, p: ProductView, qty: int = 1) -> Eligibility:
             ok = v == intent.seats
             checks.append(Check("seats", intent.seats, v, PASS if ok else FAIL, None if ok else "SEATS_MISMATCH"))
 
-    if intent.max_width_cm is not None:
-        v = p.specs.get("width_cm")
+    notes = getattr(p, "data_notes", {}) or {}
+    for limit_field, attr, label in (("max_width_cm", "width_cm", "WIDTH"), ("max_depth_cm", "depth_cm", "DEPTH"),
+                                     ("max_height_cm", "height_cm", "HEIGHT")):
+        limit = getattr(intent, limit_field, None)
+        if limit is None:
+            continue
+        v = p.specs.get(attr)
         if v is None:
-            checks.append(Check("max_width_cm", intent.max_width_cm, None, UNKNOWN, "WIDTH_UNVERIFIED"))
+            # Missing, or listed but physically implausible (data_notes): either way not verified.
+            checks.append(Check(limit_field, limit, notes.get(attr), UNKNOWN, f"{label}_UNVERIFIED"))
         else:
-            ok = v <= intent.max_width_cm
-            checks.append(Check("max_width_cm", intent.max_width_cm, v, PASS if ok else FAIL,
-                                None if ok else "WIDTH_EXCEEDED"))
+            ok = v <= limit
+            checks.append(Check(limit_field, limit, v, PASS if ok else FAIL, None if ok else f"{label}_EXCEEDED"))
 
     eligible = all(c.status == PASS for c in checks)
     return Eligibility(p.product_id, eligible, total, checks)
@@ -84,7 +95,9 @@ def evaluate(intent: Intent, p: ProductView, qty: int = 1) -> Eligibility:
 def rank(intent: Intent, products: list[ProductView]) -> list[ProductView]:
     """Deterministic baseline ranking: preferred brand first (soft), then lowest total, then fastest."""
     prefs = {b.lower() for b in intent.preferred_brands}
-    return sorted(products, key=lambda p: (p.brand.lower() not in prefs, p.total_for(), p.delivery_days, p.product_id))
+    return sorted(products, key=lambda p: ((p.brand or "").lower() not in prefs,
+                                           p.total_for() if p.total_for() is not None else float("inf"),
+                                           p.delivery_days, p.product_id))
 
 
 def checkout_gate(*, intent: Intent, cart, approval, current: ProductView | None) -> list[str]:

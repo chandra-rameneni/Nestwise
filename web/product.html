@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Product · IntentGuard Home</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+<header class="top">
+  <div class="top-inner">
+    <a class="logo" href="/">IntentGuard <span>Home</span><small>demo store</small></a>
+    <form class="search" action="/" role="search">
+      <input name="q" type="search" placeholder="Search sofas, curtains, mugs, lamps…" aria-label="Search products">
+      <button class="btn primary" type="submit">Search</button>
+    </form>
+    <nav class="nav-links"><a href="/inspector">Agent inspector</a></nav>
+  </div>
+  <div class="strip">Real products from the <b>Flipkart Products dataset</b> (CC BY-SA 4.0, PromptCloud) · prices are <b>historical (2015–16)</b> · stock and delivery are <b>simulated</b> · orders are <b>mock</b>, no payment</div>
+</header>
+
+<div class="page">
+  <main class="content" id="main"><p class="typing">Loading product…</p></main>
+  <aside class="dock" id="dock" aria-label="Product assistant"></aside>
+</div>
+<button class="btn primary dock-fab" id="ig-fab" type="button" aria-expanded="false" aria-controls="dock">Ask the assistant</button>
+
+<script src="/static/agent.js"></script>
+<script>
+(function () {
+  const { inr, esc } = window.IGAgent;
+  const pid = decodeURIComponent(location.pathname.split("/").pop());
+
+  function render(p) {
+    document.title = `${p.title} · IntentGuard Home`;
+    const off = p.mrp_inr && p.price_inr && p.mrp_inr > p.price_inr ? Math.round((1 - p.price_inr / p.mrp_inr) * 100) : 0;
+    const initials = esc((p.brand || p.title).slice(0, 2).toUpperCase());
+    const notes = Object.entries(p.data_notes || {}).map(([k, v]) =>
+      `<div class="note"><strong>Check this value:</strong> ${esc(k.replace("_cm", "").replace("_", " "))}: the ${esc(v)}. The assistant treats it as unknown.</div>`).join("");
+    const specs = Object.entries(p.specs || {}).filter(([, v]) => v && v !== "NA");
+    document.getElementById("main").innerHTML = `
+      <div class="crumbs"><a href="/">Home</a> › <a href="/?category=${esc(p.category)}">${esc(p.category_label)}</a> › ${esc(p.category_path.split(" > ").slice(1).join(" › "))}</div>
+      <div class="pdp">
+        <div class="img">${p.image_url ? `<img src="${esc(p.image_url)}" alt="${esc(p.title)}" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'ph',textContent:'${initials}'}))">` : `<span class="ph">${initials}</span>`}</div>
+        <div>
+          <span class="brand">${esc(p.brand || "Brand not listed")}</span>
+          <h1>${esc(p.title)}</h1>
+          <div class="price"><span class="now">${inr(p.price_inr)}</span>${off ? `<span class="was">${inr(p.mrp_inr)}</span><span class="off">${off}% off</span>` : ""}</div>
+          <div class="chips">
+            <span class="chip">Historical price (2015–16)${(p.source_flags.price || "").includes("simulation") ? " · changed by demo" : ""}</span>
+            <span class="chip sim">Delivery ${p.shipping_inr ? inr(p.shipping_inr) : "free"} · ${esc(p.delivery_days)} days (simulated)</span>
+            ${p.stock > 0 ? `<span class="chip sim">${esc(p.stock)} in stock (simulated)</span>` : `<span class="chip bad">Out of stock (simulated)</span>`}
+          </div>
+          ${notes}
+          <p class="desc">Ask the assistant about this product, or say <strong>buy this</strong>. It answers only from the details on this page.</p>
+        </div>
+      </div>
+      <div class="section"><h2>Specifications</h2>
+        ${specs.length ? `<div style="overflow-x:auto"><table class="specs"><tbody>${specs.map(([k, v]) => `<tr><th scope="row">${esc(k)}</th><td>${esc(v)}</td></tr>`).join("")}</tbody></table></div>` : `<p class="desc">The listing has no specifications.</p>`}
+      </div>
+      <div class="section"><h2>Description</h2><p class="desc">${esc(p.description) || "No description in the listing."}</p></div>
+      <div class="section desc" style="font-size:13px">Product ID <code>${esc(p.product_id)}</code> · <a href="${esc(p.source_url)}" target="_blank" rel="noopener">Original 2016 listing</a> (may no longer exist)</div>`;
+  }
+
+  fetch("/api/products/" + encodeURIComponent(pid)).then(async (r) => {
+    if (!r.ok) { document.getElementById("main").innerHTML = `<div class="empty">This product isn't in the store. <a href="/">Back to all products</a></div>`; return; }
+    render(await r.json());
+  });
+  document.addEventListener("ig:product-changed", (e) => { if (e.detail && e.detail.product_id === pid) render(e.detail); });
+
+  IGAgent.mount({
+    el: document.getElementById("dock"),
+    context: { page: "product", product_id: pid },
+    title: "Ask about this product",
+    intro: "I answer from this product's listing only, and say so when it doesn't cover something. Say “buy this” to order; I'll ask you to approve the exact total first.",
+    suggestions: ["How wide is it?", "What is it made of?", "Will it fit a 2 m wall?", "Show me cheaper ones like this", "Buy this"],
+  });
+})();
+</script>
+</body>
+</html>

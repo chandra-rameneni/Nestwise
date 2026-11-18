@@ -4,7 +4,9 @@
 
 ## Why it's synthetic
 
-The plan's first choice was the Kaggle *Flipkart Products* dataset (`PromptCloudHQ/flipkart-products`). It was **not downloaded or inspected**: this machine has no Kaggle credentials (`~/.kaggle` is missing), and the deadline didn't leave time to sort out access, licensing and data cleaning. A small synthetic catalog was used instead, as the plan's fallback allows.
+When P0 was built, the Kaggle *Flipkart Products* dataset (`PromptCloudHQ/flipkart-products`) hadn't been downloaded, so a small synthetic catalog was used instead, as the plan's fallback allows.
+
+**Update 2026-11-17:** the Flipkart dataset has now been downloaded (no login needed) and profiled; see `DATA_PROFILE.md`. It isn't wired into the app yet. That depends on decision D1 in `DECISIONS.md`.
 
 ## What is real and what isn't
 

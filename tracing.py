@@ -1,7 +1,7 @@
 """Structured trace events for one customer session.
 
 Every event is appended in order to an in-memory list and to traces/<trace_id>.jsonl.
-The Agent Inspector in app.py renders these real events; nothing is hardcoded.
+The Agent Inspector (web/inspector.html) renders these real events; nothing is hardcoded.
 """
 from __future__ import annotations
 

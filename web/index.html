@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IntentGuard Home</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+<header class="top">
+  <div class="top-inner">
+    <a class="logo" href="/">IntentGuard <span>Home</span><small>demo store</small></a>
+    <form class="search" id="search" role="search">
+      <input id="q" type="search" placeholder="Search sofas, curtains, mugs, lamps…" aria-label="Search products">
+      <button class="btn primary" type="submit">Search</button>
+    </form>
+    <nav class="nav-links"><a href="/inspector">Agent inspector</a></nav>
+  </div>
+  <div class="strip">Real products from the <b>Flipkart Products dataset</b> (CC BY-SA 4.0, PromptCloud) · prices are <b>historical (2015–16)</b> · stock and delivery are <b>simulated</b> · orders are <b>mock</b>, no payment</div>
+</header>
+
+<div class="page">
+  <main class="content">
+    <div class="listing">
+      <aside class="filters" aria-label="Filters">
+        <div>
+          <h3>Category</h3>
+          <div class="cat-list" id="cats"></div>
+        </div>
+        <div>
+          <h3>Price (₹)</h3>
+          <form class="price-row" id="price">
+            <input id="pmin" type="number" min="0" placeholder="Min" aria-label="Minimum price" inputmode="numeric">
+            <input id="pmax" type="number" min="0" placeholder="Max" aria-label="Maximum price" inputmode="numeric">
+            <button class="btn small" type="submit">Go</button>
+          </form>
+        </div>
+      </aside>
+      <section>
+        <div class="results-head"><h1 id="heading">All products</h1><span class="count" id="count"></span></div>
+        <div class="grid" id="grid"></div>
+        <div class="pager" id="pager"></div>
+      </section>
+    </div>
+  </main>
+  <aside class="dock" id="dock" aria-label="Shopping assistant"></aside>
+</div>
+<button class="btn primary dock-fab" id="ig-fab" type="button" aria-expanded="false" aria-controls="dock">Ask the assistant</button>
+
+<script src="/static/agent.js"></script>
+<script>
+(function () {
+  const { inr, esc } = window.IGAgent;
+  const params = new URLSearchParams(location.search);
+  const st = { q: params.get("q") || "", category: params.get("category") || "", min: params.get("min_price") || "",
+               max: params.get("max_price") || "", page: parseInt(params.get("page") || "1", 10) };
+  let cats = [];
+  document.getElementById("q").value = st.q;
+  document.getElementById("pmin").value = st.min;
+  document.getElementById("pmax").value = st.max;
+
+  function sync() {
+    const p = new URLSearchParams();
+    if (st.q) p.set("q", st.q); if (st.category) p.set("category", st.category);
+    if (st.min) p.set("min_price", st.min); if (st.max) p.set("max_price", st.max);
+    if (st.page > 1) p.set("page", st.page);
+    history.replaceState(null, "", "/" + (p.toString() ? "?" + p : ""));
+  }
+
+  window.cardHtml = function (x) {
+    const off = x.mrp_inr && x.price_inr && x.mrp_inr > x.price_inr ? Math.round((1 - x.price_inr / x.mrp_inr) * 100) : 0;
+    const initials = esc((x.brand || x.title).slice(0, 2).toUpperCase());
+    return `<a class="card" href="${esc(x.url)}">
+      <div class="img">${x.image_url ? `<img src="${esc(x.image_url)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'ph',textContent:'${initials}'}))">` : `<span class="ph">${initials}</span>`}</div>
+      <div class="card-body">
+        <span class="brand">${esc(x.brand || "Brand not listed")}</span>
+        <span class="title">${esc(x.title)}</span>
+        <div class="price"><span class="now">${inr(x.price_inr)}</span>${off ? `<span class="was">${inr(x.mrp_inr)}</span><span class="off">${off}% off</span>` : ""}</div>
+        ${x.stock === 0 ? `<span class="oos">Out of stock (simulated)</span>` : ""}
+      </div></a>`;
+  };
+
+  async function load() {
+    sync();
+    const p = new URLSearchParams({ page: st.page, page_size: 24 });
+    if (st.q) p.set("q", st.q); if (st.category) p.set("category", st.category);
+    if (st.min) p.set("min_price", st.min); if (st.max) p.set("max_price", st.max);
+    const r = await fetch("/api/products?" + p).then((r) => r.json());
+    const cat = cats.find((c) => c.slug === st.category);
+    document.getElementById("heading").textContent = st.q ? `Results for “${st.q}”` : (cat ? cat.label : "All products");
+    document.getElementById("count").textContent = `${r.total.toLocaleString("en-IN")} products`;
+    document.getElementById("grid").innerHTML = r.items.length ? r.items.map(window.cardHtml).join("")
+      : `<div class="empty">No products match. The assistant on the right can tell you what the store does sell.</div>`;
+    const pages = Math.max(1, Math.ceil(r.total / r.page_size));
+    document.getElementById("pager").innerHTML = pages > 1 ? `
+      <button class="btn small" ${st.page <= 1 ? "disabled" : ""} data-page="${st.page - 1}" type="button">Previous</button>
+      <span>Page ${st.page} of ${pages}</span>
+      <button class="btn small" ${st.page >= pages ? "disabled" : ""} data-page="${st.page + 1}" type="button">Next</button>` : "";
+    renderCats();
+  }
+  function renderCats() {
+    const all = cats.reduce((a, c) => a + c.count, 0);
+    document.getElementById("cats").innerHTML =
+      `<button type="button" data-cat="" aria-pressed="${!st.category}">All <span class="n">${all.toLocaleString("en-IN")}</span></button>` +
+      cats.map((c) => `<button type="button" data-cat="${esc(c.slug)}" aria-pressed="${st.category === c.slug}">${esc(c.label)} <span class="n">${c.count}</span></button>`).join("");
+  }
+  document.getElementById("cats").addEventListener("click", (e) => {
+    const b = e.target.closest("button"); if (!b) return;
+    st.category = b.dataset.cat; st.page = 1; load();
+  });
+  document.getElementById("pager").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-page]"); if (!b) return;
+    st.page = parseInt(b.dataset.page, 10); load(); window.scrollTo({ top: 0 });
+  });
+  document.getElementById("search").addEventListener("submit", (e) => {
+    e.preventDefault(); st.q = document.getElementById("q").value.trim(); st.page = 1; load();
+  });
+  document.getElementById("price").addEventListener("submit", (e) => {
+    e.preventDefault(); st.min = document.getElementById("pmin").value; st.max = document.getElementById("pmax").value; st.page = 1; load();
+  });
+
+  fetch("/api/meta").then((r) => r.json()).then((m) => { cats = m.categories; load(); });
+
+  IGAgent.mount({
+    el: document.getElementById("dock"),
+    context: { page: "listing" },
+    title: "Shopping assistant",
+    intro: "Tell me what you need and your limits. I only recommend products that meet every requirement I can check, and I never order without your approval.",
+    suggestions: ["Find a 3-seater sofa under ₹30,000 that fits 200 cm", "Coffee mug under ₹300", "Do you sell mobiles?"],
+  });
+})();
+</script>
+</body>
+</html>

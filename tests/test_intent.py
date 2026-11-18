@@ -59,6 +59,17 @@ def test_keyboard_request_fields():
     assert x.required_compatibility == ["macOS"] and x.preferred_brands == ["Logitech"]
 
 
+def test_single_word_product_is_a_search_not_unsupported():
+    # Observed in manual UI testing (F-003): "mobile" got the generic "What are you shopping for?" reply.
+    x = extract_rules("mobile")
+    assert x.intent == "PRODUCT_DISCOVERY" and x.product_query == "mobile"
+
+
+def test_single_word_unknown_product_says_not_in_catalog(session):
+    r = session.handle_message("mobile")
+    assert r.kind == "NOT_AVAILABLE" and "mobile" in r.message and r.recommendations == []
+
+
 def test_4k_shorthand():
     assert extract_rules("keyboard and mouse under 4k").max_total_inr == 4000
 

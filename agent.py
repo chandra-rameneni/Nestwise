@@ -1,7 +1,13 @@
-"""IntentGuard session: intent routing, bounded tool use, grounded recommendations, approval and checkout.
+"""IntentGuard session: page-aware routing, bounded tool use, grounded recommendations and answers,
+approval and checkout.
 
 The flow is code-driven (a workflow, not a free-running model loop). The model is used only to
-interpret language; every eligibility, approval and checkout decision is deterministic code.
+interpret language and to phrase product answers from listing data; every search outcome,
+eligibility, approval and checkout decision is deterministic code.
+
+Every turn ends in exactly one outcome (PRD rule R4):
+RECOMMEND | ANSWER | CLARIFY | NOT_AVAILABLE | NO_ELIGIBLE | CART_PROPOSED | APPROVED | DECLINED |
+ORDER_PLACED | BLOCKED | DEFER | UNSUPPORTED
 """
 from __future__ import annotations
 
@@ -10,12 +16,14 @@ from typing import Optional
 
 import intent as intent_mod
 import policy
-from catalog import Catalog, ProductView
+import qa
+from catalog import STORE_DB_PATH, Catalog, ProductView, SqliteCatalog, _head_noun
 from checkout import Approval, Cart, MockOrder, MockOrderService, new_approval, new_cart
 from intent import Intent
 from tracing import Tracer
 
 MAX_TOOL_CALLS_PER_TURN = 40
+MAX_CANDIDATES = 200
 MAX_RECOMMENDATIONS = 3
 
 _ASK = {
@@ -24,28 +32,35 @@ _ASK = {
     "seats": "How many seats do you need?",
     "max_width_cm": "How much wall space is there for it? Please give the maximum width in cm.",
 }
+_NEED = {"product": "the product you want", "budget": "your maximum budget in ₹", "seats": "the number of seats",
+         "max_width_cm": "the maximum width in cm"}
 
 
 @dataclass
 class Response:
-    kind: str                     # CLARIFY | RECOMMEND | NO_ELIGIBLE | NOT_IN_CATALOG | DEFER | UNSUPPORTED
-                                  # | CART_PROPOSED | APPROVED | DECLINED | ORDER_PLACED | BLOCKED | ERROR
+    kind: str
     message: str
     recommendations: list[dict] = field(default_factory=list)
     rejected: list[dict] = field(default_factory=list)
     cart: Optional[Cart] = None
     order: Optional[MockOrder] = None
     reason_codes: list[str] = field(default_factory=list)
+    cited_fields: list[str] = field(default_factory=list)
+    product_id: Optional[str] = None
 
 
-def _inr(n: int) -> str:
-    return f"₹{n:,}"
+def _inr(n: Optional[int]) -> str:
+    return "price not listed" if n is None else f"₹{n:,}"
+
+
+def default_catalog():
+    """The real store catalog when it has been built, otherwise the synthetic fixture."""
+    return SqliteCatalog() if STORE_DB_PATH.exists() else Catalog()
 
 
 class Session:
-    def __init__(self, catalog: Optional[Catalog] = None, tracer: Optional[Tracer] = None,
-                 orders: Optional[MockOrderService] = None):
-        self.catalog = catalog or Catalog()
+    def __init__(self, catalog=None, tracer: Optional[Tracer] = None, orders: Optional[MockOrderService] = None):
+        self.catalog = catalog or default_catalog()
         self.tracer = tracer or Tracer()
         self.orders = orders or MockOrderService()
         self.intent: Optional[Intent] = None
@@ -53,31 +68,54 @@ class Session:
         self.cart: Optional[Cart] = None
         self.approval: Optional[Approval] = None
         self.history: list[tuple[str, str]] = []
+        self.context: dict = {"page": "listing"}
         self._tool_calls = 0
-        self.tracer.event("session", "session.start", catalog_version=self.catalog.meta["version"],
+        self._last_clarify: Optional[tuple] = None
+        self.tracer.event("session", "session.start", catalog_version=self.catalog.meta.get("version"),
                           llm_configured=intent_mod.llm_available())
 
     # ------------------------------------------------------------------ helpers
     def _respond(self, r: Response) -> Response:
+        if r.kind != "CLARIFY":
+            self._last_clarify = None
         self.history.append(("assistant", r.message))
         self.tracer.event("agent", "agent.response", response_kind=r.kind, reason_codes=r.reason_codes,
                           recommended_ids=[x["product_id"] for x in r.recommendations],
                           cart_id=r.cart.cart_id if r.cart else None,
-                          order_id=r.order.order_id if r.order else None)
+                          order_id=r.order.order_id if r.order else None,
+                          cited_fields=r.cited_fields, page=self.context.get("page"),
+                          product_id=r.product_id or self.context.get("product_id"))
         return r
 
-    def _get(self, pid: str) -> Optional[ProductView]:
+    def _count_tool(self) -> None:
         self._tool_calls += 1
         if self._tool_calls > MAX_TOOL_CALLS_PER_TURN:
             raise RuntimeError("tool-call limit reached for this turn")
+
+    def _get(self, pid: str) -> Optional[ProductView]:
+        self._count_tool()
         with self.tracer.tool("get_product", product_id=pid) as t:
             p = self.catalog.get(pid)
             t["summary"] = None if p is None else {"version": p.version, "price": p.list_price_inr,
                                                    "shipping": p.shipping_inr, "stock": p.stock}
-        if p is not None and p.injection_flag:
-            self.tracer.event("guardrail", "untrusted_text_flagged", status="warn", product_id=pid,
-                              note="Instruction-like text in product description; treated as data, not instructions.")
+        if p is not None:
+            self._flag_untrusted(p)
         return p
+
+    def _get_many(self, pids: list[str]) -> list[ProductView]:
+        """One bounded tool call that loads several products (search results)."""
+        self._count_tool()
+        with self.tracer.tool("get_products", count=len(pids)) as t:
+            products = [p for p in (self.catalog.get(pid) for pid in pids) if p is not None]
+            t["summary"] = {"loaded": len(products)}
+        for p in products:
+            self._flag_untrusted(p)
+        return products
+
+    def _flag_untrusted(self, p: ProductView) -> None:
+        if p.injection_flag:
+            self.tracer.event("guardrail", "untrusted_text_flagged", status="warn", product_id=p.product_id,
+                              note="Instruction-like text in product description; treated as data, not instructions.")
 
     def _invalidate_approval(self, reason: str) -> None:
         if self.approval and self.approval.status == "APPROVED":
@@ -86,33 +124,53 @@ class Session:
             self.tracer.event("approval", "approval.invalidated", status="warn",
                               approval_id=self.approval.approval_id, reason=reason)
 
-    # ------------------------------------------------------------------ user message
-    def handle_message(self, text: str) -> Response:
-        self._tool_calls = 0
-        self.history.append(("user", text))
-        self.tracer.event("user", "user.message", text=text)
+    def _store_labels(self) -> str:
+        labels = [l.lower() for l in self.catalog.category_labels()]
+        return labels[0] if len(labels) == 1 else ", ".join(labels[:-1]) + " and " + labels[-1]
 
-        new_intent, changed, meta = intent_mod.extract(text, self.intent)
+    # ------------------------------------------------------------------ user message
+    def handle_message(self, text: str, context: Optional[dict] = None) -> Response:
+        self._tool_calls = 0
+        self.context = dict(context or {"page": "listing"})
+        self.history.append(("user", text))
+        self.tracer.event("user", "user.message", text=text, page=self.context.get("page"),
+                          product_id=self.context.get("product_id"))
+
+        current: Optional[ProductView] = None
+        if self.context.get("page") == "product" and self.context.get("product_id"):
+            current = self._get(self.context["product_id"])
+            if current is None:
+                return self._respond(Response("BLOCKED", "I couldn't find this product in the store.",
+                                              reason_codes=["PRODUCT_NOT_FOUND"]))
+            self.context["product_title"] = current.title
+        else:
+            self.context["page"] = "listing"
+
+        new_intent, changed, meta = intent_mod.extract(text, self.intent, self.context)
         self.tracer.event("model" if new_intent.extractor.startswith("llm") else "rules", "intent.extracted",
                           status="ok" if "error" not in meta else "warn", extractor=new_intent.extractor,
                           intent=new_intent.intent, constraints=new_intent.constraint_fields(),
+                          question=new_intent.question, wants_similar=new_intent.wants_similar,
                           missing_info=new_intent.missing_info, changed_fields=changed,
                           intent_version=new_intent.version, **meta)
 
         if new_intent.intent == "REFUND_REQUEST":
             return self._respond(Response("DEFER", (
                 "I can see you'd like a refund. Refunds aren't available in this demo yet. A real refund needs "
-                "you to sign in so I can find your own order and check the merchant's return policy. "
-                "Nothing has been refunded or changed."), reason_codes=["WORKFLOW_NOT_AVAILABLE_P0"]))
+                "you to sign in so I can find your own order and check the store's return policy. "
+                "Nothing has been refunded or changed."), reason_codes=["WORKFLOW_NOT_AVAILABLE"]))
         if new_intent.intent == "ORDER_TRACKING":
             return self._respond(Response("DEFER", (
                 "I can see you want to track an order. Order tracking isn't available in this demo yet; it would "
                 "need you to sign in so only your own orders are looked up. No order data was accessed."),
-                reason_codes=["WORKFLOW_NOT_AVAILABLE_P0"]))
+                reason_codes=["WORKFLOW_NOT_AVAILABLE"]))
+        if new_intent.intent == "UNSUPPORTED" and self._last_clarify:
+            # A non-answer ("not sure") to our last question: rule R2, say what's still needed and stop.
+            return self._clarify(list(self._last_clarify))
         if new_intent.intent == "UNSUPPORTED":
-            return self._respond(Response("UNSUPPORTED",
-                                          "I can help you find, compare and buy products from this demo catalog. "
-                                          "What are you shopping for?"))
+            return self._respond(Response("UNSUPPORTED", (
+                f"I can help you find and compare products in this store ({self._store_labels()}), answer "
+                "questions about a product, and place an order once you approve it.")))
 
         if changed and self.intent is not None:
             self._invalidate_approval(f"constraints changed: {', '.join(changed)}")
@@ -120,65 +178,102 @@ class Session:
                 self.cart.status = "SUPERSEDED"
         self.intent = new_intent
 
-        if new_intent.missing_info:
-            questions = [_ASK.get(m, f"Could you tell me the {m}?") for m in new_intent.missing_info]
-            self.tracer.event("agent", "clarify", missing_info=new_intent.missing_info)
-            return self._respond(Response("CLARIFY", " ".join(questions)))
+        if current is not None:
+            if new_intent.intent == "PRODUCT_QUESTION":
+                return self._answer(current, new_intent)
+            if new_intent.intent == "BUY_THIS":
+                return self.select_product(current.product_id, from_product_page=True)
+            if new_intent.wants_similar:
+                return self._similar(current, cheaper=new_intent.wants_cheaper)
 
+        if new_intent.missing_info:
+            return self._clarify(new_intent.missing_info)
         return self._search_and_recommend()
 
-    # ------------------------------------------------------------------ discovery
-    def _search_and_recommend(self, exclude: tuple[str, ...] = ()) -> Response:
-        it = self.intent
-        keywords = None if it.category else (it.product_query or "").split()[-1:]
-        with self.tracer.tool("search_catalog", category=it.category, keywords=keywords) as t:
-            ids = self.catalog.search(it.category, keywords)
-            t["summary"] = {"count": len(ids), "product_ids": ids}
-        if not ids:
-            return self._respond(Response("NOT_IN_CATALOG", (
-                f"I couldn't find any {it.product_query or it.category} in this demo catalog, so I won't "
-                "suggest anything. The catalog currently covers keyboard-and-mouse combos and sofas."),
-                reason_codes=["NO_CATALOG_MATCH"]))
+    # ------------------------------------------------------------------ clarify (rule R2)
+    def _clarify(self, missing: list[str]) -> Response:
+        key = tuple(sorted(missing))
+        if key == self._last_clarify:
+            # Same gap as last turn: don't ask the same question again. Say what's needed and stop.
+            needs = " and ".join(_NEED.get(m, m) for m in missing)
+            self.tracer.event("agent", "clarify.repeat_suppressed", status="warn", missing_info=missing)
+            r = Response("CLARIFY", f"I still need {needs} before I can search. Tell me whenever you're ready.")
+        else:
+            self.tracer.event("agent", "clarify", missing_info=missing)
+            r = Response("CLARIFY", " ".join(_ASK.get(m, f"Could you tell me the {m}?") for m in missing))
+        out = self._respond(r)
+        self._last_clarify = key
+        return out
 
+    # ------------------------------------------------------------------ discovery
+    def _find(self, query: str) -> tuple[list[str], list[str]]:
+        self._count_tool()
+        with self.tracer.tool("search_catalog", query=query, category=self.intent.category) as t:
+            matches, related = self.catalog.find_products(query, product_category=self.intent.category)
+            t["summary"] = {"matches": len(matches), "related": len(related), "first_ids": matches[:10]}
+        return matches, related
+
+    def _search_and_recommend(self, exclude: tuple[str, ...] = (), query: Optional[str] = None,
+                              probe: Optional[Intent] = None) -> Response:
+        it = probe or self.intent
+        query = query if query is not None else (it.product_query or "")
+        matches, related = self._find(query)
+        if not matches:
+            # Rule R1: not sold here. Terminal answer, no follow-up question, same answer every time.
+            name = query.strip() or "that"
+            return self._respond(Response("NOT_AVAILABLE", f"We don't sell {name}. This store sells "
+                                          f"{self._store_labels()}.", reason_codes=["NOT_SOLD_HERE"]))
+        candidates = [pid for pid in matches if pid not in exclude][:MAX_CANDIDATES]
         eligible, rejected = [], []
-        for pid in ids:
-            if pid in exclude:
-                continue
-            p = self._get(pid)
-            if p is None:
-                continue
+        for p in self._get_many(candidates):
             e = policy.evaluate(it, p)
             self.tracer.event("policy", "policy.eligibility", status="pass" if e.eligible else "fail",
-                              product_id=pid, total_inr=e.total_inr, eligible=e.eligible,
+                              product_id=p.product_id, total_inr=e.total_inr, eligible=e.eligible,
                               checks=[c.to_dict() for c in e.checks])
             (eligible if e.eligible else rejected).append((p, e))
 
         ranked = policy.rank(it, [p for p, _ in eligible])[:MAX_RECOMMENDATIONS]
         self.eligible_ids = [p.product_id for p in ranked]
-        recs = [self._rec_dict(p) for p in ranked]
+        recs = [self._rec_dict(p, e) for p, e in eligible if p in ranked]
+        recs.sort(key=lambda r: self.eligible_ids.index(r["product_id"]))
         rej = [{"product_id": p.product_id, "title": p.title, "total_inr": e.total_inr,
                 "reason_codes": e.reason_codes} for p, e in rejected]
-        self.tracer.event("agent", "recommendation", eligible_ids=self.eligible_ids,
+        self.tracer.event("agent", "recommendation", eligible_ids=self.eligible_ids, eligible_count=len(eligible),
                           rejected={r["product_id"]: r["reason_codes"] for r in rej})
 
         if not ranked:
             blockers = sorted({c for r in rej for c in r["reason_codes"]})
             return self._respond(Response("NO_ELIGIBLE", (
-                "None of the matching products meet all your requirements, so I'm not recommending any. "
-                f"What blocked them: {', '.join(blockers)}. You could raise the budget, allow a later delivery "
+                f"I found {len(matches)} {query} but none meets all your requirements, so I'm not recommending any. "
+                f"What ruled them out: {', '.join(blockers)}. You could raise the budget, allow a later delivery "
                 "or relax another requirement."), rejected=rej, reason_codes=blockers))
+        return self._respond(Response("RECOMMEND", self._explain(ranked, rej, len(eligible), it),
+                                      recommendations=recs, rejected=rej))
 
-        return self._respond(Response("RECOMMEND", self._explain(ranked, rej), recommendations=recs, rejected=rej))
+    def _similar(self, base: ProductView, cheaper: bool) -> Response:
+        """'Anything cheaper like this?' on a product page: same kind of product, the shopper's stated
+        requirements (PRD decision D9), and below this product's total if they asked for cheaper."""
+        it = self.intent
+        query = it.product_query if intent_mod.head_term(it.product_query) == intent_mod.head_term(_head_noun(base.title)) \
+            and it.product_query else _head_noun(base.title)
+        probe = it.model_copy()
+        if cheaper and base.total_for() is not None:
+            limit = base.total_for() - 1
+            probe.max_total_inr = min(limit, it.max_total_inr) if it.max_total_inr else limit
+        self.tracer.event("agent", "similar_search", base_product=base.product_id, query=query, cheaper=cheaper,
+                          max_total_inr=probe.max_total_inr)
+        return self._search_and_recommend(exclude=(base.product_id,), query=query, probe=probe)
 
-    def _rec_dict(self, p: ProductView) -> dict:
+    def _rec_dict(self, p: ProductView, e: Optional[policy.Eligibility] = None) -> dict:
         return {"product_id": p.product_id, "title": p.title, "brand": p.brand, "list_price_inr": p.list_price_inr,
                 "shipping_inr": p.shipping_inr, "total_inr": p.total_for(), "delivery_days": p.delivery_days,
-                "stock": p.stock, "specs": p.specs}
+                "stock": p.stock, "specs": p.specs, "url": f"/product/{p.product_id}",
+                "checks": [c.to_dict() for c in e.checks] if e else []}
 
-    def _explain(self, ranked: list[ProductView], rej: list[dict]) -> str:
+    def _explain(self, ranked: list[ProductView], rej: list[dict], n_eligible: int, it: Intent) -> str:
         """Template explanation built only from retrieved fields (no free-form model text)."""
-        it = self.intent
-        lines = [f"I found {len(ranked)} option(s) that meet every requirement I could verify:"]
+        more = f" (showing the top {len(ranked)} of {n_eligible})" if n_eligible > len(ranked) else ""
+        lines = [f"I found {n_eligible} option(s) that meet every requirement I could verify{more}:"]
         prefs = {b.lower() for b in it.preferred_brands}
         for i, p in enumerate(ranked, 1):
             facts = [f"{_inr(p.total_for())} total ({_inr(p.list_price_inr)} + {_inr(p.shipping_inr)} delivery)",
@@ -188,11 +283,15 @@ class Session:
             if it.seats:
                 facts.append(f"{p.specs.get('seats')} seats")
             if it.max_width_cm:
-                facts.append(f"{p.specs.get('width_cm')} cm wide")
-            if prefs and p.brand.lower() in prefs:
+                facts.append(f"{p.specs.get('width_cm'):g} cm wide")
+            if it.max_depth_cm:
+                facts.append(f"{p.specs.get('depth_cm'):g} cm deep")
+            if it.max_height_cm:
+                facts.append(f"{p.specs.get('height_cm'):g} cm tall")
+            if prefs and (p.brand or "").lower() in prefs:
                 facts.append(f"your preferred brand ({p.brand})")
             lines.append(f"{i}. {p.title} [{p.product_id}]: " + ", ".join(facts) + ".")
-        if prefs and not any(p.brand.lower() in prefs for p in ranked):
+        if prefs and not any((p.brand or "").lower() in prefs for p in ranked):
             lines.append(f"None of the eligible options are from {', '.join(it.preferred_brands)}; "
                          "these are the closest matches that meet your hard requirements.")
         if rej:
@@ -201,19 +300,42 @@ class Session:
         lines.append("Tell me which one you'd like, and I'll show you the exact cart total before anything is bought.")
         return "\n".join(lines)
 
+    # ------------------------------------------------------------------ product Q&A (rules R5, R6)
+    def _answer(self, p: ProductView, it: Intent) -> Response:
+        self._count_tool()
+        with self.tracer.tool("answer_about_product", product_id=p.product_id, question=it.question) as t:
+            result = qa.answer_about_product(p, it.question or "", it)
+            t["summary"] = {"method": result.method, "status": result.status, "cited_fields": result.cited_fields}
+        if result.status == "rejected":
+            self.tracer.event("guardrail", "qa.answer_rejected", status="warn", product_id=p.product_id,
+                              reason=result.meta.get("rejected"))
+        return self._respond(Response("ANSWER", result.answer, cited_fields=result.cited_fields,
+                                      product_id=p.product_id,
+                                      reason_codes=["NOT_IN_LISTING"] if result.status == "not_in_listing" else []))
+
     # ------------------------------------------------------------------ cart / approval / checkout
-    def select_product(self, product_id: str, qty: int = 1) -> Response:
-        self._tool_calls = 0
-        self.tracer.event("user", "user.select", product_id=product_id, qty=qty)
-        if self.intent is None or product_id not in self.eligible_ids:
+    def select_product(self, product_id: str, qty: int = 1, from_product_page: bool = False) -> Response:
+        """Propose a cart. From a recommendation list, only products just checked are allowed; from a product
+        page ("buy this") the product itself is checked against the shopper's stated requirements."""
+        if not from_product_page:
+            self._tool_calls = 0
+        self.tracer.event("user", "user.select", product_id=product_id, qty=qty, from_product_page=from_product_page)
+        if not from_product_page and (self.intent is None or product_id not in self.eligible_ids):
             self.tracer.event("policy", "cart.denied", status="block", product_id=product_id,
                               reason="NOT_IN_ELIGIBLE_RECOMMENDATIONS")
             return self._respond(Response("BLOCKED", "I can only put a product in the cart if it's one of the "
                                           "eligible options I just checked.", reason_codes=["NOT_ELIGIBLE"]))
+        if self.intent is None:
+            self.intent = Intent(intent="BUY_THIS")
         p = self._get(product_id)
+        if p is None:
+            return self._respond(Response("BLOCKED", "I couldn't find that product.", reason_codes=["PRODUCT_NOT_FOUND"]))
         e = policy.evaluate(self.intent, p, qty)
         if not e.eligible:
             self.tracer.event("policy", "cart.denied", status="block", product_id=product_id, reasons=e.reason_codes)
+            if from_product_page:
+                return self._blocked_with_alternatives(p, e.reason_codes, f"I can't put {p.title} in the cart: "
+                                                       f"it doesn't meet your requirements ({', '.join(e.reason_codes)}).")
             return self._respond(Response("BLOCKED", "That product no longer meets your requirements: "
                                           f"{', '.join(e.reason_codes)}.", reason_codes=e.reason_codes))
         if self.cart and self.cart.status == "PROPOSED":
@@ -227,9 +349,18 @@ class Session:
         return self._respond(Response("CART_PROPOSED", (
             f"Cart: {qty} x {p.title} [{p.product_id}]\n"
             f"Item {_inr(p.list_price_inr * qty)} + delivery {_inr(p.shipping_inr)} = **{_inr(self.cart.total_inr)} total** "
-            f"(simulated prices). Delivery in {p.delivery_days} days.\n"
+            f"(historical price; delivery simulated). Delivery in {p.delivery_days} days.\n"
             "Do you approve buying exactly this cart for this total? Nothing will be ordered without your approval."),
-            cart=self.cart))
+            cart=self.cart, product_id=p.product_id))
+
+    def _blocked_with_alternatives(self, p: ProductView, reasons: list[str], lead: str) -> Response:
+        alt = self._similar(p, cheaper=False)
+        self.history.pop()          # merge the alternatives into a single blocked response
+        tail = ("Here is what meets your requirements instead:\n" + alt.message) if alt.kind == "RECOMMEND" \
+            else alt.message
+        alt.message = lead + "\n\n" + tail
+        alt.kind, alt.reason_codes, alt.cart = "BLOCKED", reasons, None
+        return self._respond(alt)
 
     def approve(self) -> Response:
         self.tracer.event("user", "user.approve", cart_id=self.cart.cart_id if self.cart else None)
@@ -257,7 +388,6 @@ class Session:
         self._tool_calls = 0
         if self.cart is None:
             return self._respond(Response("BLOCKED", "There's no cart to check out.", reason_codes=["NO_ACTIVE_CART"]))
-        # Replay of an already-completed checkout: return the same order (idempotent).
         if self.cart.status == "ORDERED" and self.approval and self.approval.status == "USED":
             order, created = self.orders.place(self.cart, self.approval)
             self.tracer.event("checkout", "order.duplicate_suppressed", status="ok", order_id=order.order_id,
@@ -301,8 +431,10 @@ class Session:
         if current is not None and current.stock < self.cart.qty:
             parts.append(f"{current.title} is now out of stock.")
         parts.append("Your earlier approval no longer applies.")
-        alt = self._search_and_recommend()
-        # _search_and_recommend already logged its own response; merge it into one recovery message.
+        if self.intent.product_query or self.intent.category:
+            alt = self._search_and_recommend()
+        else:                                   # bought straight from a product page: look for similar ones
+            alt = self._search_and_recommend(query=_head_noun(current.title) if current else "")
         self.history.pop()
         alt.message = " ".join(parts) + "\n\n" + (
             "Here is what meets your requirements right now:\n" + alt.message if alt.kind == "RECOMMEND"
