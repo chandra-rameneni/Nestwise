@@ -256,6 +256,17 @@ class SqliteCatalog:
             (matches if is_it and has_mods and not accessory else related).append(pid)
         return matches, related
 
+    def vocabulary(self) -> tuple[set[str], set[str]]:
+        """(every word in product names and categories, the product-type words). Used to spot typos (B12):
+        'sofaa' isn't a word in the store but is close to the product type 'sofa'."""
+        if getattr(self, "_vocab", None) is None:
+            every, types = set(), set()
+            for name, leaf, path in self._con.execute("SELECT name, leaf_category, category_path FROM products"):
+                every |= set(re.findall(r"[a-z]+", f"{name} {leaf} {path}".lower()))
+                types |= {w for w in (_head_noun(name), *re.findall(r"[a-z]+", leaf.lower())) if len(w) > 3}
+            self._vocab = (every, types)
+        return self._vocab
+
     # --- agent tools (same interface as Catalog) --------------------------------------
     def search(self, category: str | None = None, keywords: list[str] | None = None, limit: int = 200) -> list[str]:
         ids, _ = self.search_text(" ".join(keywords or []), category=category, limit=limit)

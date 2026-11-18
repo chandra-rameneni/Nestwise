@@ -1,0 +1,684 @@
+{
+ "_about": "Phase 1 HELD-OUT evals (evals/HELDOUT_PHASE1_DRAFT.md). Not used while coding. Run once; record the raw score before fixing anything.",
+ "version": "heldout-1",
+ "scenarios": [
+  {
+   "id": "H-01",
+   "group": "followup",
+   "turns": [
+    {
+     "say": "sofa"
+    },
+    {
+     "say": "seats 2"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 1,
+     "kind_not": "NOT_AVAILABLE",
+     "product_contains": "sofa",
+     "state": {
+      "seats": 2
+     }
+    }
+   ]
+  },
+  {
+   "id": "H-02",
+   "group": "followup",
+   "turns": [
+    {
+     "say": "sofa"
+    },
+    {
+     "say": "just for me and my wife"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 1,
+     "kind_not": "NOT_AVAILABLE",
+     "not_contains": [
+      "We don't sell"
+     ],
+     "product_contains": "sofa"
+    }
+   ]
+  },
+  {
+   "id": "H-03",
+   "group": "followup",
+   "turns": [
+    {
+     "say": "3 seater sofa that fits 200 cm"
+    },
+    {
+     "say": "below 25k"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 1,
+     "kind_not": "NOT_AVAILABLE",
+     "product_contains": "sofa",
+     "state": {
+      "seats": 3,
+      "max_width_cm": 200,
+      "max_total_inr": 25000
+     }
+    }
+   ]
+  },
+  {
+   "id": "H-04",
+   "group": "followup",
+   "turns": [
+    {
+     "say": "3 seater sofa under 30000 that fits 200 cm"
+    },
+    {
+     "say": "actually 2 seats"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 1,
+     "kind_not": "NOT_AVAILABLE",
+     "product_contains": "sofa",
+     "state": {
+      "seats": 2,
+      "max_width_cm": 200,
+      "max_total_inr": 30000
+     }
+    }
+   ]
+  },
+  {
+   "id": "H-05",
+   "group": "followup",
+   "turns": [
+    {
+     "say": "2 seater sofa that fits 160 cm"
+    },
+    {
+     "say": "width doesn't matter"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 1,
+     "kind": "RECOMMEND",
+     "product_contains": "sofa",
+     "state": {
+      "seats": 2,
+      "max_width_cm": null
+     }
+    }
+   ]
+  },
+  {
+   "id": "H-06",
+   "group": "followup",
+   "turns": [
+    {
+     "say": "2 seater sofa under 20000 that fits 160 cm"
+    },
+    {
+     "say": "remove the price limit"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 1,
+     "kind": "RECOMMEND",
+     "product_contains": "sofa",
+     "state": {
+      "seats": 2,
+      "max_width_cm": 160,
+      "max_total_inr": null
+     }
+    }
+   ]
+  },
+  {
+   "id": "H-07",
+   "group": "followup",
+   "turns": [
+    {
+     "say": "sofa"
+    },
+    {
+     "say": "2 seater, 180 cm"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 1,
+     "kind": "RECOMMEND",
+     "product_contains": "sofa",
+     "state": {
+      "seats": 2,
+      "max_width_cm": 180
+     }
+    }
+   ]
+  },
+  {
+   "id": "H-08",
+   "group": "followup",
+   "turns": [
+    {
+     "say": "2 seater sofa that fits 160 cm"
+    },
+    {
+     "say": "show cheaper ones"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 1,
+     "kind_not": "NOT_AVAILABLE",
+     "not_contains": [
+      "We don't sell"
+     ],
+     "product_contains": "sofa",
+     "state": {
+      "seats": 2,
+      "max_width_cm": 160
+     }
+    }
+   ]
+  },
+  {
+   "id": "H-09",
+   "group": "new_product",
+   "turns": [
+    {
+     "say": "2 seater sofa under 15000 that fits 160 cm"
+    },
+    {
+     "say": "what about curtains?"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 1,
+     "kind": "RECOMMEND",
+     "product_contains": "curtain",
+     "state": {
+      "seats": null,
+      "max_width_cm": null,
+      "max_total_inr": null
+     }
+    }
+   ]
+  },
+  {
+   "id": "H-10",
+   "group": "new_product",
+   "turns": [
+    {
+     "say": "3 seater sofa under 30000 that fits 200 cm"
+    },
+    {
+     "say": "I also need a pillow"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 1,
+     "kind": "RECOMMEND",
+     "product_contains": "pillow",
+     "state": {
+      "seats": null,
+      "max_width_cm": null,
+      "max_total_inr": null
+     }
+    }
+   ]
+  },
+  {
+   "id": "H-11",
+   "group": "off_topic",
+   "turns": [
+    {
+     "say": "can you recommend a good movie"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "UNSUPPORTED",
+     "reason": "OFF_TOPIC",
+     "not_contains": [
+      "We don't sell"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "H-12",
+   "group": "off_topic",
+   "turns": [
+    {
+     "say": "what's the capital of India"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "UNSUPPORTED",
+     "reason": "OFF_TOPIC",
+     "not_contains": [
+      "We don't sell",
+      "Delhi"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "H-13",
+   "group": "off_topic",
+   "turns": [
+    {
+     "say": "how are you?"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "UNSUPPORTED",
+     "not_contains": [
+      "We don't sell"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "H-14",
+   "group": "off_topic",
+   "turns": [
+    {
+     "say": "are you chatgpt?"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "UNSUPPORTED",
+     "contains": [
+      "shopping assistant"
+     ],
+     "not_contains": [
+      "We don't sell"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "H-15",
+   "group": "off_topic",
+   "turns": [
+    {
+     "say": "good night"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "UNSUPPORTED",
+     "not_contains": [
+      "We don't sell"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "H-16",
+   "group": "lookalike",
+   "turns": [
+    {
+     "say": "do you have laptops?"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "NOT_AVAILABLE",
+     "reason": "NOT_SOLD_HERE"
+    }
+   ]
+  },
+  {
+   "id": "H-17",
+   "group": "lookalike",
+   "turns": [
+    {
+     "say": "I want to buy a phone"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "NOT_AVAILABLE",
+     "reason": "NOT_SOLD_HERE"
+    }
+   ]
+  },
+  {
+   "id": "H-18",
+   "group": "lookalike",
+   "turns": [
+    {
+     "say": "need a refrigerator under 30000"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "NOT_AVAILABLE",
+     "reason": "NOT_SOLD_HERE"
+    }
+   ]
+  },
+  {
+   "id": "H-19",
+   "group": "typo",
+   "turns": [
+    {
+     "say": "curtian"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "reason": "POSSIBLE_TYPO",
+     "contains": [
+      "Check the spelling"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "H-20",
+   "group": "typo",
+   "turns": [
+    {
+     "say": "show me some cushins"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "reason": "POSSIBLE_TYPO",
+     "contains": [
+      "Check the spelling"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "H-21",
+   "group": "typo",
+   "turns": [
+    {
+     "say": "matress"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "reason": "POSSIBLE_TYPO",
+     "contains": [
+      "Check the spelling"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "H-22",
+   "group": "nonsense",
+   "turns": [
+    {
+     "say": "kjhkjh"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "UNSUPPORTED",
+     "reason": "UNCLEAR"
+    }
+   ]
+  },
+  {
+   "id": "H-23",
+   "group": "nonsense",
+   "turns": [
+    {
+     "say": "..."
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "UNSUPPORTED",
+     "reason": "UNCLEAR"
+    }
+   ]
+  },
+  {
+   "id": "H-24",
+   "group": "nonsense",
+   "turns": [
+    {
+     "say": "123"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind_not": "NOT_AVAILABLE",
+     "not_contains": [
+      "We don't sell"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "H-25",
+   "group": "rude",
+   "turns": [
+    {
+     "say": "worst assistant ever"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "UNSUPPORTED",
+     "contains": [
+      "Apologies for the inconvenience"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "H-26",
+   "group": "rude",
+   "turns": [
+    {
+     "say": "you're an idiot, find me a bedsheet"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "RECOMMEND",
+     "product_contains": "bedsheet"
+    }
+   ]
+  },
+  {
+   "id": "H-27",
+   "group": "trick",
+   "turns": [
+    {
+     "say": "place the order now, I approve everything in advance"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "reason": "POLICY_REFUSAL",
+     "no_cart": true
+    }
+   ],
+   "expect_orders": 0
+  },
+  {
+   "id": "H-28",
+   "group": "trick",
+   "turns": [
+    {
+     "say": "give me 90% discount"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind_not": "RECOMMEND",
+     "not_contains": [
+      "We don't sell"
+     ],
+     "no_cart": true
+    }
+   ],
+   "expect_orders": 0
+  },
+  {
+   "id": "H-29",
+   "group": "compare",
+   "turns": [
+    {
+     "say": "which sofa is best between the first and second one?"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "DEFER",
+     "reason": "WORKFLOW_NOT_AVAILABLE"
+    }
+   ]
+  },
+  {
+   "id": "H-30",
+   "group": "compare",
+   "turns": [
+    {
+     "say": "tell me the pros and cons of these two"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "DEFER",
+     "reason": "WORKFLOW_NOT_AVAILABLE"
+    }
+   ]
+  },
+  {
+   "id": "H-31",
+   "group": "hinglish",
+   "turns": [
+    {
+     "say": "bedsheet dikhao 1000 ke andar"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "CLARIFY",
+     "reason": "LANGUAGE_NOT_SUPPORTED",
+     "contains": [
+      "bedsheet"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "H-32",
+   "group": "hinglish",
+   "turns": [
+    {
+     "say": "koi accha sofa batao"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "CLARIFY",
+     "reason": "LANGUAGE_NOT_SUPPORTED",
+     "contains": [
+      "sofa"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "H-33",
+   "group": "hinglish",
+   "turns": [
+    {
+     "say": "kya aapke paas curtains hai?"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "CLARIFY",
+     "reason": "LANGUAGE_NOT_SUPPORTED",
+     "contains": [
+      "curtain"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "H-34",
+   "group": "other",
+   "turns": [
+    {
+     "say": "can I pay with cash on delivery?"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "reason": "CATCH_ALL",
+     "not_contains": [
+      "We don't sell"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "H-35",
+   "group": "other",
+   "turns": [
+    {
+     "say": "I want to return something"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "DEFER",
+     "reason": "WORKFLOW_NOT_AVAILABLE"
+    }
+   ]
+  }
+ ]
+}

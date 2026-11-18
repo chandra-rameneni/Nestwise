@@ -4,9 +4,14 @@
 
 | Check | Result | How to reproduce |
 |---|---|---|
-| Unit, acceptance and API tests | **109 passed, 2 skipped, 0 failed** | `.venv/bin/python -m pytest -q` |
+| Unit, acceptance and API tests | **156 passed, 2 skipped, 0 failed** (after Phase 1) | `.venv/bin/python -m pytest -q` |
 | Scenario evals (rules mode), before the iteration | **35/39** (core 29/30, probes 6/9) | `evals/results/20261118T015110Z_rules.md` |
 | Scenario evals (rules mode), after the iteration | **39/39** (core 30/30, probes 9/9) | `evals/results/20261118T015248Z_rules.md` |
+| Phase 1 evals (36, PM-approved), before the code | **5/36** | `evals/results/20261118T133515Z_phase1_scenarios_rules.md` |
+| Phase 1 evals, after the code | **36/36** | `evals/results/20261118T144454Z_phase1_scenarios_rules.md` |
+| Phase 1 fresh-phrasing check (30 new phrasings, written after the code) | **26/30** first time; the 3 Phase 1 misses fixed, 1 was correct behaviour | See "Phase 1" below |
+| **Phase 1 held-out set** (35 phrasings not used while coding), run once | **21/35 (60%)**, raw, before fixes | `evals/results/20261118T140913Z_heldout_phase1_rules.md` |
+| Same set after fixing the worst group | 25/35. **No longer held-out**: the fix was made after seeing these failures | `evals/results/20261118T144453Z_heldout_phase1_rules.md` |
 | Scenario evals with Claude | **Not run.** No `ANTHROPIC_API_KEY` on this machine. | `.venv/bin/python evals/run_evals.py` with a key set |
 | Manual browser walkthrough of both journeys | Done 2026-11-18 | README demo script |
 
@@ -33,6 +38,32 @@
 
 Each fix has a regression test (`test_eval_*` in `tests/test_store_agent.py`).
 
+### Phase 1 (2026-11-18): understand every message
+
+- **Evals:** 36, drafted from PRD §6A and **approved by the PM** before any code (`evals/PHASE1_EVALS_DRAFT.md`, `evals/phase1_scenarios.json`).
+- **Before / after:** 5/36 → 36/36. The original 39 evals still pass.
+- **One eval changed during the work:** P1-T05 used a 160 cm width, but the catalog has no 3-seater that fits 160 cm, so it could never pass. It now uses 200 cm. The behaviour it tests is the same.
+- **Fresh-phrasing check:** 30 new phrasings written after the code. 26 were right the first time. Misses:
+  - "two seats please" → "We don't sell two"
+  - "any width is fine" → "We don't sell fine"
+  - "hi there" → "We don't sell hi there"
+
+  These three are now fixed, with regression tests in `tests/test_phase1_evals.py`. The fourth, "dinner set under 2000" → not sold, is correct: the catalog has no dinner sets.
+- **Not a held-out score.** As with iteration 1, the fixed misses now pass by construction. Rules mode only recognises the phrasings and word lists it was given; anything else goes to the catch-all, which is safe but not helpful.
+
+### Phase 1 held-out run (2026-11-18)
+
+- **Raw score: 21/35 (60%).** This is the honest Phase 1 number.
+- **Worst group fixed** (PM decision): 6 messages still got "We don't sell <junk>" ("width doesn't matter" → "doesn t", "good night" → "night"). Now, if the leftover words include common non-product words, the agent gives the catch-all reply and keeps the shopper's current product thread. Real unsold products ("mobile", "air fryer", "phone", "refrigerator") still get "We don't sell …".
+- **Still failing (10), accepted for now:**
+  - Follow-ups the rules don't recognise ("seats 2", "2 seater, 180 cm", "width doesn't matter")
+  - "what about curtains?" → off-topic reply
+  - "which sofa is best…" → asks seats
+  - "pros and cons" → catch-all
+  - Hinglish beyond the word list (3) → catch-all
+  - "place the order now, I approve everything in advance" → catch-all, not the refusal (safe: no cart, no order)
+- **The next honest measurement needs a new held-out set**, written by someone who hasn't seen these failures.
+
 ## Observed failures, all sources
 
 | ID | Source | First failure upstream | Customer impact | Status and regression test |
@@ -55,10 +86,10 @@ Each fix has a regression test (`test_eval_*` in `tests/test_store_agent.py`).
 | F-016 | Eval LS-06 | "What's the cheapest …" lost the product | "Not sold" for sofas | Fixed: `test_eval_ls06_*` |
 | F-017 | Eval CL-03 | Vague phrase taken as a product | "We don't sell sit on" | Fixed: `test_eval_cl03_*` |
 | F-018 | Eval PQ-07 | Generic word matched unrelated fields | Extra field in the answer | Fixed: `test_eval_pq07_*` |
-| F-020 | User browser test, 2026-11-18 | Anything the rules parser doesn't recognise is treated as a product name: "write a song", "what is 2×2", "bla bla", "sofaa", "you are useless" all get "We don't sell …". Logged as `NOT_SOLD_HERE`, so they can't be told apart from real "not sold" cases. | Confusing reply; off-topic messages hidden in the logs | **Open:** PRD §6A blocks B3, B12, B15, B17 |
-| F-021 | Trace review of F-020 | A ₹30,000 sofa budget from earlier in the session was attached to "write a song" | Requirements leak into unrelated requests | **Open:** PRD R9, block B10 |
+| F-020 | User browser test, 2026-11-18 | Anything the rules parser doesn't recognise is treated as a product name: "write a song", "what is 2×2", "bla bla", "sofaa", "you are useless" all get "We don't sell …". Logged as `NOT_SOLD_HERE`, so they can't be told apart from real "not sold" cases. | Confusing reply; off-topic messages hidden in the logs | **Fixed** (Phase 1): each kind of message has its own reply and label. Evals P1-O*, P1-Y*, P1-N*, P1-A*, P1-X* |
+| F-021 | Trace review of F-020 | A ₹30,000 sofa budget from earlier in the session was attached to "write a song" | Requirements leak into unrelated requests | **Fixed** (Phase 1): a new product or an off-topic message no longer inherits or wipes requirements. Evals P1-R01, P1-R02 |
 | F-022 | Manual check, 2026-11-18 | "a sofa and a coffee table" asks only about the sofa; the coffee table is dropped without saying so | Part of the request ignored | **Open:** PRD block B13 |
-| F-023 | Manual check, 2026-11-18 | Follow-ups aren't applied to the current product: "sofa" then "2 seater" → "We don't sell seater"; "only leather" → "We don't sell only leather"; answering "2" to the seats question isn't understood | The shopper can't narrow a search step by step | **Open:** PRD R9, block B19 |
+| F-023 | Manual check, 2026-11-18 | Follow-ups aren't applied to the current product: "sofa" then "2 seater" → "We don't sell seater"; "only leather" → "We don't sell only leather"; answering "2" to the seats question isn't understood | The shopper can't narrow a search step by step | **Fixed** (Phase 1) for seats and budget follow-ups. Evals P1-T01–T07. "Only leather" waits for the material requirement (Phase 2) |
 | F-019 | Trace review (LS-05) | No synonyms: "couch" won't find products named "sofa" | Not-sold answer for couches once the width is given | **Open:** synonyms are deliberately out of scope (CATALOG_REPORT known limits) |
 
 ## Failure taxonomy (from the failures above)

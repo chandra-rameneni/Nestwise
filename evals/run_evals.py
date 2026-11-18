@@ -2,6 +2,7 @@
 
 Usage:
   .venv/bin/python evals/run_evals.py            # uses Claude if ANTHROPIC_API_KEY is set, else rules mode
+  .venv/bin/python evals/run_evals.py evals/phase1_scenarios.json   # run another scenario file
   INTENTGUARD_LLM=off .venv/bin/python evals/run_evals.py   # force rules mode
 
 Writes evals/results/<timestamp>_<mode>.json and .md, and keeps each scenario's trace in traces/<trace_id>.jsonl.
@@ -43,11 +44,32 @@ def run_turn(s: Session, turn: dict, default_page: str | None):
     raise ValueError(f"unknown action {act}")
 
 
-def check(exp: dict, r, responses: list) -> list[str]:
+def snapshot(s: Session) -> dict:
+    """What the agent remembers after a turn: the product thread, its requirements, and the cart."""
+    it = s.intent
+    return {"product": (it.product_query or "") if it else "",
+            "seats": it.seats if it else None, "max_width_cm": it.max_width_cm if it else None,
+            "max_total_inr": it.max_total_inr if it else None,
+            "cart": s.cart.status if s.cart else None}
+
+
+def check(exp: dict, r, responses: list, state: dict | None = None) -> list[str]:
     """Returns a list of failed-check descriptions for one expectation."""
     if r is None:
         return ["turn produced no response"]
     fails = []
+    if "kind_not" in exp and r.kind == exp["kind_not"]:
+        fails.append(f"kind should not be {exp['kind_not']}")
+    if "reason_not" in exp and exp["reason_not"] in r.reason_codes:
+        fails.append(f"reason codes should not include {exp['reason_not']}")
+    if state is not None:
+        for k, v in exp.get("state", {}).items():
+            if state.get(k) != v:
+                fails.append(f"remembered {k}: expected {v!r}, got {state.get(k)!r}")
+        if "product_contains" in exp and exp["product_contains"] not in state["product"].lower():
+            fails.append(f"remembered product should be a {exp['product_contains']!r}, got {state['product']!r}")
+        if exp.get("no_cart") and state["cart"] is not None:
+            fails.append(f"no cart should exist, got one with status {state['cart']}")
     totals = [x["total_inr"] for x in r.recommendations]
     ids = [x["product_id"] for x in r.recommendations]
     if "kind" in exp and r.kind != exp["kind"]:
@@ -83,16 +105,18 @@ def main() -> int:
     if not STORE_DB_PATH.exists():
         print("data/catalog.sqlite not found. Run: .venv/bin/python build_catalog.py")
         return 2
-    spec = json.loads(SCENARIOS.read_text())
+    path = Path(sys.argv[1]) if len(sys.argv) > 1 else SCENARIOS
+    spec = json.loads(path.read_text())
     mode = "claude" if intent_mod.llm_available() else "rules"
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     results = []
     for sc in spec["scenarios"]:
         s = Session(catalog=SqliteCatalog(), tracer=Tracer())
-        responses, error = [], None
+        responses, states, error = [], [], None
         try:
             for turn in sc["turns"]:
                 responses.append(run_turn(s, turn, sc.get("page")))
+                states.append(snapshot(s))
         except Exception as exc:  # a crash is a failure, recorded with the trace
             error = f"{type(exc).__name__}: {exc}"
         failures = []
@@ -100,7 +124,7 @@ def main() -> int:
             failures.append({"turn": len(responses), "check": f"crashed: {error}"})
         for exp in sc["expect"]:
             if exp["turn"] < len(responses):
-                for f in check(exp, responses[exp["turn"]], responses):
+                for f in check(exp, responses[exp["turn"]], responses, states[exp["turn"]]):
                     failures.append({"turn": exp["turn"], "check": f})
         if "expect_orders" in sc and len(s.orders.orders) != sc["expect_orders"]:
             failures.append({"turn": None, "check": f"orders: expected {sc['expect_orders']}, got {len(s.orders.orders)}"})
@@ -130,7 +154,7 @@ def main() -> int:
                "scenarios_version": spec["version"], "total": n, "passed": passed,
                "core": f"{sum(r['passed'] for r in core)}/{len(core)}",
                "probes": f"{sum(r['passed'] for r in probes)}/{len(probes)}", "results": results}
-    out = RESULTS / f"{stamp}_{mode}"
+    out = RESULTS / f"{stamp}_{mode}" if path == SCENARIOS else RESULTS / f"{stamp}_{path.stem}_{mode}"
     out.with_suffix(".json").write_text(json.dumps(summary, indent=1, ensure_ascii=False))
     lines = [f"# Eval run {stamp} ({mode} mode)", "",
              f"**{passed}/{n} scenarios passed.** Core: {summary['core']} · Probes (phrasings the rules weren't written for): {summary['probes']}.", "",

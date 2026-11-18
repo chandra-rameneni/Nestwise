@@ -11,6 +11,8 @@ ORDER_PLACED | BLOCKED | DEFER | UNSUPPORTED
 """
 from __future__ import annotations
 
+import difflib
+import re
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -25,6 +27,10 @@ from tracing import Tracer
 MAX_TOOL_CALLS_PER_TURN = 40
 MAX_CANDIDATES = 200
 MAX_RECOMMENDATIONS = 3
+
+# Replies to non-shopping messages (PRD §6A). Each comes with the reason label recorded in the trace (§6A.4).
+_YES = re.compile(r"^\s*(yes|yeah|yep|yup|haan|han|ha|sure|correct|right|ok|okay)\b", re.I)
+_NO = re.compile(r"^\s*(no|nope|nahi|nah)\b", re.I)
 
 _ASK = {
     "product": "What product are you looking for?",
@@ -71,6 +77,9 @@ class Session:
         self.context: dict = {"page": "listing"}
         self._tool_calls = 0
         self._last_clarify: Optional[tuple] = None
+        self._pending_confirm: Optional[intent_mod.IntentExtraction] = None   # B16: "Are you searching for a sofa?"
+        self._turn_labels: list[str] = []          # REQUIREMENT_ADDED / _CHANGED / _REMOVED for this turn's results
+        self._prev_intent: Optional[Intent] = None  # restored when a message turns out not to name a product
         self.tracer.event("session", "session.start", catalog_version=self.catalog.meta.get("version"),
                           llm_configured=intent_mod.llm_available())
 
@@ -78,6 +87,9 @@ class Session:
     def _respond(self, r: Response) -> Response:
         if r.kind != "CLARIFY":
             self._last_clarify = None
+        if r.kind in ("RECOMMEND", "NO_ELIGIBLE") and self._turn_labels:
+            r.reason_codes = list(dict.fromkeys(r.reason_codes + self._turn_labels))
+        self._turn_labels = []
         self.history.append(("assistant", r.message))
         self.tracer.event("agent", "agent.response", response_kind=r.kind, reason_codes=r.reason_codes,
                           recommended_ids=[x["product_id"] for x in r.recommendations],
@@ -146,7 +158,15 @@ class Session:
         else:
             self.context["page"] = "listing"
 
-        new_intent, changed, meta = intent_mod.extract(text, self.intent, self.context)
+        pending, self._pending_confirm = self._pending_confirm, None
+        if pending is not None and _NO.match(text):
+            return self._respond(Response("CLARIFY", "No problem. Tell me in English what you're looking for, "
+                                          "and I'll find it for you.", reason_codes=["NEEDS_PRODUCT"]))
+        if pending is not None and _YES.match(text):
+            new_intent, changed = intent_mod.merge(self.intent, pending, "rules_fallback")
+            meta = {"confirmed": "shopper confirmed the product after a Hinglish message (B16)"}
+        else:
+            new_intent, changed, meta = intent_mod.extract(text, self.intent, self.context)
         self.tracer.event("model" if new_intent.extractor.startswith("llm") else "rules", "intent.extracted",
                           status="ok" if "error" not in meta else "warn", extractor=new_intent.extractor,
                           intent=new_intent.intent, constraints=new_intent.constraint_fields(),
@@ -164,14 +184,15 @@ class Session:
                 "I can see you want to track an order. Order tracking isn't available in this demo yet; it would "
                 "need you to sign in so only your own orders are looked up. No order data was accessed."),
                 reason_codes=["WORKFLOW_NOT_AVAILABLE"]))
-        if new_intent.intent == "UNSUPPORTED" and self._last_clarify:
+        kind = new_intent.message_kind
+        if new_intent.intent == "UNSUPPORTED" and kind in (None, "CATCH_ALL") and self._last_clarify:
             # A non-answer ("not sure") to our last question: rule R2, say what's still needed and stop.
             return self._clarify(list(self._last_clarify))
         if new_intent.intent == "UNSUPPORTED":
-            return self._respond(Response("UNSUPPORTED", (
-                f"I can help you find and compare products in this store ({self._store_labels()}), answer "
-                "questions about a product, and place an order once you approve it.")))
+            return self._not_shopping(kind, new_intent, text)
 
+        self._turn_labels = self._requirement_labels(self.intent, new_intent, changed)
+        self._prev_intent = self.intent
         if changed and self.intent is not None:
             self._invalidate_approval(f"constraints changed: {', '.join(changed)}")
             if self.cart and self.cart.status == "PROPOSED":
@@ -189,6 +210,84 @@ class Session:
         if new_intent.missing_info:
             return self._clarify(new_intent.missing_info)
         return self._search_and_recommend()
+
+    # ------------------------------------------------------------------ not a shopping message (§6A)
+    def _not_shopping(self, kind: Optional[str], it: Intent, text: str) -> Response:
+        labels = self._store_labels()
+        if kind == "GREETING":
+            return self._respond(Response("UNSUPPORTED", (
+                f"Hi! I can help you find and compare products in this store ({labels}), answer questions "
+                "about a product, and place an order once you approve it."), reason_codes=["GREETING"]))
+        if kind == "THANKS":
+            return self._respond(Response("UNSUPPORTED", "You're welcome! Happy shopping.",
+                                          reason_codes=["GREETING"]))
+        if kind == "OFF_TOPIC":
+            if re.search(r"\b(who|what) are you\b|\byour name\b|\bare you\b", text, re.I):
+                msg = f"I'm this store's shopping assistant. I can help you find and buy {labels}."
+            else:
+                msg = ("That's not something I can help with, sorry. But I'd love to help you find something "
+                       f"for your home: {labels}.")
+            return self._respond(Response("UNSUPPORTED", msg, reason_codes=["OFF_TOPIC"]))
+        if kind == "UNCLEAR":
+            return self._respond(Response("UNSUPPORTED", "Sorry, I didn't understand that. I can help you find, "
+                                          "compare and buy home and living products.", reason_codes=["UNCLEAR"]))
+        if kind == "ABUSIVE":
+            return self._respond(Response("UNSUPPORTED", "Apologies for the inconvenience. Hope you find what "
+                                          "you're looking for.", reason_codes=["ABUSIVE"]))
+        if kind == "TRICK":
+            self.tracer.event("guardrail", "policy_refusal", status="warn", note="request to bypass rules")
+            return self._respond(Response("UNSUPPORTED", "I can't skip approval or change prices, but I'm happy "
+                                          "to help you find the right one and order it with your OK.",
+                                          reason_codes=["POLICY_REFUSAL"]))
+        if kind == "COMPARE":
+            return self._respond(Response("DEFER", "Side-by-side comparison isn't something I can do just yet, "
+                                          "sorry! I can tell you the width, seats and price of each one, though. "
+                                          "Which one first?", reason_codes=["WORKFLOW_NOT_AVAILABLE"]))
+        if kind == "HINGLISH" and it.product_query:
+            matches, _ = self._find(it.product_query)
+            if matches:
+                phrase = it.product_query + (f" under {it.max_total_inr}" if it.max_total_inr else "")
+                self._pending_confirm = intent_mod.extract_rules(phrase, self.context)
+                return self._respond(Response("CLARIFY", f"Are you searching for a {it.product_query}? "
+                                              "Only English is supported.", reason_codes=["LANGUAGE_NOT_SUPPORTED"]))
+        return self._respond(Response("UNSUPPORTED", "Sorry, I didn't quite get that. I can help you find and "
+                                      "buy things for your home.", reason_codes=["CATCH_ALL"]))
+
+    @staticmethod
+    def _requirement_labels(prior: Optional[Intent], new: Intent, changed: list[str]) -> list[str]:
+        """Reason labels for how this message changed the current product's requirements (B10, B19)."""
+        if prior is None or "product" in changed:
+            return []
+        labels = []
+        for f in changed:
+            if f in new.remove_fields:
+                labels.append("REQUIREMENT_REMOVED")
+            elif f in intent_mod.CONSTRAINT_FIELDS or f in ("required_compatibility", "preferred_brands"):
+                before = getattr(prior, f)
+                labels.append("REQUIREMENT_CHANGED" if before not in (None, []) else "REQUIREMENT_ADDED")
+        return list(dict.fromkeys(labels))
+
+    def _possible_typo(self, query: str) -> Optional[str]:
+        """B12: if a word isn't in the store but is close to a product type ('sofaa' -> 'sofa'), return the
+        corrected phrase, but only if the corrected phrase actually finds products."""
+        vocab = getattr(self.catalog, "vocabulary", None)
+        if vocab is None:
+            return None
+        every, types = vocab()
+        words, fixed = re.findall(r"[a-z]+", query.lower()), False
+        out = []
+        for w in words:
+            if w not in every and len(w) >= 4:
+                close = difflib.get_close_matches(w, [x for x in types if x[0] == w[0]], n=1, cutoff=0.8)
+                if close:
+                    out.append(close[0]); fixed = True
+                    continue
+            out.append(w)
+        if not fixed:
+            return None
+        suggestion = " ".join(out)
+        matches, _ = self.catalog.find_products(suggestion)
+        return suggestion if matches else None
 
     # ------------------------------------------------------------------ clarify (rule R2)
     def _clarify(self, missing: list[str]) -> Response:
@@ -208,8 +307,10 @@ class Session:
     # ------------------------------------------------------------------ discovery
     def _find(self, query: str) -> tuple[list[str], list[str]]:
         self._count_tool()
-        with self.tracer.tool("search_catalog", query=query, category=self.intent.category) as t:
-            matches, related = self.catalog.find_products(query, product_category=self.intent.category)
+        with self.tracer.tool("search_catalog", query=query,
+                              category=self.intent.category if self.intent else None) as t:
+            matches, related = self.catalog.find_products(
+                query, product_category=self.intent.category if self.intent else None)
             t["summary"] = {"matches": len(matches), "related": len(related), "first_ids": matches[:10]}
         return matches, related
 
@@ -219,6 +320,19 @@ class Session:
         query = query if query is not None else (it.product_query or "")
         matches, related = self._find(query)
         if not matches:
+            fix = self._possible_typo(query)
+            if fix:
+                self.tracer.event("agent", "possible_typo", query=query, suggestion=fix)
+                return self._respond(Response("NOT_AVAILABLE", "I couldn't find that item. Check the spelling and "
+                                              f"try again. Did you mean \u201c{fix}\u201d?",
+                                              reason_codes=["POSSIBLE_TYPO"]))
+            if not intent_mod.looks_like_product(query):
+                # The leftover words aren't a product ("doesn t", "night"): don't claim we don't sell it (B17).
+                self.tracer.event("agent", "not_a_product", query=query)
+                if probe is None:
+                    self.intent = self._prev_intent   # keep the shopper's current product thread intact (R9)
+                return self._respond(Response("UNSUPPORTED", "Sorry, I didn't quite get that. I can help you find "
+                                              "and buy things for your home.", reason_codes=["CATCH_ALL"]))
             # Rule R1: not sold here. Terminal answer, no follow-up question, same answer every time.
             name = query.strip() or "that"
             return self._respond(Response("NOT_AVAILABLE", f"We don't sell {name}. This store sells "
