@@ -86,10 +86,13 @@
     function renderState(s) {
       state = s;
       const mode = $("ig-mode");
-      mode.textContent = s.mode === "claude" ? "Claude" : "Rules mode";
-      mode.className = "mode " + s.mode;
-      mode.title = s.mode === "claude" ? "Requests are understood by Claude." :
-        "No Anthropic API key is set, so a rule-based parser understands requests and product answers are read straight from the listing.";
+      const ai = s.mode && s.mode !== "rules";
+      const fellBack = ai && s.last_extractor && !s.last_extractor.startsWith("llm");
+      mode.textContent = fellBack ? "Rules (AI busy)" : ai ? "AI mode" : "Rules mode";
+      mode.className = "mode " + (ai && !fellBack ? "claude" : "rules");
+      mode.title = fellBack ? "No AI model answered the last message (busy or out of free requests), so the rules handled it." :
+        ai ? `Requests are understood by ${s.model || "a language model"} (${s.mode}). If it's unavailable, the rules take over.` :
+        "No model API key is set, so a rule-based parser understands requests and product answers are read straight from the listing.";
       const c = s.cart, a = s.approval;
       const cartEl = $("ig-cart");
       if (c && c.status === "PROPOSED") {
@@ -119,6 +122,7 @@
     }
 
     async function run(promise, userText) {
+      $("ig-suggest").hidden = true;              // suggestions only before the chat starts (O-10)
       if (userText) addUser(userText);
       const wait = document.createElement("div");
       wait.className = "typing"; wait.textContent = "Checking…";
@@ -176,6 +180,7 @@
         else if (i === lastBot && s.last_reply && s.last_reply.message === h.text) addBot(s.last_reply);
         else msgs.insertAdjacentHTML("beforeend", `<div class="msg bot">${format(h.text)}</div>`);
       });
+      if (hist.length) $("ig-suggest").hidden = true;
       renderState(s); scroll();
     });
 

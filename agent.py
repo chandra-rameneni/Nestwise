@@ -27,16 +27,19 @@ from tracing import Tracer
 MAX_TOOL_CALLS_PER_TURN = 40
 MAX_CANDIDATES = 200
 MAX_RECOMMENDATIONS = 3
+# Head words too generic to search on their own when a longer phrase fails (O-24): "dinner set" must not show sets.
+_GENERIC_HEADS = {"set", "sets", "pack", "packs", "combo", "piece", "pieces", "item", "items", "cover", "covers",
+                  "stand", "stands", "holder", "case", "kit", "box", "thing", "product", "products"}
 
 # Replies to non-shopping messages (PRD §6A). Each comes with the reason label recorded in the trace (§6A.4).
 _YES = re.compile(r"^\s*(yes|yeah|yep|yup|haan|han|ha|sure|correct|right|ok|okay)\b", re.I)
 _NO = re.compile(r"^\s*(no|nope|nahi|nah)\b", re.I)
 
 _ASK = {
-    "product": "What product are you looking for?",
-    "budget": "What is the most you want to pay in total, including delivery (in ₹)?",
+    "product": "Happy to help! What kind of product do you have in mind, for example a sofa, a bedsheet or a dining set?",
+    "budget": "What's the most you'd like to spend, including delivery?",
     "seats": "How many seats do you need?",
-    "max_width_cm": "How much wall space is there for it? Please give the maximum width in cm.",
+    "max_width_cm": "How much space do you have for it, in cm?",
 }
 _NEED = {"product": "the product you want", "budget": "your maximum budget in ₹", "seats": "the number of seats",
          "max_width_cm": "the maximum width in cm"}
@@ -57,6 +60,33 @@ class Response:
 
 def _inr(n: Optional[int]) -> str:
     return "price not listed" if n is None else f"₹{n:,}"
+
+
+def _plural(name: str, n: int = 2) -> str:
+    name = (name or "").strip()
+    if n == 1 or not name or name.endswith("s"):
+        return name
+    return name[:-1] + "ies" if name.endswith("y") and name[-2:-1] not in "aeiou" else name + "s"
+
+
+_REASON_WORDS = {"OUT_OF_STOCK": "it's out of stock right now", "BUDGET_EXCEEDED": "it's over your budget",
+                 "WIDTH_EXCEEDED": "it's wider than your space", "DEPTH_EXCEEDED": "it's deeper than your space",
+                 "HEIGHT_EXCEEDED": "it's taller than your space", "SEATS_MISMATCH": "it has a different number of seats",
+                 "PRICE_UNKNOWN": "it has no listed price", "DELIVERY_TOO_SLOW": "it would arrive too late",
+                 "MATERIAL_MISMATCH": "it isn't made of what you asked for",
+                 "WIDTH_UNVERIFIED": "the listing doesn't give its width",
+                 "SEATS_UNVERIFIED": "the listing doesn't give its seats",
+                 "MATERIAL_UNVERIFIED": "the listing doesn't say what it's made of"}
+
+
+def _reasons(codes: list[str]) -> str:
+    """Reason codes in plain words for the shopper (Phase 3: no codes in shopper text)."""
+    words = list(dict.fromkeys(_REASON_WORDS.get(c, "it doesn't meet one of your requirements") for c in codes))
+    return " and ".join(words) if words else "it doesn't meet your requirements"
+
+
+def _apologise(msg: str) -> str:
+    return re.sub(r"^(Good news|Sure|Here)[,!]?\s*", "Sorry about that. ", msg, count=1) if msg else msg
 
 
 def default_catalog():
@@ -80,11 +110,32 @@ class Session:
         self._pending_confirm: Optional[intent_mod.IntentExtraction] = None   # B16: "Are you searching for a sofa?"
         self._turn_labels: list[str] = []          # REQUIREMENT_ADDED / _CHANGED / _REMOVED for this turn's results
         self._prev_intent: Optional[Intent] = None  # restored when a message turns out not to name a product
+        self.shown: list[ProductView] = []          # products in the last recommendation (B34)
+        self._no_progress = 0                       # unhelpful replies in a row (B36)
+        self._in_recovery = False
+        self._last_invite: Optional[list] = None    # what the last "search first" reply invited (B18, B32)
         self.tracer.event("session", "session.start", catalog_version=self.catalog.meta.get("version"),
                           llm_configured=intent_mod.llm_available())
 
     # ------------------------------------------------------------------ helpers
+    @staticmethod
+    def _is_no_progress(r: Response) -> bool:
+        return r.kind == "CLARIFY" or (r.kind == "UNSUPPORTED" and bool({"CATCH_ALL", "UNCLEAR"} & set(r.reason_codes)))
+
+    _SHORT = {"OFF_TOPIC": "Still can't help with that one, sorry! Ask me about anything for your home.",
+              "UNCLEAR": "Sorry, still not sure what you mean. Try a product, like \u201csofas under \u20b920,000\u201d.",
+              "CATCH_ALL": "Sorry, still not getting it. Try a product, like \u201cbedsheets under \u20b91,000\u201d."}
+
     def _respond(self, r: Response) -> Response:
+        last = next((m for role, m in reversed(self.history) if role == "assistant"), None)
+        if r.kind == "UNSUPPORTED" and r.message == last:          # O-20: never the same long reply twice
+            short = next((self._SHORT[c] for c in r.reason_codes if c in self._SHORT), None)
+            if short:
+                r.message = short
+        if self._is_no_progress(r) and self._no_progress >= 2 and not self._in_recovery:
+            return self._recover_stuck()            # B36: never a third unhelpful reply in a row
+        if not self._in_recovery:
+            self._no_progress = self._no_progress + 1 if self._is_no_progress(r) else 0
         if r.kind != "CLARIFY":
             self._last_clarify = None
         if r.kind in ("RECOMMEND", "NO_ELIGIBLE") and self._turn_labels:
@@ -98,6 +149,27 @@ class Session:
                           cited_fields=r.cited_fields, page=self.context.get("page"),
                           product_id=r.product_id or self.context.get("product_id"))
         return r
+
+    def _recover_stuck(self) -> Response:
+        """B36: after two unhelpful replies, change approach: show what's known so far, or give examples."""
+        self._in_recovery = True
+        self._no_progress = 0
+        self.tracer.event("agent", "stuck_recovery", status="warn")
+        try:
+            if self.intent is not None and (self.intent.product_query or self.intent.category):
+                r = self._search_and_recommend()
+                r.message = _apologise(r.message)
+                r.reason_codes = list(dict.fromkeys(r.reason_codes + ["STUCK_RECOVERY"]))
+                return r
+            return self._respond(Response("UNSUPPORTED", self._help_text(sorry=True), reason_codes=["STUCK_RECOVERY"]))
+        finally:
+            self._in_recovery = False
+
+    def _help_text(self, sorry: bool = False) -> str:
+        lead = "Sorry, I'm not getting it. Let's try another way. " if sorry else ""
+        return (f"{lead}I can find products in this store ({self._store_labels()}), answer questions about a product, "
+                "and place an order once you approve it. Try: \u201cFind a 3-seater sofa under \u20b930,000\u201d, "
+                "\u201cBedsheets under \u20b91,000\u201d, or on a product page, \u201cHow wide is it?\u201d")
 
     def _count_tool(self) -> None:
         self._tool_calls += 1
@@ -157,6 +229,10 @@ class Session:
             self.context["product_title"] = current.title
         else:
             self.context["page"] = "listing"
+            if self.shown:
+                ref = self._shown_reference(text)        # B34: "the fabric one", "the first one"
+                if ref is not None:
+                    return ref
 
         pending, self._pending_confirm = self._pending_confirm, None
         if pending is not None and _NO.match(text):
@@ -166,6 +242,10 @@ class Session:
             new_intent, changed = intent_mod.merge(self.intent, pending, "rules_fallback")
             meta = {"confirmed": "shopper confirmed the product after a Hinglish message (B16)"}
         else:
+            if self._last_clarify:
+                self.context["pending_question"] = list(self._last_clarify)
+            elif self._last_invite:
+                self.context["pending_question"] = list(self._last_invite)
             new_intent, changed, meta = intent_mod.extract(text, self.intent, self.context)
         self.tracer.event("model" if new_intent.extractor.startswith("llm") else "rules", "intent.extracted",
                           status="ok" if "error" not in meta else "warn", extractor=new_intent.extractor,
@@ -175,15 +255,11 @@ class Session:
                           intent_version=new_intent.version, **meta)
 
         if new_intent.intent == "REFUND_REQUEST":
-            return self._respond(Response("DEFER", (
-                "I can see you'd like a refund. Refunds aren't available in this demo yet. A real refund needs "
-                "you to sign in so I can find your own order and check the store's return policy. "
-                "Nothing has been refunded or changed."), reason_codes=["WORKFLOW_NOT_AVAILABLE"]))
+            return self._respond(Response("DEFER", "Sorry, I can't handle refunds or returns just yet. I can help you "
+                                          "find and buy products, though.", reason_codes=["WORKFLOW_NOT_AVAILABLE"]))
         if new_intent.intent == "ORDER_TRACKING":
-            return self._respond(Response("DEFER", (
-                "I can see you want to track an order. Order tracking isn't available in this demo yet; it would "
-                "need you to sign in so only your own orders are looked up. No order data was accessed."),
-                reason_codes=["WORKFLOW_NOT_AVAILABLE"]))
+            return self._respond(Response("DEFER", "Sorry, I can't track orders just yet. I can help you find and buy "
+                                          "products, though.", reason_codes=["WORKFLOW_NOT_AVAILABLE"]))
         kind = new_intent.message_kind
         if new_intent.intent == "UNSUPPORTED" and kind in (None, "CATCH_ALL") and self._last_clarify:
             # A non-answer ("not sure") to our last question: rule R2, say what's still needed and stop.
@@ -203,13 +279,148 @@ class Session:
             if new_intent.intent == "PRODUCT_QUESTION":
                 return self._answer(current, new_intent)
             if new_intent.intent == "BUY_THIS":
-                return self.select_product(current.product_id, from_product_page=True)
+                return self.select_product(current.product_id, qty=new_intent.quantity or 1, from_product_page=True)
             if new_intent.wants_similar:
                 return self._similar(current, cheaper=new_intent.wants_cheaper)
 
+        if current is None:
+            r = self._listing_decisions(new_intent, text)
+            if r is not None:
+                return r
         if new_intent.missing_info:
             return self._clarify(new_intent.missing_info)
         return self._search_and_recommend()
+
+    # ------------------------------------------------------------------ Phase 2 listing decisions
+    def _listing_decisions(self, it: Intent, text: str) -> Optional[Response]:
+        has_product = bool(it.product_query or it.category)
+        if it.vague_quality:                             # B28
+            self._last_clarify = ("max_width_cm",)
+            r = self._respond(Response("CLARIFY", f"Happy to check! How much space do you have for it? Then I'll "
+                                       "tell you which ones fit.", reason_codes=["VAGUE_REQUIREMENT"]))
+            self._last_clarify = ("max_width_cm",)
+            return r
+        if it.other_products:                            # B13
+            return self._several(it)
+        if it.show_results and not has_product:          # B31 with nothing searched yet
+            self.intent = self._prev_intent
+            return self._respond(Response("CLARIFY", "Happy to! What would you like to see? For example sofas, "
+                                          "bedsheets or curtains.", reason_codes=["NEEDS_PRODUCT"]))
+        if it.show_results or it.frustrated:             # B31, B36
+            r = self._search_and_recommend()
+            if it.frustrated:
+                r.message = _apologise(r.message)
+            r.reason_codes = list(dict.fromkeys(r.reason_codes + ["SHOW_RESULTS"]))
+            return r
+        if not has_product:
+            named = self._name_or_brand(text)            # B33: a product name copied from the page
+            if named is not None:
+                return named
+            if it.material:                              # B33: "solid wood" with no product
+                return self._material_search(it.material)
+        return None
+
+    def _name_or_brand(self, text: str) -> Optional[Response]:
+        for finder, label in (("brand_products", "BRAND_MATCH"), ("name_products", "NAME_MATCH")):
+            f = getattr(self.catalog, finder, None)
+            ids = f(text) if f else []
+            if ids:
+                probe = (self.intent or Intent(intent="PRODUCT_DISCOVERY")).model_copy(
+                    update={"product_query": None, "category": None, "material": None})
+                return self._show_ids(ids, probe, label)
+        return None
+
+    def _material_search(self, material: str) -> Response:
+        ids = getattr(self.catalog, "material_products", lambda m: [])(material)
+        probe = Intent(intent="PRODUCT_DISCOVERY")
+        r = self._show_ids(ids, probe, "MATERIAL_MATCH", tail=f"Looking for something in particular, like a "
+                                                             f"{material} dining set, bed or table?")
+        return r
+
+    def _show_ids(self, ids: list[str], probe: Intent, label: str, tail: str = "") -> Response:
+        products = self._get_many(ids[:MAX_CANDIDATES])
+        ok = [(p, policy.evaluate(probe, p)) for p in products]
+        ok = [(p, e) for p, e in ok if e.eligible]
+        ranked = policy.rank(probe, [p for p, _ in ok])[:MAX_RECOMMENDATIONS]
+        if not ranked:
+            return self._respond(Response("NO_ELIGIBLE", "I found matching products, but none are in stock with a "
+                                          "listed price right now.", reason_codes=[label]))
+        self.eligible_ids = [p.product_id for p in ranked]
+        self.shown = ranked
+        recs = [self._rec_dict(p, e) for p, e in ok if p in ranked]
+        recs.sort(key=lambda x: self.eligible_ids.index(x["product_id"]))
+        msg = self._explain(ranked, [], len(ok), probe) + (f"\n{tail}" if tail else "")
+        return self._respond(Response("RECOMMEND", msg, recommendations=recs, reason_codes=[label]))
+
+    def _several(self, it: Intent) -> Response:
+        """B13: results for each product named, in its own group."""
+        groups, recs, ids, shown, any_rec = [], [], [], [], False
+        for q in [it.product_query or ""] + list(it.other_products):
+            probe = it.model_copy(update={"product_query": q, "category": None, "other_products": []})
+            r = self._search_and_recommend(probe=probe, query=q)
+            self.history.pop()
+            if r.kind == "RECOMMEND":
+                any_rec = True
+                lines = [x["title"] + f" \u2014 {_inr(x['total_inr'])}" for x in r.recommendations]
+                groups.append(f"{q.capitalize()}:\n" + "\n".join(f"\u2022 {l}" for l in lines))
+                recs += r.recommendations
+                ids += [x["product_id"] for x in r.recommendations]
+                shown += list(self.shown)
+            elif r.kind == "NOT_AVAILABLE":
+                groups.append(f"Sorry, we don't sell {q}.")
+            else:
+                groups.append(f"{q.capitalize()}: {r.message}")
+        self.eligible_ids, self.shown = ids, shown
+        return self._respond(Response("RECOMMEND" if any_rec else "NOT_AVAILABLE", "\n\n".join(groups),
+                                      recommendations=recs, reason_codes=["MULTIPLE_PRODUCTS"]))
+
+    # ------------------------------------------------------------------ B34: pointing at shown results
+    _REF = re.compile(r"\b(?:the|that|this)\s+(?:\w+\s+){0,2}one\b|\b(?:first|second|third|1st|2nd|3rd|last)\s+one\b|"
+                      r"^\s*(?:the\s+)?(?:first|second|third|1st|2nd|3rd|last|cheaper|cheapest)(?:\s+one)?\s*[.!]?\s*$|"
+                      r"\bthe (?:cheaper|cheapest) one\b", re.I)
+    _Q = re.compile(r"\?|\b(when|how|what|is|does|do|can|will|which|are)\b", re.I)
+    _TAKE = re.compile(r"\b(i want|i'll take|i will take|take|buy|order|add)\b", re.I)
+    _COMMON = {"the", "one", "and", "for", "with", "sofa", "seater", "set", "want", "when", "can", "delivered", "will",
+               "how", "what", "this", "that", "first", "second", "third", "last", "take", "buy", "order", "it", "be"}
+
+    def _shown_reference(self, text: str) -> Optional[Response]:
+        low = text.lower()
+        words = [w for w in re.findall(r"[a-z0-9]+", low) if len(w) >= 3 and w not in self._COMMON]
+        titles = {p.product_id: set(re.findall(r"[a-z0-9]+", p.title.lower())) for p in self.shown}
+        everywhere = set.intersection(*titles.values()) if titles else set()
+        hits = []
+        for p in self.shown:
+            toks = titles[p.product_id] - everywhere
+            if any(w in toks or difflib.get_close_matches(w, list(toks), n=1, cutoff=0.85) for w in words):
+                hits.append(p)
+        if intent_mod._SHOW.search(low):
+            return None                                  # "first show me the results" is B31, not a pick
+        ref = self._REF.search(low)
+        target = None
+        if len(hits) == 1:
+            target = hits[0]
+        elif ref and not hits:
+            word = next((w for w in ("first", "1st", "second", "2nd", "third", "3rd", "last", "cheapest", "cheaper")
+                         if re.search(rf"\b{w}\b", low)), "")
+            order = {"first": 0, "1st": 0, "second": 1, "2nd": 1, "third": 2, "3rd": 2, "last": -1}
+            if word in order and len(self.shown) > abs(order[word]) - (1 if word == "last" else 0):
+                target = self.shown[order[word]]
+            elif word in ("cheaper", "cheapest"):
+                target = min(self.shown, key=lambda p: p.total_for() or 10 ** 9)
+            elif re.search(r"\bone\b", low):
+                names = "; ".join(f"{i}. {p.title}" for i, p in enumerate(self.shown, 1))
+                return self._respond(Response("CLARIFY", f"Which one do you mean? I showed: {names}.",
+                                              reason_codes=["FROM_SHOWN_RESULTS"]))
+        if target is None or not (ref or self._Q.search(low) or self._TAKE.search(low)):
+            return None
+        self.tracer.event("agent", "shown_reference", product_id=target.product_id, text=text)
+        if self._Q.search(low):
+            result = qa.answer_about_product(target, text, Intent(intent="PRODUCT_QUESTION", question=text))
+            return self._respond(Response("ANSWER", f"{target.title}: {result.answer}", cited_fields=result.cited_fields,
+                                          product_id=target.product_id, reason_codes=["FROM_SHOWN_RESULTS"]))
+        r = self.select_product(target.product_id)
+        r.reason_codes = list(dict.fromkeys(r.reason_codes + ["FROM_SHOWN_RESULTS"]))
+        return r
 
     # ------------------------------------------------------------------ not a shopping message (§6A)
     def _not_shopping(self, kind: Optional[str], it: Intent, text: str) -> Response:
@@ -243,6 +454,18 @@ class Session:
             return self._respond(Response("DEFER", "Side-by-side comparison isn't something I can do just yet, "
                                           "sorry! I can tell you the width, seats and price of each one, though. "
                                           "Which one first?", reason_codes=["WORKFLOW_NOT_AVAILABLE"]))
+        if kind == "HELP":
+            if self.intent is not None and self.intent.product_query and self._no_progress:
+                return self._respond(Response("ANSWER", (
+                    "Sorry about the trouble. I can find products, answer questions about them and order with your "
+                    f"approval. Want to pick up with the {_plural(self.intent.product_query)}?"), reason_codes=["HELP"]))
+            return self._respond(Response("ANSWER", self._help_text(), reason_codes=["HELP"]))
+        if kind == "STORE_INFO":
+            return self._respond(Response("ANSWER", self._store_info(text), reason_codes=["STORE_INFO"]))
+        if kind == "CATCH_ALL":
+            named = self._name_or_brand(text)
+            if named is not None:
+                return named
         if kind == "HINGLISH" and it.product_query:
             matches, _ = self._find(it.product_query)
             if matches:
@@ -252,6 +475,26 @@ class Session:
                                               "Only English is supported.", reason_codes=["LANGUAGE_NOT_SUPPORTED"]))
         return self._respond(Response("UNSUPPORTED", "Sorry, I didn't quite get that. I can help you find and "
                                       "buy things for your home.", reason_codes=["CATCH_ALL"]))
+
+    def _store_info(self, text: str) -> str:
+        """B35: answers about the store from catalog facts only; honest about what the data doesn't cover."""
+        t = text.lower()
+        if re.search(r"\bpay|cash on delivery|\bcod\b|\bemi\b", t):
+            return ("I don't have information about payment options. In this demo store, orders are mock and no "
+                    "payment is taken.")
+        if "policy" in t:
+            return "I don't have the store's policies (returns, shipping or warranty) in my data, sorry."
+        cats = self.catalog.categories() if hasattr(self.catalog, "categories") else []
+        if re.search(r"brand", t) and hasattr(self.catalog, "_brand_index"):
+            from collections import Counter
+            top = Counter(b for b in self.catalog._brand_index().values() if b).most_common(5)
+            return (f"We have {len({b for b in self.catalog._brand_index().values() if b}):,} brands. The biggest are "
+                    + ", ".join(f"{b} ({n})" for b, n in top) + ".")
+        if cats:
+            total = sum(c["count"] for c in cats)
+            return (f"We have {total:,} products: " + ", ".join(f"{c['count']:,} in {c['label'].lower()}" for c in cats)
+                    + ".")
+        return f"This store sells {self._store_labels()}."
 
     @staticmethod
     def _requirement_labels(prior: Optional[Intent], new: Intent, changed: list[str]) -> list[str]:
@@ -296,7 +539,7 @@ class Session:
             # Same gap as last turn: don't ask the same question again. Say what's needed and stop.
             needs = " and ".join(_NEED.get(m, m) for m in missing)
             self.tracer.event("agent", "clarify.repeat_suppressed", status="warn", missing_info=missing)
-            r = Response("CLARIFY", f"I still need {needs} before I can search. Tell me whenever you're ready.")
+            r = Response("CLARIFY", f"No rush. I still need {needs} before I can search. Tell me whenever you're ready.")
         else:
             self.tracer.event("agent", "clarify", missing_info=missing)
             r = Response("CLARIFY", " ".join(_ASK.get(m, f"Could you tell me the {m}?") for m in missing))
@@ -318,8 +561,40 @@ class Session:
                               probe: Optional[Intent] = None) -> Response:
         it = probe or self.intent
         query = query if query is not None else (it.product_query or "")
+        query = re.sub(r"\b(couch|couches|settee|settees)\b", "sofa", query)    # F-019: common synonyms
         matches, related = self._find(query)
+        label = None
+        if not matches and query:
+            for finder, lab in (("brand_products", "BRAND_MATCH"), ("name_products", "NAME_MATCH")):
+                f = getattr(self.catalog, finder, None)
+                found = f(query) if f else []
+                if found:                                 # B33: a brand or full product name
+                    matches, label = found, lab
+                    if probe is None:
+                        it = self.intent = it.model_copy(update={"product_query": None, "category": None})
+                    break
+        partial_note = None
+        if not matches and query:
+            words = re.findall(r"[a-z]+", query.lower())
+            head = intent_mod.head_term(query)
+            vocab = getattr(self.catalog, "vocabulary", None)
+            known = vocab()[0] if vocab else set()
+            others = [w for w in words if intent_mod.head_term(w) != head]
+            # Only when the extra words are unknown to the store ("shive"); a real word like "dining" or "coffee"
+            # names a different product, so "dining table" must not show laptop tables.
+            if len(words) > 1 and head and len(head) >= 4 and head not in _GENERIC_HEADS and others \
+                    and not any(w in known for w in others):
+                found, _ = self._find(head)
+                if found:                                 # O-24: "shive temple" -> the store's temples
+                    matches, label = found, "PARTIAL_MATCH"
+                    partial_note = f"I couldn't find a {query}, but here's what we have in {head}s:"
+                    if probe is None:
+                        it = self.intent = it.model_copy(update={"product_query": head, "category": None})
+        if not matches and not query and it.material:
+            return self._material_search(it.material)
         if not matches:
+            if probe is None:
+                self.intent = self._prev_intent           # B37: a failed search never changes the shopper's thread
             fix = self._possible_typo(query)
             if fix:
                 self.tracer.event("agent", "possible_typo", query=query, suggestion=fix)
@@ -329,14 +604,12 @@ class Session:
             if not intent_mod.looks_like_product(query):
                 # The leftover words aren't a product ("doesn t", "night"): don't claim we don't sell it (B17).
                 self.tracer.event("agent", "not_a_product", query=query)
-                if probe is None:
-                    self.intent = self._prev_intent   # keep the shopper's current product thread intact (R9)
                 return self._respond(Response("UNSUPPORTED", "Sorry, I didn't quite get that. I can help you find "
                                               "and buy things for your home.", reason_codes=["CATCH_ALL"]))
             # Rule R1: not sold here. Terminal answer, no follow-up question, same answer every time.
-            name = query.strip() or "that"
-            return self._respond(Response("NOT_AVAILABLE", f"We don't sell {name}. This store sells "
-                                          f"{self._store_labels()}.", reason_codes=["NOT_SOLD_HERE"]))
+            name = _plural(query.strip()) or "that"
+            return self._respond(Response("NOT_AVAILABLE", f"Sorry, we don't sell {name}. We're a home and living "
+                                          f"store: {self._store_labels()}.", reason_codes=["NOT_SOLD_HERE"]))
         candidates = [pid for pid in matches if pid not in exclude][:MAX_CANDIDATES]
         eligible, rejected = [], []
         for p in self._get_many(candidates):
@@ -356,13 +629,69 @@ class Session:
                           rejected={r["product_id"]: r["reason_codes"] for r in rej})
 
         if not ranked:
-            blockers = sorted({c for r in rej for c in r["reason_codes"]})
+            return self._closest(rejected, rej, query, it)
+        self.shown = ranked
+        invite = self._invite(it)
+        msg = self._explain(ranked, rej, len(eligible), it, closing=invite,
+                            lead=partial_note.rstrip(":") + "." if partial_note else None)
+        return self._respond(Response("RECOMMEND", msg, recommendations=recs, rejected=rej,
+                                      reason_codes=[label] if label else []))
+
+    def _invite(self, it: Intent) -> Optional[str]:
+        """B18: after a broad search, one light line inviting the shopper to narrow down."""
+        self._last_invite = None
+        is_sofa = it.category == "sofa" or intent_mod.head_term(it.product_query) in ("sofa", "couch", "settee")
+        if is_sofa and (it.seats is None or it.max_width_cm is None):
+            self._last_invite = [f for f in ("seats", "max_width_cm") if getattr(it, f) is None]
+            if it.seats is None and it.max_width_cm is None:
+                return "Tell me how many seats you need or how much space you have, and I'll narrow these down."
+            if it.max_width_cm is None:
+                return "Tell me how much space you have, and I'll narrow these down."
+            return "Tell me how many people it's for, and I'll narrow these down."
+        if not any(getattr(it, f) for f in intent_mod.CONSTRAINT_FIELDS):
+            return "Tell me your budget or anything else that matters, and I'll narrow these down."
+        return None
+
+    _RELAXABLE = {"BUDGET_EXCEEDED", "WIDTH_EXCEEDED", "DEPTH_EXCEEDED", "HEIGHT_EXCEEDED", "SEATS_MISMATCH",
+                  "DELIVERY_TOO_SLOW", "MATERIAL_MISMATCH", "WIDTH_UNVERIFIED", "DEPTH_UNVERIFIED",
+                  "HEIGHT_UNVERIFIED", "SEATS_UNVERIFIED", "MATERIAL_UNVERIFIED"}
+
+    def _closest(self, rejected: list, rej: list[dict], query: str, it: Intent) -> Response:
+        """B21: nothing meets every requirement: say so, then show the closest options and how each differs."""
+        blockers = sorted({c for r in rej for c in r["reason_codes"]})
+        near = [(p, e) for p, e in rejected if e.reason_codes and set(e.reason_codes) <= self._RELAXABLE]
+        near.sort(key=lambda pe: (len(pe[1].reason_codes), (pe[1].total_inr or 10 ** 9)))
+        near = near[:MAX_RECOMMENDATIONS]
+        if not near:
             return self._respond(Response("NO_ELIGIBLE", (
-                f"I found {len(matches)} {query} but none meets all your requirements, so I'm not recommending any. "
-                f"What ruled them out: {', '.join(blockers)}. You could raise the budget, allow a later delivery "
-                "or relax another requirement."), rejected=rej, reason_codes=blockers))
-        return self._respond(Response("RECOMMEND", self._explain(ranked, rej, len(eligible), it),
-                                      recommendations=recs, rejected=rej))
+                f"Sorry, nothing matches all your requirements for {_plural(query) or 'that'}, and nothing comes close "
+                "enough to suggest. You could raise the budget or drop a requirement."), rejected=rej,
+                reason_codes=blockers))
+        lines = []
+        for p, e in near:
+            diffs = []
+            for c in e.checks:
+                if c.status == policy.PASS:
+                    continue
+                if c.reason_code == "BUDGET_EXCEEDED":
+                    diffs.append(f"{_inr(c.observed - c.required)} over your budget")
+                elif c.reason_code and c.reason_code.endswith("_EXCEEDED"):
+                    diffs.append(f"{c.observed:g} cm, over your {c.required:g} cm")
+                elif c.reason_code == "SEATS_MISMATCH":
+                    diffs.append(f"{c.observed} seats, not {c.required}")
+                elif c.reason_code and c.reason_code.endswith("_UNVERIFIED"):
+                    diffs.append(f"{c.constraint.replace('max_', '').replace('_cm', '')} not listed")
+                elif c.reason_code == "DELIVERY_TOO_SLOW":
+                    diffs.append(f"arrives in {c.observed} days")
+                elif c.reason_code == "MATERIAL_MISMATCH":
+                    diffs.append(f"not {c.required}")
+            lines.append(f"\u2022 {p.title}: {_inr(e.total_inr)} ({'; '.join(diffs)})")
+        self.shown = [p for p, _ in near]
+        recs = [self._rec_dict(p, e) for p, e in near]
+        return self._respond(Response("NO_ELIGIBLE", (
+            f"Sorry, nothing matches all your requirements for {_plural(query) or 'that'}. These are the closest:\n"
+            + "\n".join(lines) + "\nWant me to look again with a different budget or size?"),
+            recommendations=recs, rejected=rej, reason_codes=blockers + ["RELAXED_OPTIONS"]))
 
     def _similar(self, base: ProductView, cheaper: bool) -> Response:
         """'Anything cheaper like this?' on a product page: same kind of product, the shopper's stated
@@ -384,34 +713,46 @@ class Session:
                 "stock": p.stock, "specs": p.specs, "url": f"/product/{p.product_id}",
                 "checks": [c.to_dict() for c in e.checks] if e else []}
 
-    def _explain(self, ranked: list[ProductView], rej: list[dict], n_eligible: int, it: Intent) -> str:
-        """Template explanation built only from retrieved fields (no free-form model text)."""
-        more = f" (showing the top {len(ranked)} of {n_eligible})" if n_eligible > len(ranked) else ""
-        lines = [f"I found {n_eligible} option(s) that meet every requirement I could verify{more}:"]
+    def _explain(self, ranked: list[ProductView], rej: list[dict], n_eligible: int, it: Intent,
+                 closing: Optional[str] = None, lead: Optional[str] = None) -> str:
+        """Template reply built only from retrieved fields (no free-form model text). Phase 3 wording: a warm
+        lead-in, one compact line per product (no internal codes), one closing line."""
+        noun = intent_mod.head_term(it.product_query) if it.product_query else ("sofa" if it.category == "sofa" else "")
+        things = _plural(noun, n_eligible) if noun else ("product" if n_eligible == 1 else "products")
+        others = [f for f in intent_mod.CONSTRAINT_FIELDS if f != "max_total_inr" and getattr(it, f)]
+        if it.max_total_inr and not others:
+            fit = f"{'is' if n_eligible == 1 else 'are'} under {_inr(it.max_total_inr)}"
+        elif it.max_total_inr or others:
+            fit = f"{'fits' if n_eligible == 1 else 'fit'} what you need"
+        else:
+            fit = "to choose from"
+        if lead is None:
+            lead = f"Good news, {n_eligible} {things} {fit}."
+        show = (f" Here are the {len(ranked)} best value:" if n_eligible > len(ranked) else
+                " Here it is:" if n_eligible == 1 else " Here they are:")
+        lines = [lead + show]
         prefs = {b.lower() for b in it.preferred_brands}
-        for i, p in enumerate(ranked, 1):
-            facts = [f"{_inr(p.total_for())} total ({_inr(p.list_price_inr)} + {_inr(p.shipping_inr)} delivery)",
-                     f"arrives in {p.delivery_days} days"]
+        for p in ranked:
+            facts = [f"{_inr(p.total_for())} total", f"arrives in {p.delivery_days} days"]
             if "macOS" in it.required_compatibility:
                 facts.append("listed as macOS compatible")
-            if it.seats:
-                facts.append(f"{p.specs.get('seats')} seats")
-            if it.max_width_cm:
+            seats = p.specs.get("seats")
+            if seats is not None:
+                facts.append(f"{seats} seat{'s' if seats != 1 else ''}")
+            if p.specs.get("width_cm") is not None:
                 facts.append(f"{p.specs.get('width_cm'):g} cm wide")
-            if it.max_depth_cm:
+            if it.max_depth_cm and p.specs.get("depth_cm") is not None:
                 facts.append(f"{p.specs.get('depth_cm'):g} cm deep")
-            if it.max_height_cm:
+            if it.max_height_cm and p.specs.get("height_cm") is not None:
                 facts.append(f"{p.specs.get('height_cm'):g} cm tall")
             if prefs and (p.brand or "").lower() in prefs:
                 facts.append(f"your preferred brand ({p.brand})")
-            lines.append(f"{i}. {p.title} [{p.product_id}]: " + ", ".join(facts) + ".")
+            lines.append(f"\u2022 {p.title}: " + ", ".join(facts) + ".")
         if prefs and not any((p.brand or "").lower() in prefs for p in ranked):
             lines.append(f"None of the eligible options are from {', '.join(it.preferred_brands)}; "
-                         "these are the closest matches that meet your hard requirements.")
-        if rej:
-            lines.append(f"I left out {len(rej)} product(s) that failed or couldn't be verified against your "
-                         "requirements (see details).")
-        lines.append("Tell me which one you'd like, and I'll show you the exact cart total before anything is bought.")
+                         "these are the closest that meet your other requirements.")
+        lines.append(closing or "Tell me which one you'd like, and I'll show you the exact total before anything is "
+                                "bought.")
         return "\n".join(lines)
 
     # ------------------------------------------------------------------ product Q&A (rules R5, R6)
@@ -437,8 +778,8 @@ class Session:
         if not from_product_page and (self.intent is None or product_id not in self.eligible_ids):
             self.tracer.event("policy", "cart.denied", status="block", product_id=product_id,
                               reason="NOT_IN_ELIGIBLE_RECOMMENDATIONS")
-            return self._respond(Response("BLOCKED", "I can only put a product in the cart if it's one of the "
-                                          "eligible options I just checked.", reason_codes=["NOT_ELIGIBLE"]))
+            return self._respond(Response("BLOCKED", "I can only add products from the options I just checked. Pick "
+                                          "one of those, or tell me what you're after.", reason_codes=["NOT_ELIGIBLE"]))
         if self.intent is None:
             self.intent = Intent(intent="BUY_THIS")
         p = self._get(product_id)
@@ -448,10 +789,11 @@ class Session:
         if not e.eligible:
             self.tracer.event("policy", "cart.denied", status="block", product_id=product_id, reasons=e.reason_codes)
             if from_product_page:
-                return self._blocked_with_alternatives(p, e.reason_codes, f"I can't put {p.title} in the cart: "
-                                                       f"it doesn't meet your requirements ({', '.join(e.reason_codes)}).")
-            return self._respond(Response("BLOCKED", "That product no longer meets your requirements: "
-                                          f"{', '.join(e.reason_codes)}.", reason_codes=e.reason_codes))
+                lead = ("Sorry, this one's out of stock right now." if e.reason_codes == ["OUT_OF_STOCK"]
+                        else f"Sorry, I can't add this one: {_reasons(e.reason_codes)}.")
+                return self._blocked_with_alternatives(p, e.reason_codes, lead)
+            return self._respond(Response("BLOCKED", f"Sorry, that one doesn't work anymore: {_reasons(e.reason_codes)}.",
+                                          reason_codes=e.reason_codes))
         if self.cart and self.cart.status == "PROPOSED":
             self.cart.status = "SUPERSEDED"
         self._invalidate_approval("new cart proposed")
@@ -460,17 +802,19 @@ class Session:
         self.tracer.event("cart", "cart.created", cart_id=self.cart.cart_id, product_id=p.product_id, qty=qty,
                           unit_price_inr=p.list_price_inr, shipping_inr=p.shipping_inr,
                           total_inr=self.cart.total_inr, data_version=p.version)
+        item = f"{qty} \u00d7 {p.title}" if qty > 1 else p.title
+        ship = f" + {_inr(p.shipping_inr)} delivery" if p.shipping_inr else " + free delivery"
         return self._respond(Response("CART_PROPOSED", (
-            f"Cart: {qty} x {p.title} [{p.product_id}]\n"
-            f"Item {_inr(p.list_price_inr * qty)} + delivery {_inr(p.shipping_inr)} = **{_inr(self.cart.total_inr)} total** "
-            f"(historical price; delivery simulated). Delivery in {p.delivery_days} days.\n"
-            "Do you approve buying exactly this cart for this total? Nothing will be ordered without your approval."),
+            f"Great choice! {item}: {_inr(p.list_price_inr * qty)}{ship} = **{_inr(self.cart.total_inr)}**. "
+            f"Arrives in {p.delivery_days} days.\n"
+            + (f"You're paying for {qty} of these.\n" if qty > 1 else "") +
+            "Tap **Approve this exact cart** when you're ready. Nothing is ordered without your approval."),
             cart=self.cart, product_id=p.product_id))
 
     def _blocked_with_alternatives(self, p: ProductView, reasons: list[str], lead: str) -> Response:
         alt = self._similar(p, cheaper=False)
         self.history.pop()          # merge the alternatives into a single blocked response
-        tail = ("Here is what meets your requirements instead:\n" + alt.message) if alt.kind == "RECOMMEND" \
+        tail = ("Here are similar ones you can order today:\n" + alt.message) if alt.kind == "RECOMMEND" \
             else alt.message
         alt.message = lead + "\n\n" + tail
         alt.kind, alt.reason_codes, alt.cart = "BLOCKED", reasons, None
@@ -485,29 +829,28 @@ class Session:
         self.tracer.event("approval", "approval.granted", approval_id=self.approval.approval_id,
                           cart_id=self.cart.cart_id, approved_total_inr=self.approval.approved_total_inr,
                           data_version=self.approval.data_version, intent_version=self.approval.intent_version)
-        return self._respond(Response("APPROVED", f"Approved: {_inr(self.approval.approved_total_inr)} for "
-                                      f"{self.cart.title}. I'll check the latest price and stock again before "
-                                      "placing the mock order.", cart=self.cart))
+        return self._respond(Response("APPROVED", f"Approved for {_inr(self.approval.approved_total_inr)}. I'll "
+                                      "double-check the price and stock before placing the order.", cart=self.cart))
 
     def decline(self) -> Response:
         self.tracer.event("user", "user.decline", cart_id=self.cart.cart_id if self.cart else None)
         if self.cart:
             self.cart.status = "DECLINED"
         self._invalidate_approval("customer declined")
-        return self._respond(Response("DECLINED", "Okay, I haven't ordered anything. Let me know if you'd like "
-                                      "to look at other options.", cart=self.cart))
+        return self._respond(Response("DECLINED", "No problem, nothing was ordered. If you change your mind, I'm "
+                                      "right here and happy to pick up where we left off.", cart=self.cart))
 
     def checkout(self) -> Response:
         """Revalidate against current data, then place at most one mock order."""
         self._tool_calls = 0
         if self.cart is None:
-            return self._respond(Response("BLOCKED", "There's no cart to check out.", reason_codes=["NO_ACTIVE_CART"]))
+            return self._respond(Response("BLOCKED", "There's nothing in your cart yet.", reason_codes=["NO_ACTIVE_CART"]))
         if self.cart.status == "ORDERED" and self.approval and self.approval.status == "USED":
             order, created = self.orders.place(self.cart, self.approval)
             self.tracer.event("checkout", "order.duplicate_suppressed", status="ok", order_id=order.order_id,
                               idempotency_key=order.idempotency_key)
-            return self._respond(Response("ORDER_PLACED", f"This order was already placed: {order.order_id}. "
-                                          "No second order was created.", cart=self.cart, order=order))
+            return self._respond(Response("ORDER_PLACED", "This order was already placed, so I didn't create a second "
+                                          "one.", cart=self.cart, order=order))
 
         current = self._get(self.cart.product_id)
         reasons = policy.checkout_gate(intent=self.intent, cart=self.cart, approval=self.approval, current=current)
@@ -528,31 +871,33 @@ class Session:
                           order_id=order.order_id, idempotency_key=order.idempotency_key,
                           total_inr=order.total_inr, simulated=True)
         return self._respond(Response("ORDER_PLACED", (
-            f"Mock order {order.order_id} placed for {self.cart.title}, {_inr(order.total_inr)} total. "
-            "This is a simulation: no payment was taken and nothing will ship."), cart=self.cart, order=order))
+            f"Done! Your order for the {self.cart.title} ({_inr(order.total_inr)}) is placed. This is a demo, so no "
+            "payment was taken and nothing will ship."), cart=self.cart, order=order))
 
     def _recover(self, reasons: list[str], current: Optional[ProductView]) -> Response:
         if "NO_VALID_APPROVAL" in reasons:
-            return self._respond(Response("BLOCKED", "I can't place the order: you haven't approved this exact "
-                                          "cart yet.", cart=self.cart, reason_codes=reasons))
+            return self._respond(Response("BLOCKED", "I can't place the order yet: please approve this exact cart "
+                                          "first.", cart=self.cart, reason_codes=reasons))
         self._invalidate_approval(", ".join(reasons))
         old_total = self.approval.approved_total_inr if self.approval else self.cart.total_inr
         self.cart.status = "SUPERSEDED"
-        parts = [f"I stopped the order. Something changed after you approved it ({', '.join(reasons)})."]
-        if current is not None and current.total_for(self.cart.qty) != old_total:
-            parts.append(f"{current.title} is now {_inr(current.total_for(self.cart.qty))} instead of the "
-                         f"{_inr(old_total)} you approved.")
         if current is not None and current.stock < self.cart.qty:
-            parts.append(f"{current.title} is now out of stock.")
-        parts.append("Your earlier approval no longer applies.")
+            parts = [f"Heads up: the {current.title} went out of stock after you approved, so I haven't ordered "
+                     "anything."]
+        elif current is not None and current.total_for(self.cart.qty) != old_total:
+            parts = [f"Heads up: the price changed from {_inr(old_total)} to {_inr(current.total_for(self.cart.qty))} "
+                     "since you approved, so I haven't ordered anything. If the new total works for you, just approve "
+                     "again."]
+        else:
+            parts = ["Heads up: something changed since you approved, so I haven't ordered anything. Please check "
+                     "and approve again."]
         if self.intent.product_query or self.intent.category:
             alt = self._search_and_recommend()
         else:                                   # bought straight from a product page: look for similar ones
             alt = self._search_and_recommend(query=_head_noun(current.title) if current else "")
         self.history.pop()
-        alt.message = " ".join(parts) + "\n\n" + (
-            "Here is what meets your requirements right now:\n" + alt.message if alt.kind == "RECOMMEND"
-            else alt.message) + "\n\nPick an option and approve again if you'd like to continue."
+        alt.message = " ".join(parts) + ("\n\nHere's what meets your requirements right now:\n" + alt.message
+                                          if alt.kind == "RECOMMEND" else "")
         alt.kind = "BLOCKED"
         alt.reason_codes = reasons
         alt.cart = None

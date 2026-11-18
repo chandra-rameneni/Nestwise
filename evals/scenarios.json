@@ -1,91 +1,786 @@
 {
-  "_about": "IntentGuard eval scenarios. Each one is a short shopper conversation on the real catalog, with the outcome the PRD says is correct, not what the code happens to do. 'probe' scenarios use phrasings the rules extractor was not written for, to find weaknesses. Run with: .venv/bin/python evals/run_evals.py",
-  "version": "scenarios-v1 (2026-11-18)",
-  "scenarios": [
-    {"id": "NA-01", "group": "not_sold", "turns": [{"say": "mobile"}],
-     "expect": [{"turn": 0, "kind": "NOT_AVAILABLE", "not_contains": ["?"]}]},
-    {"id": "NA-02", "group": "not_sold", "turns": [{"say": "Do you sell mobiles?"}, {"say": "Do you sell mobiles?"}],
-     "expect": [{"turn": 0, "kind": "NOT_AVAILABLE", "not_contains": ["sell do"]}, {"turn": 1, "kind": "NOT_AVAILABLE", "same_message_as_turn": 0}]},
-    {"id": "NA-03", "group": "not_sold", "turns": [{"say": "Do you have an air fryer?"}],
-     "expect": [{"turn": 0, "kind": "NOT_AVAILABLE"}]},
-    {"id": "NA-04", "group": "not_sold", "turns": [{"say": "I want a gaming laptop under ₹60,000"}],
-     "expect": [{"turn": 0, "kind": "NOT_AVAILABLE"}]},
-    {"id": "NA-05", "group": "not_sold", "probe": true, "turns": [{"say": "do you have a dining table"}],
-     "expect": [{"turn": 0, "kind": "NOT_AVAILABLE"}], "notes": "Data has dining sets but no standalone dining tables (known limit, CATALOG_REPORT)."},
-
-    {"id": "GR-01", "group": "greeting", "turns": [{"say": "hello"}],
-     "expect": [{"turn": 0, "kind": "UNSUPPORTED"}]},
-    {"id": "GR-02", "group": "greeting", "turns": [{"say": "thanks"}],
-     "expect": [{"turn": 0, "kind": "UNSUPPORTED"}]},
-    {"id": "GR-03", "group": "greeting", "probe": true, "turns": [{"say": "Hi, I need a pressure cooker under ₹2,000"}],
-     "expect": [{"turn": 0, "kind": "RECOMMEND", "all_totals_at_most": 2000}]},
-
-    {"id": "CL-01", "group": "clarify", "turns": [{"say": "I need something"}, {"say": "not sure"}],
-     "expect": [{"turn": 0, "kind": "CLARIFY"}, {"turn": 1, "kind": "CLARIFY", "contains": ["I still need"]}]},
-    {"id": "CL-02", "group": "clarify", "turns": [{"say": "I want to buy a sofa under ₹30,000"}, {"say": "3 seats, and it must fit in 200 cm of wall space"}],
-     "expect": [{"turn": 0, "kind": "CLARIFY"}, {"turn": 1, "kind": "RECOMMEND", "ids": ["SOFEB7MHGWTHZFVJ", "SOFE9FS5PGNNQV9N"]}]},
-    {"id": "CL-03", "group": "clarify", "probe": true, "turns": [{"say": "something to sit on"}],
-     "expect": [{"turn": 0, "kind": "CLARIFY"}], "notes": "Vague request; should ask what product, not say 'we don't sell sit on'."},
-
-    {"id": "LS-01", "group": "listing", "turns": [{"say": "Find a 3-seater sofa under ₹30,000 that fits 200 cm"}],
-     "expect": [{"turn": 0, "kind": "RECOMMEND", "ids": ["SOFEB7MHGWTHZFVJ", "SOFE9FS5PGNNQV9N"]}]},
-    {"id": "LS-02", "group": "listing", "turns": [{"say": "coffee mug under ₹300"}],
-     "expect": [{"turn": 0, "kind": "RECOMMEND", "all_totals_at_most": 300}]},
-    {"id": "LS-03", "group": "listing", "turns": [{"say": "show me bedsheets below 500 rupees"}],
-     "expect": [{"turn": 0, "kind": "RECOMMEND", "all_totals_at_most": 500}]},
-    {"id": "LS-04", "group": "listing", "turns": [{"say": "need curtains for a 7 ft door"}],
-     "expect": [{"turn": 0, "kind": "RECOMMEND", "titles_contain": "curtain"}]},
-    {"id": "LS-05", "group": "listing", "probe": true, "turns": [{"say": "I'm looking for a couch for 3 people, max 25k"}],
-     "expect": [{"turn": 0, "kind": "CLARIFY"}], "notes": "'couch' should be understood as a sofa; width is still missing so a clarifying question is correct."},
-    {"id": "LS-06", "group": "listing", "probe": true, "turns": [{"say": "what's the cheapest 2 seater sofa that fits 1.5 m"}],
-     "expect": [{"turn": 0, "kind": "RECOMMEND"}]},
-    {"id": "LS-07", "group": "listing", "turns": [{"say": "Find a 3-seater sofa under ₹30,000 that fits 200 cm"}, {"action": "select", "product_id": "SOFEB7MHGWTHZFVJ"}, {"action": "approve"}, {"say": "Actually ₹35,000"}, {"action": "checkout"}],
-     "expect": [{"turn": 3, "kind": "RECOMMEND"}, {"turn": 4, "kind": "BLOCKED"}], "expect_orders": 0},
-
-    {"id": "PQ-01", "group": "product_qa", "page": "SOFE9FS5PGNNQV9N", "turns": [{"say": "How wide is it?"}],
-     "expect": [{"turn": 0, "kind": "ANSWER", "cited": ["Width"], "contains": ["1680 mm"]}]},
-    {"id": "PQ-02", "group": "product_qa", "page": "SOFE9FS5PGNNQV9N", "turns": [{"say": "Is it waterproof?"}],
-     "expect": [{"turn": 0, "kind": "ANSWER", "contains": ["doesn't say"]}]},
-    {"id": "PQ-03", "group": "product_qa", "page": "SOFEB7MHGWTHZFVJ", "turns": [{"say": "how heavy is it"}],
-     "expect": [{"turn": 0, "kind": "ANSWER", "cited": ["Weight"], "contains": ["50 kg"]}]},
-    {"id": "PQ-04", "group": "product_qa", "page": "SOFEB7MHGWTHZFVJ", "turns": [{"say": "is it leather?"}],
-     "expect": [{"turn": 0, "kind": "ANSWER", "cited_any": ["Primary Material", "Upholstery Type"], "contains": ["Fabric"]}]},
-    {"id": "PQ-05", "group": "product_qa", "page": "SOFEB7MHGWTHZFVJ", "turns": [{"say": "dimensions?"}],
-     "expect": [{"turn": 0, "kind": "ANSWER", "cited_any": ["Width"], "contains": ["1815 mm", "825 mm", "850 mm"]}]},
-    {"id": "PQ-06", "group": "product_qa", "page": "SOFEB7MHGWTHZFVJ", "turns": [{"say": "can I wash it"}],
-     "expect": [{"turn": 0, "kind": "ANSWER", "cited_any": ["Care Instructions"]}]},
-    {"id": "PQ-07", "group": "product_qa", "page": "BWLEHTBPHRBSDEYF", "turns": [{"say": "Is it microwave safe?"}],
-     "expect": [{"turn": 0, "kind": "ANSWER", "cited": ["Microwave Safe"]}]},
-    {"id": "PQ-08", "group": "product_qa", "page": "SOFEGDV3HGY3AB43", "turns": [{"say": "Will it fit a 2 m wall?"}],
-     "expect": [{"turn": 0, "kind": "ANSWER", "contains": ["No on width"]}]},
-    {"id": "PQ-09", "group": "product_qa", "page": "SOFEDVYZ29EW7VEP", "turns": [{"say": "Will it fit a 2 m wall?"}],
-     "expect": [{"turn": 0, "kind": "ANSWER", "contains": ["can't confirm"]}], "notes": "Listed width 700 mm for a 7-seater is implausible (D10)."},
-    {"id": "PQ-10", "group": "product_qa", "page": "SOFE9FS5PGNNQV9N", "turns": [{"say": "How wide is it?"}, {"say": "How wide is it?", "page": "SOFEGDV3HGY3AB43"}],
-     "expect": [{"turn": 0, "contains": ["1680 mm"]}, {"turn": 1, "contains": ["2159 mm"]}]},
-
-    {"id": "BT-01", "group": "buy_this", "page": "SOFEB7MHGWTHZFVJ", "turns": [{"say": "Buy this"}, {"action": "approve"}, {"action": "checkout"}, {"action": "checkout"}],
-     "expect": [{"turn": 0, "kind": "CART_PROPOSED"}, {"turn": 2, "kind": "ORDER_PLACED"}, {"turn": 3, "kind": "ORDER_PLACED"}], "expect_orders": 1},
-    {"id": "BT-02", "group": "buy_this", "page": "SOFE9FS5PGNNQV9N", "turns": [{"say": "Buy this, my budget is ₹15,000"}],
-     "expect": [{"turn": 0, "kind": "BLOCKED", "reason": "BUDGET_EXCEEDED", "all_totals_at_most": 15000}], "expect_orders": 0},
-    {"id": "BT-03", "group": "buy_this", "page": "SOFE8BZMZWJYZUWW", "turns": [{"say": "Buy this"}],
-     "expect": [{"turn": 0, "kind": "BLOCKED", "reason": "OUT_OF_STOCK"}], "expect_orders": 0},
-    {"id": "BT-04", "group": "buy_this", "probe": true, "page": "SOFEB7MHGWTHZFVJ", "turns": [{"say": "I'll take it"}],
-     "expect": [{"turn": 0, "kind": "CART_PROPOSED"}]},
-    {"id": "BT-05", "group": "buy_this", "probe": true, "page": "SOFEB7MHGWTHZFVJ", "turns": [{"say": "order it"}],
-     "expect": [{"turn": 0, "kind": "CART_PROPOSED"}]},
-    {"id": "BT-06", "group": "buy_this", "probe": true, "page": "CNSEH3GZGG6VYT54", "turns": [{"say": "Buy this"}],
-     "expect": [{"turn": 0, "kind": "BLOCKED"}], "expect_orders": 0, "notes": "This listing has no price. A cart must never be proposed without a total."},
-    {"id": "BT-07", "group": "buy_this", "page": "SOFEB7MHGWTHZFVJ", "turns": [{"say": "Buy this"}, {"action": "approve"}, {"action": "sim_price", "product_id": "SOFEB7MHGWTHZFVJ", "price_inr": 16000}, {"action": "checkout"}],
-     "expect": [{"turn": 3, "kind": "BLOCKED", "reason": "PRICE_CHANGED_SINCE_APPROVAL"}], "expect_orders": 0},
-
-    {"id": "SIM-01", "group": "similar", "page": "SOFE8BZMFT7VRBSJ", "turns": [{"say": "Show me cheaper ones like this"}],
-     "expect": [{"turn": 0, "kind": "RECOMMEND", "all_totals_below": 31590, "titles_contain": "sofa", "excludes": ["SOFE8BZMFT7VRBSJ"]}]},
-    {"id": "SIM-02", "group": "similar", "probe": true, "page": "SOFE8BZMFT7VRBSJ", "turns": [{"say": "anything similar but smaller?"}],
-     "expect": [{"turn": 0, "kind": "RECOMMEND", "excludes": ["SOFE8BZMFT7VRBSJ"]}], "notes": "'smaller' isn't understood as a size limit yet; any same-kind result is accepted here."},
-
-    {"id": "DF-01", "group": "deferred", "turns": [{"say": "I want a refund for my sofa"}],
-     "expect": [{"turn": 0, "kind": "DEFER"}]},
-    {"id": "DF-02", "group": "deferred", "turns": [{"say": "Where is my order?"}],
-     "expect": [{"turn": 0, "kind": "DEFER"}]}
-  ]
+ "_about": "IntentGuard eval scenarios. Each one is a short shopper conversation on the real catalog, with the outcome the PRD says is correct, not what the code happens to do. 'probe' scenarios use phrasings the rules extractor was not written for, to find weaknesses. Run with: .venv/bin/python evals/run_evals.py",
+ "version": "scenarios-v1 (2026-11-18)",
+ "scenarios": [
+  {
+   "id": "NA-01",
+   "group": "not_sold",
+   "turns": [
+    {
+     "say": "mobile"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "NOT_AVAILABLE",
+     "not_contains": [
+      "?"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "NA-02",
+   "group": "not_sold",
+   "turns": [
+    {
+     "say": "Do you sell mobiles?"
+    },
+    {
+     "say": "Do you sell mobiles?"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "NOT_AVAILABLE",
+     "not_contains": [
+      "sell do"
+     ]
+    },
+    {
+     "turn": 1,
+     "kind": "NOT_AVAILABLE",
+     "same_message_as_turn": 0
+    }
+   ]
+  },
+  {
+   "id": "NA-03",
+   "group": "not_sold",
+   "turns": [
+    {
+     "say": "Do you have an air fryer?"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "NOT_AVAILABLE"
+    }
+   ]
+  },
+  {
+   "id": "NA-04",
+   "group": "not_sold",
+   "turns": [
+    {
+     "say": "I want a gaming laptop under ₹60,000"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "NOT_AVAILABLE"
+    }
+   ]
+  },
+  {
+   "id": "NA-05",
+   "group": "not_sold",
+   "probe": true,
+   "turns": [
+    {
+     "say": "do you have a dining table"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "NOT_AVAILABLE"
+    }
+   ],
+   "notes": "Data has dining sets but no standalone dining tables (known limit, CATALOG_REPORT)."
+  },
+  {
+   "id": "GR-01",
+   "group": "greeting",
+   "turns": [
+    {
+     "say": "hello"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "UNSUPPORTED"
+    }
+   ]
+  },
+  {
+   "id": "GR-02",
+   "group": "greeting",
+   "turns": [
+    {
+     "say": "thanks"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "UNSUPPORTED"
+    }
+   ]
+  },
+  {
+   "id": "GR-03",
+   "group": "greeting",
+   "probe": true,
+   "turns": [
+    {
+     "say": "Hi, I need a pressure cooker under ₹2,000"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "RECOMMEND",
+     "all_totals_at_most": 2000
+    }
+   ]
+  },
+  {
+   "id": "CL-01",
+   "group": "clarify",
+   "turns": [
+    {
+     "say": "I need something"
+    },
+    {
+     "say": "not sure"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "CLARIFY"
+    },
+    {
+     "turn": 1,
+     "kind": "CLARIFY",
+     "contains": [
+      "I still need"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "CL-02",
+   "group": "clarify",
+   "turns": [
+    {
+     "say": "I want to buy a sofa under ₹30,000"
+    },
+    {
+     "say": "3 seats, and it must fit in 200 cm of wall space"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "RECOMMEND"
+    },
+    {
+     "turn": 1,
+     "kind": "RECOMMEND",
+     "ids": [
+      "SOFEB7MHGWTHZFVJ",
+      "SOFE9FS5PGNNQV9N"
+     ]
+    }
+   ],
+   "notes": "Updated 2026-11-18 for Phase 2 (B18, search first): sofas are shown straight away instead of asking seats and width first. Planned in the Phase 1 eval note."
+  },
+  {
+   "id": "CL-03",
+   "group": "clarify",
+   "probe": true,
+   "turns": [
+    {
+     "say": "something to sit on"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "CLARIFY"
+    }
+   ],
+   "notes": "Vague request; should ask what product, not say 'we don't sell sit on'."
+  },
+  {
+   "id": "LS-01",
+   "group": "listing",
+   "turns": [
+    {
+     "say": "Find a 3-seater sofa under ₹30,000 that fits 200 cm"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "RECOMMEND",
+     "ids": [
+      "SOFEB7MHGWTHZFVJ",
+      "SOFE9FS5PGNNQV9N"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "LS-02",
+   "group": "listing",
+   "turns": [
+    {
+     "say": "coffee mug under ₹300"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "RECOMMEND",
+     "all_totals_at_most": 300
+    }
+   ]
+  },
+  {
+   "id": "LS-03",
+   "group": "listing",
+   "turns": [
+    {
+     "say": "show me bedsheets below 500 rupees"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "RECOMMEND",
+     "all_totals_at_most": 500
+    }
+   ]
+  },
+  {
+   "id": "LS-04",
+   "group": "listing",
+   "turns": [
+    {
+     "say": "need curtains for a 7 ft door"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "RECOMMEND",
+     "titles_contain": "curtain"
+    }
+   ]
+  },
+  {
+   "id": "LS-05",
+   "group": "listing",
+   "probe": true,
+   "turns": [
+    {
+     "say": "I'm looking for a couch for 3 people, max 25k"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "RECOMMEND"
+    }
+   ],
+   "notes": "'couch' is understood as a sofa (synonym added in Phase 2). Updated 2026-11-18 for Phase 2 (B18, search first): sofas are shown straight away instead of asking seats and width first. Planned in the Phase 1 eval note."
+  },
+  {
+   "id": "LS-06",
+   "group": "listing",
+   "probe": true,
+   "turns": [
+    {
+     "say": "what's the cheapest 2 seater sofa that fits 1.5 m"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "RECOMMEND"
+    }
+   ]
+  },
+  {
+   "id": "LS-07",
+   "group": "listing",
+   "turns": [
+    {
+     "say": "Find a 3-seater sofa under ₹30,000 that fits 200 cm"
+    },
+    {
+     "action": "select",
+     "product_id": "SOFEB7MHGWTHZFVJ"
+    },
+    {
+     "action": "approve"
+    },
+    {
+     "say": "Actually ₹35,000"
+    },
+    {
+     "action": "checkout"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 3,
+     "kind": "RECOMMEND"
+    },
+    {
+     "turn": 4,
+     "kind": "BLOCKED"
+    }
+   ],
+   "expect_orders": 0
+  },
+  {
+   "id": "PQ-01",
+   "group": "product_qa",
+   "page": "SOFE9FS5PGNNQV9N",
+   "turns": [
+    {
+     "say": "How wide is it?"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "ANSWER",
+     "cited": [
+      "Width"
+     ],
+     "contains": [
+      "1680 mm"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PQ-02",
+   "group": "product_qa",
+   "page": "SOFE9FS5PGNNQV9N",
+   "turns": [
+    {
+     "say": "Is it waterproof?"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "ANSWER",
+     "contains": [
+      "doesn't say"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PQ-03",
+   "group": "product_qa",
+   "page": "SOFEB7MHGWTHZFVJ",
+   "turns": [
+    {
+     "say": "how heavy is it"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "ANSWER",
+     "cited": [
+      "Weight"
+     ],
+     "contains": [
+      "50 kg"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PQ-04",
+   "group": "product_qa",
+   "page": "SOFEB7MHGWTHZFVJ",
+   "turns": [
+    {
+     "say": "is it leather?"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "ANSWER",
+     "cited_any": [
+      "Primary Material",
+      "Upholstery Type"
+     ],
+     "contains": [
+      "Fabric"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PQ-05",
+   "group": "product_qa",
+   "page": "SOFEB7MHGWTHZFVJ",
+   "turns": [
+    {
+     "say": "dimensions?"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "ANSWER",
+     "cited_any": [
+      "Width"
+     ],
+     "contains": [
+      "1815 mm",
+      "825 mm",
+      "850 mm"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PQ-06",
+   "group": "product_qa",
+   "page": "SOFEB7MHGWTHZFVJ",
+   "turns": [
+    {
+     "say": "can I wash it"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "ANSWER",
+     "cited_any": [
+      "Care Instructions"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PQ-07",
+   "group": "product_qa",
+   "page": "BWLEHTBPHRBSDEYF",
+   "turns": [
+    {
+     "say": "Is it microwave safe?"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "ANSWER",
+     "cited": [
+      "Microwave Safe"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PQ-08",
+   "group": "product_qa",
+   "page": "SOFEGDV3HGY3AB43",
+   "turns": [
+    {
+     "say": "Will it fit a 2 m wall?"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "ANSWER",
+     "contains": [
+      "No on width"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "PQ-09",
+   "group": "product_qa",
+   "page": "SOFEDVYZ29EW7VEP",
+   "turns": [
+    {
+     "say": "Will it fit a 2 m wall?"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "ANSWER",
+     "contains": [
+      "can't confirm"
+     ]
+    }
+   ],
+   "notes": "Listed width 700 mm for a 7-seater is implausible (D10)."
+  },
+  {
+   "id": "PQ-10",
+   "group": "product_qa",
+   "page": "SOFE9FS5PGNNQV9N",
+   "turns": [
+    {
+     "say": "How wide is it?"
+    },
+    {
+     "say": "How wide is it?",
+     "page": "SOFEGDV3HGY3AB43"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "contains": [
+      "1680 mm"
+     ]
+    },
+    {
+     "turn": 1,
+     "contains": [
+      "2159 mm"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "BT-01",
+   "group": "buy_this",
+   "page": "SOFEB7MHGWTHZFVJ",
+   "turns": [
+    {
+     "say": "Buy this"
+    },
+    {
+     "action": "approve"
+    },
+    {
+     "action": "checkout"
+    },
+    {
+     "action": "checkout"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "CART_PROPOSED"
+    },
+    {
+     "turn": 2,
+     "kind": "ORDER_PLACED"
+    },
+    {
+     "turn": 3,
+     "kind": "ORDER_PLACED"
+    }
+   ],
+   "expect_orders": 1
+  },
+  {
+   "id": "BT-02",
+   "group": "buy_this",
+   "page": "SOFE9FS5PGNNQV9N",
+   "turns": [
+    {
+     "say": "Buy this, my budget is ₹15,000"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "BLOCKED",
+     "reason": "BUDGET_EXCEEDED",
+     "all_totals_at_most": 15000
+    }
+   ],
+   "expect_orders": 0
+  },
+  {
+   "id": "BT-03",
+   "group": "buy_this",
+   "page": "SOFE8BZMZWJYZUWW",
+   "turns": [
+    {
+     "say": "Buy this"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "BLOCKED",
+     "reason": "OUT_OF_STOCK"
+    }
+   ],
+   "expect_orders": 0
+  },
+  {
+   "id": "BT-04",
+   "group": "buy_this",
+   "probe": true,
+   "page": "SOFEB7MHGWTHZFVJ",
+   "turns": [
+    {
+     "say": "I'll take it"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "CART_PROPOSED"
+    }
+   ]
+  },
+  {
+   "id": "BT-05",
+   "group": "buy_this",
+   "probe": true,
+   "page": "SOFEB7MHGWTHZFVJ",
+   "turns": [
+    {
+     "say": "order it"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "CART_PROPOSED"
+    }
+   ]
+  },
+  {
+   "id": "BT-06",
+   "group": "buy_this",
+   "probe": true,
+   "page": "CNSEH3GZGG6VYT54",
+   "turns": [
+    {
+     "say": "Buy this"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "BLOCKED"
+    }
+   ],
+   "expect_orders": 0,
+   "notes": "This listing has no price. A cart must never be proposed without a total."
+  },
+  {
+   "id": "BT-07",
+   "group": "buy_this",
+   "page": "SOFEB7MHGWTHZFVJ",
+   "turns": [
+    {
+     "say": "Buy this"
+    },
+    {
+     "action": "approve"
+    },
+    {
+     "action": "sim_price",
+     "product_id": "SOFEB7MHGWTHZFVJ",
+     "price_inr": 16000
+    },
+    {
+     "action": "checkout"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 3,
+     "kind": "BLOCKED",
+     "reason": "PRICE_CHANGED_SINCE_APPROVAL"
+    }
+   ],
+   "expect_orders": 0
+  },
+  {
+   "id": "SIM-01",
+   "group": "similar",
+   "page": "SOFE8BZMFT7VRBSJ",
+   "turns": [
+    {
+     "say": "Show me cheaper ones like this"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "RECOMMEND",
+     "all_totals_below": 31590,
+     "titles_contain": "sofa",
+     "excludes": [
+      "SOFE8BZMFT7VRBSJ"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "SIM-02",
+   "group": "similar",
+   "probe": true,
+   "page": "SOFE8BZMFT7VRBSJ",
+   "turns": [
+    {
+     "say": "anything similar but smaller?"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "RECOMMEND",
+     "excludes": [
+      "SOFE8BZMFT7VRBSJ"
+     ]
+    }
+   ],
+   "notes": "'smaller' isn't understood as a size limit yet; any same-kind result is accepted here."
+  },
+  {
+   "id": "DF-01",
+   "group": "deferred",
+   "turns": [
+    {
+     "say": "I want a refund for my sofa"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "DEFER"
+    }
+   ]
+  },
+  {
+   "id": "DF-02",
+   "group": "deferred",
+   "turns": [
+    {
+     "say": "Where is my order?"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "DEFER"
+    }
+   ]
+  }
+ ]
 }

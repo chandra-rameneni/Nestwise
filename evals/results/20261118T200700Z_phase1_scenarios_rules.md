@@ -1,4 +1,4 @@
-# Eval run 20261118T144454Z (rules mode)
+# Eval run 20261118T200700Z (rules mode)
 
 **36/36 scenarios passed.** Core: 36/36 · Probes (phrasings the rules weren't written for): 0/0.
 

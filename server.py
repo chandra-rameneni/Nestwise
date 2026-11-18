@@ -18,6 +18,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 import intent as intent_mod
+import llm
 from agent import Response as AgentResponse
 from agent import Session
 from catalog import STORE_DB_PATH, ProductView, SqliteCatalog
@@ -93,7 +94,9 @@ def state(s: Session) -> dict:
                     "total_inr": o.total_inr} for o in s.orders.orders.values()],
         "constraints": s.intent.constraint_fields() if s.intent else None,
         "trace_id": s.tracer.trace_id,
-        "mode": "claude" if intent_mod.llm_available() else "rules",
+        "mode": llm.provider() or "rules", "model": llm.model_name(),
+        "last_extractor": next((e["attrs"].get("extractor") for e in reversed(s.tracer.events)
+                                if e["name"] == "intent.extracted"), None),
     }
 
 
@@ -119,7 +122,7 @@ def meta(ig_session: Optional[str] = Cookie(None)):
     c = _catalog(ig_session)
     return {"categories": c.categories(), "source": {k: c.meta.get(k) for k in ("dataset", "licence", "price_note",
                                                                               "simulated", "version")},
-            "mode": "claude" if intent_mod.llm_available() else "rules", "model": intent_mod.MODEL}
+            "mode": llm.provider() or "rules", "model": llm.model_name()}
 
 
 @app.get("/api/products")

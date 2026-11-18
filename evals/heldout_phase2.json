@@ -1,0 +1,467 @@
+{
+ "_about": "Phase 2 HELD-OUT evals, written after the Phase 2 code and run once; raw score recorded before any fixes.",
+ "version": "heldout2-1",
+ "scenarios": [
+  {
+   "id": "H2-01",
+   "group": "search_first",
+   "turns": [
+    {
+     "say": "couches"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "RECOMMEND",
+     "titles_contain": "sofa"
+    }
+   ]
+  },
+  {
+   "id": "H2-02",
+   "group": "search_first",
+   "turns": [
+    {
+     "say": "show sofas below 15k"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "RECOMMEND",
+     "all_totals_at_most": 15000
+    }
+   ]
+  },
+  {
+   "id": "H2-03",
+   "group": "reply",
+   "turns": [
+    {
+     "say": "sofa"
+    },
+    {
+     "say": "for two people"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 1,
+     "kind": "RECOMMEND",
+     "state": {
+      "seats": 2
+     }
+    }
+   ]
+  },
+  {
+   "id": "H2-04",
+   "group": "reply",
+   "turns": [
+    {
+     "say": "sofa"
+    },
+    {
+     "say": "1.8 m"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 1,
+     "kind": "RECOMMEND",
+     "state": {
+      "max_width_cm": 180
+     }
+    }
+   ]
+  },
+  {
+   "id": "H2-05",
+   "group": "reply",
+   "turns": [
+    {
+     "say": "sofa"
+    },
+    {
+     "say": "doesn't matter"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 1,
+     "not_contains": [
+      "We don't sell"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "H2-06",
+   "group": "show",
+   "turns": [
+    {
+     "say": "3 seater sofa"
+    },
+    {
+     "say": "okay show me"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 1,
+     "kind": "RECOMMEND",
+     "state": {
+      "seats": 3
+     }
+    }
+   ]
+  },
+  {
+   "id": "H2-07",
+   "group": "show",
+   "turns": [
+    {
+     "say": "dining set"
+    },
+    {
+     "say": "can you show me what you found"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 1,
+     "kind": "RECOMMEND",
+     "not_contains": [
+      "We don't sell"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "H2-08",
+   "group": "store",
+   "turns": [
+    {
+     "say": "what kind of products do you sell?"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "reason": "STORE_INFO"
+    }
+   ]
+  },
+  {
+   "id": "H2-09",
+   "group": "help",
+   "turns": [
+    {
+     "say": "how does this work"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "reason": "HELP"
+    }
+   ]
+  },
+  {
+   "id": "H2-10",
+   "group": "store",
+   "turns": [
+    {
+     "say": "which brands do you have?"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "reason": "STORE_INFO",
+     "contains": [
+      "brands"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "H2-11",
+   "group": "store",
+   "turns": [
+    {
+     "say": "do you accept upi?"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "not_contains": [
+      "We don't sell"
+     ],
+     "reason": "STORE_INFO"
+    }
+   ]
+  },
+  {
+   "id": "H2-12",
+   "group": "brand",
+   "turns": [
+    {
+     "say": "Lal Pet Products"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "RECOMMEND",
+     "titles_contain": "lal"
+    }
+   ]
+  },
+  {
+   "id": "H2-13",
+   "group": "brand",
+   "turns": [
+    {
+     "say": "durian"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "RECOMMEND",
+     "titles_contain": "durian"
+    }
+   ]
+  },
+  {
+   "id": "H2-14",
+   "group": "material",
+   "turns": [
+    {
+     "say": "wooden"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "RECOMMEND",
+     "not_contains": [
+      "We don't sell"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "H2-15",
+   "group": "material",
+   "turns": [
+    {
+     "say": "2 seater sofa"
+    },
+    {
+     "say": "fabric only"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 1,
+     "kind": "RECOMMEND",
+     "state": {
+      "material": "fabric",
+      "seats": 2
+     }
+    }
+   ]
+  },
+  {
+   "id": "H2-16",
+   "group": "shown",
+   "turns": [
+    {
+     "say": "Find a 3-seater sofa under ₹30,000 that fits 200 cm"
+    },
+    {
+     "say": "the second one"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 1,
+     "kind": "CART_PROPOSED"
+    }
+   ]
+  },
+  {
+   "id": "H2-17",
+   "group": "shown",
+   "turns": [
+    {
+     "say": "Find a 3-seater sofa under ₹30,000 that fits 200 cm"
+    },
+    {
+     "say": "does the durian one come assembled?"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 1,
+     "kind": "ANSWER",
+     "contains": [
+      "Durian"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "H2-18",
+   "group": "shown",
+   "turns": [
+    {
+     "say": "Find a 3-seater sofa under ₹30,000 that fits 200 cm"
+    },
+    {
+     "say": "the cheaper one"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 1,
+     "kind": "CART_PROPOSED"
+    }
+   ]
+  },
+  {
+   "id": "H2-19",
+   "group": "several",
+   "turns": [
+    {
+     "say": "curtains and cushion covers"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "RECOMMEND",
+     "titles_include_each": [
+      "curtain",
+      "cushion"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "H2-20",
+   "group": "closest",
+   "turns": [
+    {
+     "say": "sofa under 3000"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "NO_ELIGIBLE",
+     "contains": [
+      "over"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "H2-21",
+   "group": "vague",
+   "turns": [
+    {
+     "say": "is the durian sofa big?"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "CLARIFY",
+     "reason": "VAGUE_REQUIREMENT"
+    }
+   ]
+  },
+  {
+   "id": "H2-22",
+   "group": "quantity",
+   "turns": [
+    {
+     "say": "I'll take 3",
+     "page": "SOFEB7MHGWTHZFVJ"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "CART_PROPOSED",
+     "state": {
+      "cart_qty": 3
+     }
+    }
+   ]
+  },
+  {
+   "id": "H2-23",
+   "group": "stuck",
+   "turns": [
+    {
+     "say": "I need something"
+    },
+    {
+     "say": "no idea"
+    },
+    {
+     "say": "not sure"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 2,
+     "differs_from_turn": 1
+    }
+   ]
+  },
+  {
+   "id": "H2-24",
+   "group": "stuck",
+   "turns": [
+    {
+     "say": "sofa"
+    },
+    {
+     "say": "i already told you, show me"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 1,
+     "kind": "RECOMMEND",
+     "contains": [
+      "Sorry"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "H2-25",
+   "group": "lookalike",
+   "turns": [
+    {
+     "say": "mobile phones"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "NOT_AVAILABLE",
+     "reason": "NOT_SOLD_HERE"
+    }
+   ]
+  }
+ ]
+}

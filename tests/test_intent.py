@@ -48,9 +48,10 @@ def test_int07_budget_update_keeps_other_constraints():
     assert updated.category == "keyboard_mouse_combo"
 
 
-def test_int08_sofa_without_fit_info_needs_clarification():
+def test_int08_sofa_without_fit_info_searches_first():
+    # PRD B18 (Phase 2): seats and width are no longer required before a search.
     x, _, _ = extract("I want to buy a sofa", None)
-    assert "seats" in x.missing_info and "max_width_cm" in x.missing_info
+    assert "seats" not in x.missing_info and "max_width_cm" not in x.missing_info
 
 
 def test_keyboard_request_fields():

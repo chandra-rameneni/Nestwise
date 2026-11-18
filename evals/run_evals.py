@@ -12,6 +12,7 @@ agent.response event of the turn whose outcome didn't match.
 from __future__ import annotations
 
 import json
+import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -41,6 +42,9 @@ def run_turn(s: Session, turn: dict, default_page: str | None):
     if act == "sim_price":
         s.simulate_price_change(turn["product_id"], turn["price_inr"])
         return None
+    if act == "sim_stock":
+        s.simulate_out_of_stock(turn["product_id"])
+        return None
     raise ValueError(f"unknown action {act}")
 
 
@@ -50,7 +54,8 @@ def snapshot(s: Session) -> dict:
     return {"product": (it.product_query or "") if it else "",
             "seats": it.seats if it else None, "max_width_cm": it.max_width_cm if it else None,
             "max_total_inr": it.max_total_inr if it else None,
-            "cart": s.cart.status if s.cart else None}
+            "material": getattr(it, "material", None) if it else None,
+            "cart": s.cart.status if s.cart else None, "cart_qty": s.cart.qty if s.cart else None}
 
 
 def check(exp: dict, r, responses: list, state: dict | None = None) -> list[str]:
@@ -62,6 +67,17 @@ def check(exp: dict, r, responses: list, state: dict | None = None) -> list[str]
         fails.append(f"kind should not be {exp['kind_not']}")
     if "reason_not" in exp and exp["reason_not"] in r.reason_codes:
         fails.append(f"reason codes should not include {exp['reason_not']}")
+    if "min_recs" in exp and len(r.recommendations) < exp["min_recs"]:
+        fails.append(f"should show at least {exp['min_recs']} products, showed {len(r.recommendations)}")
+    if "check_passed" in exp and (not r.recommendations or not all(
+            any(c["constraint"] == exp["check_passed"] and c["status"] == "pass" for c in rec.get("checks", []))
+            for rec in r.recommendations)):
+        fails.append(f"every shown product should pass the {exp['check_passed']} check")
+    for word in exp.get("titles_include_each", []):
+        if not any(word in x["title"].lower() for x in r.recommendations):
+            fails.append(f"some shown product should be a {word}")
+    if "differs_from_turn" in exp and r.message == responses[exp["differs_from_turn"]].message:
+        fails.append(f"reply should differ from turn {exp['differs_from_turn']} (same reply repeated)")
     if state is not None:
         for k, v in exp.get("state", {}).items():
             if state.get(k) != v:
@@ -74,12 +90,23 @@ def check(exp: dict, r, responses: list, state: dict | None = None) -> list[str]
     ids = [x["product_id"] for x in r.recommendations]
     if "kind" in exp and r.kind != exp["kind"]:
         fails.append(f"kind: expected {exp['kind']}, got {r.kind}")
+    low = r.message.lower()                # case-insensitive: "Sorry, we don't sell" still counts as "We don't sell"
     for s in exp.get("contains", []):
-        if s not in r.message:
+        if s.lower() not in low:
             fails.append(f"message should contain {s!r}")
     for s in exp.get("not_contains", []):
-        if s in r.message:
+        if s.lower() in low:
             fails.append(f"message should not contain {s!r}")
+    for pat in exp.get("not_regex", []):
+        if re.search(pat, r.message):
+            fails.append(f"message should not match {pat!r}")
+    for pat in exp.get("regex", []):
+        if not re.search(pat, r.message):
+            fails.append(f"message should match {pat!r}")
+    if "shorter_than_turn" in exp and len(r.message) >= len(responses[exp["shorter_than_turn"]].message):
+        fails.append(f"reply should be shorter than turn {exp['shorter_than_turn']}")
+    if "max_sentences" in exp and len([s for s in re.split(r"(?<=[.!?])\s+", r.message.strip()) if s]) > exp["max_sentences"]:
+        fails.append(f"reply should have at most {exp['max_sentences']} sentences")
     if "ids" in exp and set(ids) != set(exp["ids"]):
         fails.append(f"recommended ids: expected {sorted(exp['ids'])}, got {sorted(ids)}")
     if "excludes" in exp and set(ids) & set(exp["excludes"]):
@@ -107,7 +134,8 @@ def main() -> int:
         return 2
     path = Path(sys.argv[1]) if len(sys.argv) > 1 else SCENARIOS
     spec = json.loads(path.read_text())
-    mode = "claude" if intent_mod.llm_available() else "rules"
+    import llm
+    mode = llm.provider() or "rules"
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     results = []
     for sc in spec["scenarios"]:
@@ -150,7 +178,7 @@ def main() -> int:
     passed = sum(r["passed"] for r in results)
     core = [r for r in results if not r["probe"]]
     probes = [r for r in results if r["probe"]]
-    summary = {"run_at": stamp, "mode": mode, "model": intent_mod.MODEL if mode == "claude" else None,
+    summary = {"run_at": stamp, "mode": mode, "model": llm.model_name(),
                "scenarios_version": spec["version"], "total": n, "passed": passed,
                "core": f"{sum(r['passed'] for r in core)}/{len(core)}",
                "probes": f"{sum(r['passed'] for r in probes)}/{len(probes)}", "results": results}

@@ -162,6 +162,7 @@ details.ruled ul { margin: 6px 0 0; padding-left: 18px; max-height: 180px; overf
 .cart .actions { display: flex; gap: 6px; flex-wrap: wrap; }
 .cart .status { font: 500 12px var(--mono); color: var(--muted); }
 .suggest { display: flex; gap: 6px; flex-wrap: wrap; padding: 0 16px 8px; }
+.suggest[hidden] { display: none; }   /* O-25: hidden must win over display: flex */
 .suggest button { font-size: 12.5px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); cursor: pointer; }
 .composer { display: flex; gap: 8px; padding: 10px 16px 14px; border-top: 1px solid var(--line); }
 .composer input { flex: 1; min-width: 0; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }

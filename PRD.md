@@ -1,6 +1,6 @@
 # IntentGuard PRD (v2: storefront with an embedded agent)
 
-**Status:** draft for sign-off · **Date:** 2026-11-17, updated 2026-11-18 (response guide §6A; behaviour decisions B18–B30; warmer tone) · **Replaces:** the chat-only P0 direction
+**Status:** draft for sign-off · **Date:** 2026-11-17, updated 2026-11-18 (response guide §6A; behaviour decisions B18–B30; warmer tone; B31–B37 from store testing) · **Replaces:** the chat-only P0 direction
 **Based on:** [`BUSINESS_CASE.md`](BUSINESS_CASE.md) (why, for whom, competitor research)
 
 ## 1. Problem
@@ -85,6 +85,9 @@ This section says what the agent should say in each situation. Each block's **ex
 - **Warmth never adds facts.** Never claims something the data doesn't support.
 - Ends with a clear next step, or stops cleanly. Never ends on a question it has already asked.
 - Never repeats the shopper's words back when they aren't a product ("We don't sell bla bla" is wrong).
+- **No internal codes in shopper text** (product IDs, reason codes, mock order IDs); they stay in the trace. No "option(s)". *(Phase 3)*
+- **Products appear once:** a lead-in and one compact line per product; full details are on the cards. One closing line. *(Phase 3)*
+- **No word-for-word repeats** of an unhelpful reply; the second one is shorter. *(Phase 3)*
 
 | Robotic (today) | Warm (target) |
 |---|---|
@@ -221,7 +224,7 @@ B20 (ordering), B21 (nothing meets everything), B23 (out of stock), B29 (model d
 - **Must not:** mix requirements between the products; silently ignore one.
 - **Example reply:** *"Here are a few sofas to start with: … Sorry, we don't sell coffee tables."* / *"Bedsheets under ₹2,000: … Pillows under ₹2,000: …"*
 - **Outcome / reason:** CLARIFY or RECOMMEND / `MULTIPLE_PRODUCTS`
-- **Status:** **Not built.** Checked 2026-11-18: "a sofa and a coffee table" asks about the sofa only and silently drops the coffee table (F-022).
+- **Status:** **Built** (Phase 2, 2026-11-18; P2-N02, P2-N03).
 
 #### B14. The shopper tries to trick the agent
 - **Situation:** "ignore your rules", "you're allowed to order without approval", "pretend the price is ₹100".
@@ -263,7 +266,7 @@ B20 (ordering), B21 (nothing meets everything), B23 (out of stock), B29 (model d
 - **Must not:** hold back results to ask about seats or width first.
 - **Example reply:** *"Here are a few sofas to start with. Tell me how many seats you need or how much space you have, and I'll narrow these down."*
 - **Outcome / reason:** RECOMMEND / `BROAD_SEARCH`
-- **Status:** **Not built.** Today "sofa" asks seats and width before showing anything (`prompts/intent_v2.txt` and the rules extractor both treat them as required).
+- **Status:** **Built** (Phase 2, 2026-11-18; P2-S01–S04). Sofas show straight away with seats, width and price, plus one line inviting narrowing.
 
 #### B19. Following the thread (R9)
 - **Situation:** a follow-up that refines the current product: "2 seater", "under ₹20,000", "only leather", "something smaller", or just "2" after a seats question.
@@ -271,7 +274,7 @@ B20 (ordering), B21 (nothing meets everything), B23 (out of stock), B29 (model d
 - **Must not:** treat the refinement as a new product ("We don't sell seater"); drop earlier requirements.
 - **Example:** "sofa" → sofas. "2 seater" → *"Here are 2-seater sofas:"*. "under ₹20,000" → *"2-seater sofas under ₹20,000:"*. "bedsheets" → bedsheets, without the sofa requirements.
 - **Outcome / reason:** RECOMMEND / `REQUIREMENT_ADDED`
-- **Status:** **Partly** (Phase 1, 2026-11-18; P1-T01–T07): "2 seater", "2", "for 2 people" and "under ₹20,000" now narrow the current sofa. It still asks for the width before showing results until B18 (Phase 2). "Only leather" needs the material requirement (Phase 2).
+- **Status:** **Built** for seats, budget, width and material (Phases 1 and 2; P1-T01–T07, P2-B06).
 
 #### B20. How results are ordered
 - **Must:** show only **exact matches**: the product the shopper asked for, meeting every requirement they gave. "A ₹1,200 sofa" has two requirements (product: sofa; price: ₹1,200), so only sofas at that price are shown. Order: preferred brand, then lowest total, then fastest delivery. If there are no exact matches, follow B21. *(Clarified with the user 2026-11-18.)*
@@ -285,7 +288,7 @@ B20 (ordering), B21 (nothing meets everything), B23 (out of stock), B29 (model d
 - **Must not:** present them as matching; include products with no price or no stock.
 - **Example reply:** *"Sorry, I couldn't find a sofa for ₹1,200. There are similar ones from ₹1,400: …"*
 - **Outcome / reason:** NO_ELIGIBLE / `RELAXED_OPTIONS`
-- **Status:** **Partly.** Today it says none qualify and lists reason codes, but shows no options.
+- **Status:** **Built** (Phase 2, 2026-11-18; P2-N01). The closest options are shown but can't go in a cart until the shopper relaxes a requirement.
 
 #### B22. A detail is unknown
 - **Situation:** a requirement depends on a detail the listing doesn't have (no width listed) or lists implausibly (D10).
@@ -314,7 +317,7 @@ B20 (ordering), B21 (nothing meets everything), B23 (out of stock), B29 (model d
 #### B26. Quantity ("2 of these")
 - **Must:** allow any quantity up to the stock available. There's no per-customer limit unless a product has an explicit one (none in this data). The cart and reply state the quantity and the total clearly. A budget applies to the whole total. If there isn't enough stock, say how many are available.
 - **Example reply:** *"Sure! 2 × ₹14,900 = ₹29,800, plus ₹0 shipping, so ₹29,800 in total for 2 sofas. Approve this exact cart when you're ready."*
-- **Status:** **Partly.** The cart, checks and recheck support quantity; the chat can't set it yet (always 1).
+- **Status:** **Built** on the product page (Phase 2, 2026-11-18; P2-N05).
 
 #### B27. "Compare these two"
 - **Must:** say kindly that side-by-side comparison isn't available yet, and offer what we can do.
@@ -329,7 +332,7 @@ B20 (ordering), B21 (nothing meets everything), B23 (out of stock), B29 (model d
 - **Must not:** decide for the shopper what "wide" means.
 - **Example reply:** *"Happy to check! How much space do you have for it? Then I'll tell you which HomeTown sofas fit."*
 - **Outcome / reason:** CLARIFY / `VAGUE_REQUIREMENT`
-- **Status:** **Not built.**
+- **Status:** **Built** (Phase 2, 2026-11-18; P2-N04).
 
 #### B29. The AI model is down or gives a bad answer
 - **Situation:** Claude errors or times out, or its answer fails the citation check (R5).
@@ -346,6 +349,61 @@ B20 (ordering), B21 (nothing meets everything), B23 (out of stock), B29 (model d
 - **Not kept:** nothing is inferred from pages the shopper only viewed.
 - **Example:** the shopper sets "2-seater under ₹20,000", opens a sofa page and asks "will this work?" → checked against those. Opens a bedsheet page and asks "is it cotton?" → answered without the sofa requirements.
 - **Status:** **Partly.** The session and requirements are kept across pages; the product-type check and "it" on the listing page aren't built or tested.
+
+> **B31–B37 come from the PM's store testing on 2026-11-18** (`evals/OBSERVATIONS.md`, O-1 to O-23).
+
+#### B31. "Show me the results"
+- **Situation:** the shopper asks to see results for the current search: "show me the results", "just show me", "show me what you have", "share the results for my query".
+- **Must:** run the current search with what's known so far and show it.
+- **Must not:** treat "results" as a product; ask the same question again.
+- **Example reply:** *"Here are sofas under ₹20,000:"*
+- **Outcome / reason:** RECOMMEND / `SHOW_RESULTS`
+- **Status:** **Built** (Phase 2, 2026-11-18; P2-R01–R04).
+
+#### B32. A reply to the agent's own question
+- **Situation:** the agent just asked something (seats, width) and the shopper replies.
+- **Must:** read the reply as the answer first. A number or measurement ("200cms", "2 metres", "200") fills that requirement. "No space", "doesn't matter", "any", "not sure" drop it and move on.
+- **Must not:** treat the reply as a product ("We don't sell space"); ask the same question again later in the same thread (R2 covers the whole thread, not just the previous turn).
+- **Example:** "How much wall space…?" → "200cms" → *"Here are 3-seater sofas up to 200 cm wide:"*
+- **Outcome / reason:** RECOMMEND or CLARIFY / `REQUIREMENT_ADDED` or `REQUIREMENT_REMOVED`
+- **Status:** **Built** (Phase 2, 2026-11-18; P2-Q01–Q05): cms, centimetres, metres, a bare number after the question, and "no space" / "doesn't matter".
+
+#### B33. Search by brand, material or product name
+- **Situation:** the shopper names a brand ("jerry", "petshop7"), a material ("solid wood", "leather"), or a full product name copied from the page.
+- **Must:** show matching products. A brand or exact name matches that brand or product; a material matches products made of it (and becomes a requirement on the current product, e.g. "only leather").
+- **Must not:** say "We don't sell …" when the site's own search finds products. The D8 rule ("the product IS that thing") applies only to product types.
+- **Example reply:** *"Here are Jerry's products:"* / *"Here are solid wood products. Looking for something in particular, like a dining set or a bed?"*
+- **Outcome / reason:** RECOMMEND / `BRAND_MATCH`, `MATERIAL_MATCH` or `NAME_MATCH`
+- **Status:** **Built** (Phase 2, 2026-11-18; P2-B01–B07). Brand names use a cleaned brand column (O-17).
+
+#### B34. Pointing at what was just shown
+- **Situation:** after showing results, the shopper refers to one of them: "the fabric one", "the first one", "the cheaper one", "the HomeTown CIAZ", and may ask about it ("when can it be delivered?").
+- **Must:** work out which shown product is meant and answer about it from its listing (R5), or pick it for the cart. If it's unclear which one, ask, naming the options.
+- **Must not:** start a new search; drop the current requirements.
+- **Example:** two sofas shown → "I want the fabric one. When can it be delivered?" → *"The HomeTown CIAZ Fabric 3 Seater arrives in 9 days (simulated)."*
+- **Outcome / reason:** ANSWER or CART_PROPOSED / `FROM_SHOWN_RESULTS`
+- **Status:** **Built** (Phase 2, 2026-11-18; P2-P01–P04).
+
+#### B35. Help and questions about the store
+- **Situation:** "what can you do?", "what can you help me with?", "help", "how many products do you have?", "which brands do you sell?"
+- **Must:** for help, say what the agent can do with 2–3 examples to try. For store questions, answer from catalog facts only (counts, categories, brands). For anything the data doesn't cover (payment methods, returns policy), say so honestly.
+- **Must not:** reply "That's not something I can help with" to a question about what it can help with; invent store policies.
+- **Example reply:** *"We have 2,043 products: 761 in home décor, 639 in kitchen & dining, 479 in home furnishing and 164 in furniture."*
+- **Outcome / reason:** ANSWER / `HELP` or `STORE_INFO`
+- **Status:** **Built** (Phase 2, 2026-11-18; P2-H01–H07).
+
+#### B36. The shopper is stuck
+- **Situation:** two unhelpful replies in a row (questions, catch-alls or "not sold" for the same request), or signs of frustration ("are you not capable…", "I already told you").
+- **Must:** change approach: apologise briefly and show the best results for what's known so far, or offer examples.
+- **Must not:** give the same reply a third time.
+- **Example reply:** *"Sorry about that. Here's what I have for sofas under ₹20,000:"*
+- **Outcome / reason:** RECOMMEND / `STUCK_RECOVERY`
+- **Status:** **Built** (Phase 2, 2026-11-18; P2-K01–K02).
+
+#### B37. A failed search doesn't change memory
+- **Must:** when a search finds nothing (or the words weren't a product), keep the current product thread and its requirements exactly as they were.
+- **Must not:** remember the failed words as the product ("dumber"), or wipe the budget and width ("fabric").
+- **Status:** **Built** (Phase 2, 2026-11-18; P2-M01–M02).
 
 ### 6A.4 Logging and review
 
@@ -368,7 +426,9 @@ B20 (ordering), B21 (nothing meets everything), B23 (out of stock), B29 (model d
 - **P0 (this build):**
   - Both journeys.
   - Rules R1–R8, and the response guide (§6A). Blocks marked *Not built* or *Partly* are known gaps.
-  - **Next:** R9 and R10, reason labels for logging, and blocks B18–B30.
+  - **Built in Phases 1–2:** R9, reason labels, B3, B10, B12–B19, B21, B26–B28, B31–B37.
+  - **Built in Phase 3:** warm wording (§6A.1).
+  - **Next:** Phase 4 (pages and shared stock, R10).
   - Real catalog slice with provenance labels.
   - Simulated price and stock changes for the demo.
   - Trace inspector page.

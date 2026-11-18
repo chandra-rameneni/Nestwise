@@ -17,9 +17,10 @@ def test_e2e01_discover_compare_buy(session):
     assert r.kind == "ORDER_PLACED" and len(session.orders.orders) == 1
 
 
-def test_e2e02_sofa_clarify_then_recommend(session):
+def test_e2e02_sofa_search_first_then_narrow(session):
+    # PRD B18 (Phase 2): results first, with an invitation to narrow by seats or space.
     r = session.handle_message("I want to buy a sofa under ₹30,000")
-    assert r.kind == "CLARIFY" and "seats" in r.message and "width" in r.message
+    assert r.kind == "RECOMMEND" and "seats" in r.message and "space" in r.message
     r = session.handle_message("3 seats, and it must fit in 200 cm of wall space")
     assert r.kind == "RECOMMEND"
     assert [x["product_id"] for x in r.recommendations] == ["SF-001"]
@@ -34,7 +35,7 @@ def test_e2e03_price_change_recovery(session):
     session.approve()
     session.simulate_price_change("KM-001", 3001)
     r = session.checkout()
-    assert r.kind == "BLOCKED" and "no longer applies" in r.message
+    assert r.kind == "BLOCKED" and "haven't ordered" in r.message           # Phase 3 wording (B8)
     session.select_product("KM-007")
     session.approve()
     assert session.checkout().kind == "ORDER_PLACED"

@@ -1,5 +1,5 @@
 {
- "run_at": "20261118T144455Z",
+ "run_at": "20261118T200702Z",
  "mode": "rules",
  "model": null,
  "scenarios_version": "scenarios-v1 (2026-11-18)",
@@ -14,12 +14,12 @@
    "probe": false,
    "passed": true,
    "failures": [],
-   "trace_id": "tr_51e29285b711",
+   "trace_id": "tr_0bf258fe8816",
    "first_failing_event": null,
    "replies": [
     {
      "kind": "NOT_AVAILABLE",
-     "message": "We don't sell mobile. This store sells home décor, kitchen & dining, home furnishing and furniture.",
+     "message": "Sorry, we don't sell mobiles. We're a home and living store: home décor, kitchen & dining, home furnishing and furniture.",
      "cited": []
     }
    ],
@@ -31,17 +31,17 @@
    "probe": false,
    "passed": true,
    "failures": [],
-   "trace_id": "tr_d43dd966b27c",
+   "trace_id": "tr_52e5b0419e92",
    "first_failing_event": null,
    "replies": [
     {
      "kind": "NOT_AVAILABLE",
-     "message": "We don't sell mobiles. This store sells home décor, kitchen & dining, home furnishing and furniture.",
+     "message": "Sorry, we don't sell mobiles. We're a home and living store: home décor, kitchen & dining, home furnishing and furniture.",
      "cited": []
     },
     {
      "kind": "NOT_AVAILABLE",
-     "message": "We don't sell mobiles. This store sells home décor, kitchen & dining, home furnishing and furniture.",
+     "message": "Sorry, we don't sell mobiles. We're a home and living store: home décor, kitchen & dining, home furnishing and furniture.",
      "cited": []
     }
    ],
@@ -53,12 +53,12 @@
    "probe": false,
    "passed": true,
    "failures": [],
-   "trace_id": "tr_1bac778dcb69",
+   "trace_id": "tr_56633e3c11c7",
    "first_failing_event": null,
    "replies": [
     {
      "kind": "NOT_AVAILABLE",
-     "message": "We don't sell air fryer. This store sells home décor, kitchen & dining, home furnishing and furniture.",
+     "message": "Sorry, we don't sell air fryers. We're a home and living store: home décor, kitchen & dining, home furnishing and furniture.",
      "cited": []
     }
    ],
@@ -70,12 +70,12 @@
    "probe": false,
    "passed": true,
    "failures": [],
-   "trace_id": "tr_aca358533878",
+   "trace_id": "tr_1ea972ca4bd7",
    "first_failing_event": null,
    "replies": [
     {
      "kind": "NOT_AVAILABLE",
-     "message": "We don't sell gaming laptop. This store sells home décor, kitchen & dining, home furnishing and furniture.",
+     "message": "Sorry, we don't sell gaming laptops. We're a home and living store: home décor, kitchen & dining, home furnishing and furniture.",
      "cited": []
     }
    ],
@@ -87,12 +87,12 @@
    "probe": true,
    "passed": true,
    "failures": [],
-   "trace_id": "tr_bdc2624807d3",
+   "trace_id": "tr_7dacfe47c5e6",
    "first_failing_event": null,
    "replies": [
     {
      "kind": "NOT_AVAILABLE",
-     "message": "We don't sell dining table. This store sells home décor, kitchen & dining, home furnishing and furniture.",
+     "message": "Sorry, we don't sell dining tables. We're a home and living store: home décor, kitchen & dining, home furnishing and furniture.",
      "cited": []
     }
    ],
@@ -104,7 +104,7 @@
    "probe": false,
    "passed": true,
    "failures": [],
-   "trace_id": "tr_161667e6ce05",
+   "trace_id": "tr_e21945672e1c",
    "first_failing_event": null,
    "replies": [
     {
@@ -121,7 +121,7 @@
    "probe": false,
    "passed": true,
    "failures": [],
-   "trace_id": "tr_753fbfa4edeb",
+   "trace_id": "tr_cdaadfcd7934",
    "first_failing_event": null,
    "replies": [
     {
@@ -138,12 +138,12 @@
    "probe": true,
    "passed": true,
    "failures": [],
-   "trace_id": "tr_a31a9ea64270",
+   "trace_id": "tr_d0d952e0bc86",
    "first_failing_event": null,
    "replies": [
     {
      "kind": "RECOMMEND",
-     "message": "I found 2 option(s) that meet every requirement I could verify:\n1. United 3 L Pressure Cooker [PRCEGJDKCWDFFSAY]: ₹1,275 total (₹1,275 + ₹0 delivery), arrives in 6 days.\n2. United United Magic Silver 5 Ltr 5 L Pressure Cooker [PRCEGHNC9C8MGPVK]: ₹1,900 total (₹1,900 + ₹0 delivery), arrives in 6 days",
+     "message": "Good news, 2 cookers are under ₹2,000. Here they are:\n• United 3 L Pressure Cooker: ₹1,275 total, arrives in 6 days.\n• United United Magic Silver 5 Ltr 5 L Pressure Cooker: ₹1,900 total, arrives in 6 days.\nTell me which one you'd like, and I'll show you the exact total before anything is bought.",
      "cited": []
     }
    ],
@@ -155,17 +155,17 @@
    "probe": false,
    "passed": true,
    "failures": [],
-   "trace_id": "tr_ff8df0a63681",
+   "trace_id": "tr_12abd0ca9951",
    "first_failing_event": null,
    "replies": [
     {
      "kind": "CLARIFY",
-     "message": "What product are you looking for?",
+     "message": "Happy to help! What kind of product do you have in mind, for example a sofa, a bedsheet or a dining set?",
      "cited": []
     },
     {
      "kind": "CLARIFY",
-     "message": "I still need the product you want before I can search. Tell me whenever you're ready.",
+     "message": "No rush. I still need the product you want before I can search. Tell me whenever you're ready.",
      "cited": []
     }
    ],
@@ -177,21 +177,21 @@
    "probe": false,
    "passed": true,
    "failures": [],
-   "trace_id": "tr_0937956a9498",
+   "trace_id": "tr_544de52081c6",
    "first_failing_event": null,
    "replies": [
     {
-     "kind": "CLARIFY",
-     "message": "How many seats do you need? How much wall space is there for it? Please give the maximum width in cm.",
+     "kind": "RECOMMEND",
+     "message": "Good news, 26 sofas are under ₹30,000. Here are the 3 best value:\n• Durian BID/32625/A/1 Leatherette 1 Seater Sofa: ₹9,209 total, arrives in 8 days, 1 seat, 56 cm wide.\n• Durian BID/32626/A/1 Leatherette 1 Seater Sofa: ₹11,375 total, arrives in 9 days, 1 seat, 80 cm wide.\n• Durian BID/32625/A/2 Leat",
      "cited": []
     },
     {
      "kind": "RECOMMEND",
-     "message": "I found 2 option(s) that meet every requirement I could verify:\n1. HomeTown CIAZ Fabric 3 Seater Sectional [SOFEB7MHGWTHZFVJ]: ₹14,900 total (₹14,900 + ₹0 delivery), arrives in 9 days, 3 seats, 181.5 cm wide.\n2. Durian BID/32625/A/3 Leatherette 3 Seater Sofa [SOFE9FS5PGNNQV9N]: ₹17,680 total (₹17,68",
+     "message": "Good news, 2 sofas fit what you need. Here they are:\n• HomeTown CIAZ Fabric 3 Seater Sectional: ₹14,900 total, arrives in 9 days, 3 seats, 181.5 cm wide.\n• Durian BID/32625/A/3 Leatherette 3 Seater Sofa: ₹17,680 total, arrives in 5 days, 3 seats, 168 cm wide.\nTell me which one you'd like, and I'll s",
      "cited": []
     }
    ],
-   "notes": null
+   "notes": "Updated 2026-11-18 for Phase 2 (B18, search first): sofas are shown straight away instead of asking seats and width first. Planned in the Phase 1 eval note."
   },
   {
    "id": "CL-03",
@@ -199,12 +199,12 @@
    "probe": true,
    "passed": true,
    "failures": [],
-   "trace_id": "tr_e069df383696",
+   "trace_id": "tr_946aa085c364",
    "first_failing_event": null,
    "replies": [
     {
      "kind": "CLARIFY",
-     "message": "What product are you looking for?",
+     "message": "Happy to help! What kind of product do you have in mind, for example a sofa, a bedsheet or a dining set?",
      "cited": []
     }
    ],
@@ -216,12 +216,12 @@
    "probe": false,
    "passed": true,
    "failures": [],
-   "trace_id": "tr_47149855d01c",
+   "trace_id": "tr_88f525a251d1",
    "first_failing_event": null,
    "replies": [
     {
      "kind": "RECOMMEND",
-     "message": "I found 2 option(s) that meet every requirement I could verify:\n1. HomeTown CIAZ Fabric 3 Seater Sectional [SOFEB7MHGWTHZFVJ]: ₹14,900 total (₹14,900 + ₹0 delivery), arrives in 9 days, 3 seats, 181.5 cm wide.\n2. Durian BID/32625/A/3 Leatherette 3 Seater Sofa [SOFE9FS5PGNNQV9N]: ₹17,680 total (₹17,68",
+     "message": "Good news, 2 sofas fit what you need. Here they are:\n• HomeTown CIAZ Fabric 3 Seater Sectional: ₹14,900 total, arrives in 9 days, 3 seats, 181.5 cm wide.\n• Durian BID/32625/A/3 Leatherette 3 Seater Sofa: ₹17,680 total, arrives in 5 days, 3 seats, 168 cm wide.\nTell me which one you'd like, and I'll s",
      "cited": []
     }
    ],
@@ -233,12 +233,12 @@
    "probe": false,
    "passed": true,
    "failures": [],
-   "trace_id": "tr_5db9b8ed272b",
+   "trace_id": "tr_18c8411c0d52",
    "first_failing_event": null,
    "replies": [
     {
      "kind": "RECOMMEND",
-     "message": "I found 107 option(s) that meet every requirement I could verify (showing the top 3 of 107):\n1. Prithish Abstract Design 28 Ceramic Mug [MUGE5HG8VVGMBN5M]: ₹174 total (₹125 + ₹49 delivery), arrives in 2 days.\n2. Prithish Time To Poop Ceramic Mug [MUGE9WYRNRCC5W65]: ₹198 total (₹149 + ₹49 delivery), ",
+     "message": "Good news, 107 mugs are under ₹300. Here are the 3 best value:\n• Prithish Abstract Design 28 Ceramic Mug: ₹174 total, arrives in 2 days, 8 cm wide.\n• Prithish Time To Poop Ceramic Mug: ₹198 total, arrives in 3 days, 8 cm wide.\n• Prithish Floral Heart with Butterflies Ceramic Mug: ₹224 total, arrives",
      "cited": []
     }
    ],
@@ -250,12 +250,12 @@
    "probe": false,
    "passed": true,
    "failures": [],
-   "trace_id": "tr_1e39c454eaaf",
+   "trace_id": "tr_9a8d59f6d7c7",
    "first_failing_event": null,
    "replies": [
     {
      "kind": "RECOMMEND",
-     "message": "I found 2 option(s) that meet every requirement I could verify:\n1. JBC Collection Cotton Printed Single Bedsheet [BDSEJJ7CDYYK8V8Y]: ₹309 total (₹260 + ₹49 delivery), arrives in 6 days.\n2. jaisayram Cotton Abstract Single Bedsheet [BDSEJSJZ6HYKU3KK]: ₹329 total (₹280 + ₹49 delivery), arrives in 6 da",
+     "message": "Good news, 2 bedsheets are under ₹500. Here they are:\n• JBC Collection Cotton Printed Single Bedsheet: ₹309 total, arrives in 6 days.\n• jaisayram Cotton Abstract Single Bedsheet: ₹329 total, arrives in 6 days.\nTell me which one you'd like, and I'll show you the exact total before anything is bought.",
      "cited": []
     }
    ],
@@ -267,12 +267,12 @@
    "probe": false,
    "passed": true,
    "failures": [],
-   "trace_id": "tr_64abfecf5c3f",
+   "trace_id": "tr_a47b86942395",
    "first_failing_event": null,
    "replies": [
     {
      "kind": "RECOMMEND",
-     "message": "I found 62 option(s) that meet every requirement I could verify (showing the top 3 of 62):\n1. Shopgalore Polyester Brown Abstract Eyelet Window & Door Curtain [CRNECHFGGNYG3KHR]: ₹275 total (₹226 + ₹49 delivery), arrives in 2 days.\n2. SWHF Cotton Maroon Striped Eyelet Window & Door Curtain [CRNEE6R7",
+     "message": "Good news, 62 curtains to choose from. Here are the 3 best value:\n• Shopgalore Polyester Brown Abstract Eyelet Window & Door Curtain: ₹275 total, arrives in 2 days.\n• SWHF Cotton Maroon Striped Eyelet Window & Door Curtain: ₹348 total, arrives in 5 days.\n• Ville Style Polyester Maroon Floral Eyelet ",
      "cited": []
     }
    ],
@@ -284,16 +284,16 @@
    "probe": true,
    "passed": true,
    "failures": [],
-   "trace_id": "tr_4aaa37872ed3",
+   "trace_id": "tr_7f9e33112911",
    "first_failing_event": null,
    "replies": [
     {
-     "kind": "CLARIFY",
-     "message": "How much wall space is there for it? Please give the maximum width in cm.",
+     "kind": "RECOMMEND",
+     "message": "Good news, 7 couchs fit what you need. Here are the 3 best value:\n• ARRA Solid Wood 3 Seater Sofa: ₹14,500 total, arrives in 9 days, 3 seats.\n• ARRA Solid Wood 3 Seater Sofa: ₹14,800 total, arrives in 10 days, 3 seats.\n• HomeTown CIAZ Fabric 3 Seater Sectional: ₹14,900 total, arrives in 9 days, 3 se",
      "cited": []
     }
    ],
-   "notes": "'couch' should be understood as a sofa; width is still missing so a clarifying question is correct."
+   "notes": "'couch' is understood as a sofa (synonym added in Phase 2). Updated 2026-11-18 for Phase 2 (B18, search first): sofas are shown straight away instead of asking seats and width first. Planned in the Phase 1 eval note."
   },
   {
    "id": "LS-06",
@@ -301,12 +301,12 @@
    "probe": true,
    "passed": true,
    "failures": [],
-   "trace_id": "tr_6943d1b9935f",
+   "trace_id": "tr_9190fea82c6b",
    "first_failing_event": null,
    "replies": [
     {
      "kind": "RECOMMEND",
-     "message": "I found 5 option(s) that meet every requirement I could verify (showing the top 3 of 5):\n1. Durian BID/32625/A/2 Leatherette 2 Seater Sofa [SOFE9FS5ASZFGWVD]: ₹12,220 total (₹12,220 + ₹0 delivery), arrives in 8 days, 2 seats, 110 cm wide.\n2. Durian Leatherette 2 Seater Sofa [SOFEE76DZYFDSVCP]: ₹24,0",
+     "message": "Good news, 5 sofas fit what you need. Here are the 3 best value:\n• Durian BID/32625/A/2 Leatherette 2 Seater Sofa: ₹12,220 total, arrives in 8 days, 2 seats, 110 cm wide.\n• Durian Leatherette 2 Seater Sofa: ₹24,050 total, arrives in 10 days, 2 seats, 147 cm wide.\n• Durian Berry Solid Wood 2 Seater S",
      "cited": []
     }
    ],
@@ -318,32 +318,32 @@
    "probe": false,
    "passed": true,
    "failures": [],
-   "trace_id": "tr_0cd561083f1f",
+   "trace_id": "tr_26ad901fc910",
    "first_failing_event": null,
    "replies": [
     {
      "kind": "RECOMMEND",
-     "message": "I found 2 option(s) that meet every requirement I could verify:\n1. HomeTown CIAZ Fabric 3 Seater Sectional [SOFEB7MHGWTHZFVJ]: ₹14,900 total (₹14,900 + ₹0 delivery), arrives in 9 days, 3 seats, 181.5 cm wide.\n2. Durian BID/32625/A/3 Leatherette 3 Seater Sofa [SOFE9FS5PGNNQV9N]: ₹17,680 total (₹17,68",
+     "message": "Good news, 2 sofas fit what you need. Here they are:\n• HomeTown CIAZ Fabric 3 Seater Sectional: ₹14,900 total, arrives in 9 days, 3 seats, 181.5 cm wide.\n• Durian BID/32625/A/3 Leatherette 3 Seater Sofa: ₹17,680 total, arrives in 5 days, 3 seats, 168 cm wide.\nTell me which one you'd like, and I'll s",
      "cited": []
     },
     {
      "kind": "CART_PROPOSED",
-     "message": "Cart: 1 x HomeTown CIAZ Fabric 3 Seater Sectional [SOFEB7MHGWTHZFVJ]\nItem ₹14,900 + delivery ₹0 = **₹14,900 total** (historical price; delivery simulated). Delivery in 9 days.\nDo you approve buying exactly this cart for this total? Nothing will be ordered without your approval.",
+     "message": "Great choice! HomeTown CIAZ Fabric 3 Seater Sectional: ₹14,900 + free delivery = **₹14,900**. Arrives in 9 days.\nTap **Approve this exact cart** when you're ready. Nothing is ordered without your approval.",
      "cited": []
     },
     {
      "kind": "APPROVED",
-     "message": "Approved: ₹14,900 for HomeTown CIAZ Fabric 3 Seater Sectional. I'll check the latest price and stock again before placing the mock order.",
+     "message": "Approved for ₹14,900. I'll double-check the price and stock before placing the order.",
      "cited": []
     },
     {
      "kind": "RECOMMEND",
-     "message": "I found 3 option(s) that meet every requirement I could verify:\n1. HomeTown CIAZ Fabric 3 Seater Sectional [SOFEB7MHGWTHZFVJ]: ₹14,900 total (₹14,900 + ₹0 delivery), arrives in 9 days, 3 seats, 181.5 cm wide.\n2. Durian BID/32625/A/3 Leatherette 3 Seater Sofa [SOFE9FS5PGNNQV9N]: ₹17,680 total (₹17,68",
+     "message": "Good news, 3 sofas fit what you need. Here they are:\n• HomeTown CIAZ Fabric 3 Seater Sectional: ₹14,900 total, arrives in 9 days, 3 seats, 181.5 cm wide.\n• Durian BID/32625/A/3 Leatherette 3 Seater Sofa: ₹17,680 total, arrives in 5 days, 3 seats, 168 cm wide.\n• Durian Berry Solid Wood 3 Seater Sofa:",
      "cited": []
     },
     {
      "kind": "BLOCKED",
-     "message": "I can't place the order: you haven't approved this exact cart yet.",
+     "message": "I can't place the order yet: please approve this exact cart first.",
      "cited": []
     }
    ],
@@ -355,7 +355,7 @@
    "probe": false,
    "passed": true,
    "failures": [],
-   "trace_id": "tr_2fd68e4d61a3",
+   "trace_id": "tr_e79219136be0",
    "first_failing_event": null,
    "replies": [
     {
@@ -374,12 +374,12 @@
    "probe": false,
    "passed": true,
    "failures": [],
-   "trace_id": "tr_9c01dbccbd1f",
+   "trace_id": "tr_da36775d52db",
    "first_failing_event": null,
    "replies": [
     {
      "kind": "ANSWER",
-     "message": "The listing doesn't say.",
+     "message": "The listing doesn't say, so I'd rather not guess.",
      "cited": []
     }
    ],
@@ -391,7 +391,7 @@
    "probe": false,
    "passed": true,
    "failures": [],
-   "trace_id": "tr_34dd9f9270e9",
+   "trace_id": "tr_b848d8e9a5b8",
    "first_failing_event": null,
    "replies": [
     {
@@ -410,7 +410,7 @@
    "probe": false,
    "passed": true,
    "failures": [],
-   "trace_id": "tr_e8e5be5494a1",
+   "trace_id": "tr_e472ea978ce0",
    "first_failing_event": null,
    "replies": [
     {
@@ -431,7 +431,7 @@
    "probe": false,
    "passed": true,
    "failures": [],
-   "trace_id": "tr_2a8d71fb10af",
+   "trace_id": "tr_6f7dd8c5aa10",
    "first_failing_event": null,
    "replies": [
     {
@@ -452,7 +452,7 @@
    "probe": false,
    "passed": true,
    "failures": [],
-   "trace_id": "tr_2c32c1219481",
+   "trace_id": "tr_9c6dc005dedc",
    "first_failing_event": null,
    "replies": [
     {
@@ -471,7 +471,7 @@
    "probe": false,
    "passed": true,
    "failures": [],
-   "trace_id": "tr_b0d621e6ff09",
+   "trace_id": "tr_7ba063ea4733",
    "first_failing_event": null,
    "replies": [
     {
@@ -490,7 +490,7 @@
    "probe": false,
    "passed": true,
    "failures": [],
-   "trace_id": "tr_798bb81e8fc3",
+   "trace_id": "tr_2ce5307eb49c",
    "first_failing_event": null,
    "replies": [
     {
@@ -509,7 +509,7 @@
    "probe": false,
    "passed": true,
    "failures": [],
-   "trace_id": "tr_d6083aa78a30",
+   "trace_id": "tr_ee23ba01da7f",
    "first_failing_event": null,
    "replies": [
     {
@@ -528,7 +528,7 @@
    "probe": false,
    "passed": true,
    "failures": [],
-   "trace_id": "tr_78ac874e6eb3",
+   "trace_id": "tr_e53427527e56",
    "first_failing_event": null,
    "replies": [
     {
@@ -554,27 +554,27 @@
    "probe": false,
    "passed": true,
    "failures": [],
-   "trace_id": "tr_a2e446f6e561",
+   "trace_id": "tr_5a61fdea9793",
    "first_failing_event": null,
    "replies": [
     {
      "kind": "CART_PROPOSED",
-     "message": "Cart: 1 x HomeTown CIAZ Fabric 3 Seater Sectional [SOFEB7MHGWTHZFVJ]\nItem ₹14,900 + delivery ₹0 = **₹14,900 total** (historical price; delivery simulated). Delivery in 9 days.\nDo you approve buying exactly this cart for this total? Nothing will be ordered without your approval.",
+     "message": "Great choice! HomeTown CIAZ Fabric 3 Seater Sectional: ₹14,900 + free delivery = **₹14,900**. Arrives in 9 days.\nTap **Approve this exact cart** when you're ready. Nothing is ordered without your approval.",
      "cited": []
     },
     {
      "kind": "APPROVED",
-     "message": "Approved: ₹14,900 for HomeTown CIAZ Fabric 3 Seater Sectional. I'll check the latest price and stock again before placing the mock order.",
+     "message": "Approved for ₹14,900. I'll double-check the price and stock before placing the order.",
      "cited": []
     },
     {
      "kind": "ORDER_PLACED",
-     "message": "Mock order MOCK-4F54EA0A placed for HomeTown CIAZ Fabric 3 Seater Sectional, ₹14,900 total. This is a simulation: no payment was taken and nothing will ship.",
+     "message": "Done! Your order for the HomeTown CIAZ Fabric 3 Seater Sectional (₹14,900) is placed. This is a demo, so no payment was taken and nothing will ship.",
      "cited": []
     },
     {
      "kind": "ORDER_PLACED",
-     "message": "This order was already placed: MOCK-4F54EA0A. No second order was created.",
+     "message": "This order was already placed, so I didn't create a second one.",
      "cited": []
     }
    ],
@@ -586,12 +586,12 @@
    "probe": false,
    "passed": true,
    "failures": [],
-   "trace_id": "tr_e9477766a402",
+   "trace_id": "tr_6cd45e384fa1",
    "first_failing_event": null,
    "replies": [
     {
      "kind": "BLOCKED",
-     "message": "I can't put Durian BID/32625/A/3 Leatherette 3 Seater Sofa in the cart: it doesn't meet your requirements (BUDGET_EXCEEDED).\n\nHere is what meets your requirements instead:\nI found 7 option(s) that meet every requirement I could verify (showing the top 3 of 7):\n1. Durian BID/32625/A/1 Leatherette 1 S",
+     "message": "Sorry, I can't add this one: it's over your budget.\n\nHere are similar ones you can order today:\nGood news, 7 products are under ₹15,000. Here are the 3 best value:\n• Durian BID/32625/A/1 Leatherette 1 Seater Sofa: ₹9,209 total, arrives in 8 days, 1 seat, 56 cm wide.\n• Durian BID/32626/A/1 Leatherett",
      "cited": []
     }
    ],
@@ -603,12 +603,12 @@
    "probe": false,
    "passed": true,
    "failures": [],
-   "trace_id": "tr_fafc8136959e",
+   "trace_id": "tr_8c24e6c2aefe",
    "first_failing_event": null,
    "replies": [
     {
      "kind": "BLOCKED",
-     "message": "I can't put Durian Berry Solid Wood 1 Seater Sofa in the cart: it doesn't meet your requirements (OUT_OF_STOCK).\n\nHere is what meets your requirements instead:\nI found 52 option(s) that meet every requirement I could verify (showing the top 3 of 52):\n1. Durian BID/32625/A/1 Leatherette 1 Seater Sofa",
+     "message": "Sorry, this one's out of stock right now.\n\nHere are similar ones you can order today:\nGood news, 52 products to choose from. Here are the 3 best value:\n• Durian BID/32625/A/1 Leatherette 1 Seater Sofa: ₹9,209 total, arrives in 8 days, 1 seat, 56 cm wide.\n• Durian BID/32626/A/1 Leatherette 1 Seater S",
      "cited": []
     }
    ],
@@ -620,12 +620,12 @@
    "probe": true,
    "passed": true,
    "failures": [],
-   "trace_id": "tr_ec3359b4e30a",
+   "trace_id": "tr_553c4a624e12",
    "first_failing_event": null,
    "replies": [
     {
      "kind": "CART_PROPOSED",
-     "message": "Cart: 1 x HomeTown CIAZ Fabric 3 Seater Sectional [SOFEB7MHGWTHZFVJ]\nItem ₹14,900 + delivery ₹0 = **₹14,900 total** (historical price; delivery simulated). Delivery in 9 days.\nDo you approve buying exactly this cart for this total? Nothing will be ordered without your approval.",
+     "message": "Great choice! HomeTown CIAZ Fabric 3 Seater Sectional: ₹14,900 + free delivery = **₹14,900**. Arrives in 9 days.\nTap **Approve this exact cart** when you're ready. Nothing is ordered without your approval.",
      "cited": []
     }
    ],
@@ -637,12 +637,12 @@
    "probe": true,
    "passed": true,
    "failures": [],
-   "trace_id": "tr_2b52d441b9e2",
+   "trace_id": "tr_c0e161a09167",
    "first_failing_event": null,
    "replies": [
     {
      "kind": "CART_PROPOSED",
-     "message": "Cart: 1 x HomeTown CIAZ Fabric 3 Seater Sectional [SOFEB7MHGWTHZFVJ]\nItem ₹14,900 + delivery ₹0 = **₹14,900 total** (historical price; delivery simulated). Delivery in 9 days.\nDo you approve buying exactly this cart for this total? Nothing will be ordered without your approval.",
+     "message": "Great choice! HomeTown CIAZ Fabric 3 Seater Sectional: ₹14,900 + free delivery = **₹14,900**. Arrives in 9 days.\nTap **Approve this exact cart** when you're ready. Nothing is ordered without your approval.",
      "cited": []
     }
    ],
@@ -654,12 +654,12 @@
    "probe": true,
    "passed": true,
    "failures": [],
-   "trace_id": "tr_7b6a99ef1ecd",
+   "trace_id": "tr_7cc2ea600d1d",
    "first_failing_event": null,
    "replies": [
     {
      "kind": "BLOCKED",
-     "message": "I can't put Techware Microwavable Tea Cups WF13115 - Purple WF13115 - P in the cart: it doesn't meet your requirements (PRICE_UNKNOWN).\n\nI found 1 wf but none meets all your requirements, so I'm not recommending any. What ruled them out: . You could raise the budget, allow a later delivery or relax ",
+     "message": "Sorry, I can't add this one: it has no listed price.\n\nSorry, nothing matches all your requirements for wfs, and nothing comes close enough to suggest. You could raise the budget or drop a requirement.",
      "cited": []
     }
    ],
@@ -671,23 +671,23 @@
    "probe": false,
    "passed": true,
    "failures": [],
-   "trace_id": "tr_27b3ed698700",
+   "trace_id": "tr_632f167c16a7",
    "first_failing_event": null,
    "replies": [
     {
      "kind": "CART_PROPOSED",
-     "message": "Cart: 1 x HomeTown CIAZ Fabric 3 Seater Sectional [SOFEB7MHGWTHZFVJ]\nItem ₹14,900 + delivery ₹0 = **₹14,900 total** (historical price; delivery simulated). Delivery in 9 days.\nDo you approve buying exactly this cart for this total? Nothing will be ordered without your approval.",
+     "message": "Great choice! HomeTown CIAZ Fabric 3 Seater Sectional: ₹14,900 + free delivery = **₹14,900**. Arrives in 9 days.\nTap **Approve this exact cart** when you're ready. Nothing is ordered without your approval.",
      "cited": []
     },
     {
      "kind": "APPROVED",
-     "message": "Approved: ₹14,900 for HomeTown CIAZ Fabric 3 Seater Sectional. I'll check the latest price and stock again before placing the mock order.",
+     "message": "Approved for ₹14,900. I'll double-check the price and stock before placing the order.",
      "cited": []
     },
     null,
     {
      "kind": "BLOCKED",
-     "message": "I stopped the order. Something changed after you approved it (APPROVAL_STALE_DATA_CHANGED, PRICE_CHANGED_SINCE_APPROVAL). HomeTown CIAZ Fabric 3 Seater Sectional is now ₹16,000 instead of the ₹14,900 you approved. Your earlier approval no longer applies.\n\nHere is what meets your requirements right n",
+     "message": "Heads up: the price changed from ₹14,900 to ₹16,000 since you approved, so I haven't ordered anything. If the new total works for you, just approve again.\n\nHere's what meets your requirements right now:\nGood news, 3 products to choose from. Here they are:\n• HomeTown CIAZ Fabric 3 Seater Sectional: ₹",
      "cited": []
     }
    ],
@@ -699,12 +699,12 @@
    "probe": false,
    "passed": true,
    "failures": [],
-   "trace_id": "tr_8c338ce135e7",
+   "trace_id": "tr_6a80dd751e00",
    "first_failing_event": null,
    "replies": [
     {
      "kind": "RECOMMEND",
-     "message": "I found 26 option(s) that meet every requirement I could verify (showing the top 3 of 26):\n1. Durian BID/32625/A/1 Leatherette 1 Seater Sofa [SOFE9FS5YH6TTNJT]: ₹9,209 total (₹8,710 + ₹499 delivery), arrives in 8 days.\n2. Durian BID/32626/A/1 Leatherette 1 Seater Sofa [SOFE9FS5HNUYGF3M]: ₹11,375 tot",
+     "message": "Good news, 26 products are under ₹31,589. Here are the 3 best value:\n• Durian BID/32625/A/1 Leatherette 1 Seater Sofa: ₹9,209 total, arrives in 8 days, 1 seat, 56 cm wide.\n• Durian BID/32626/A/1 Leatherette 1 Seater Sofa: ₹11,375 total, arrives in 9 days, 1 seat, 80 cm wide.\n• Durian BID/32625/A/2 L",
      "cited": []
     }
    ],
@@ -716,12 +716,12 @@
    "probe": true,
    "passed": true,
    "failures": [],
-   "trace_id": "tr_37f02633b0eb",
+   "trace_id": "tr_8e5487c08a5e",
    "first_failing_event": null,
    "replies": [
     {
      "kind": "RECOMMEND",
-     "message": "I found 51 option(s) that meet every requirement I could verify (showing the top 3 of 51):\n1. Durian BID/32625/A/1 Leatherette 1 Seater Sofa [SOFE9FS5YH6TTNJT]: ₹9,209 total (₹8,710 + ₹499 delivery), arrives in 8 days.\n2. Durian BID/32626/A/1 Leatherette 1 Seater Sofa [SOFE9FS5HNUYGF3M]: ₹11,375 tot",
+     "message": "Good news, 51 products to choose from. Here are the 3 best value:\n• Durian BID/32625/A/1 Leatherette 1 Seater Sofa: ₹9,209 total, arrives in 8 days, 1 seat, 56 cm wide.\n• Durian BID/32626/A/1 Leatherette 1 Seater Sofa: ₹11,375 total, arrives in 9 days, 1 seat, 80 cm wide.\n• Durian BID/32625/A/2 Leat",
      "cited": []
     }
    ],
@@ -733,12 +733,12 @@
    "probe": false,
    "passed": true,
    "failures": [],
-   "trace_id": "tr_a30875a73705",
+   "trace_id": "tr_d72d8b2b454e",
    "first_failing_event": null,
    "replies": [
     {
      "kind": "DEFER",
-     "message": "I can see you'd like a refund. Refunds aren't available in this demo yet. A real refund needs you to sign in so I can find your own order and check the store's return policy. Nothing has been refunded or changed.",
+     "message": "Sorry, I can't handle refunds or returns just yet. I can help you find and buy products, though.",
      "cited": []
     }
    ],
@@ -750,12 +750,12 @@
    "probe": false,
    "passed": true,
    "failures": [],
-   "trace_id": "tr_e76bb7e2cf26",
+   "trace_id": "tr_73f55b81ef76",
    "first_failing_event": null,
    "replies": [
     {
      "kind": "DEFER",
-     "message": "I can see you want to track an order. Order tracking isn't available in this demo yet; it would need you to sign in so only your own orders are looked up. No order data was accessed.",
+     "message": "Sorry, I can't track orders just yet. I can help you find and buy products, though.",
      "cited": []
     }
    ],

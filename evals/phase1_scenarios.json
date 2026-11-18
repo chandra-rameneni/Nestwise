@@ -1,6 +1,6 @@
 {
  "_about": "Phase 1 evals (BUILD_PLAN.md), approved by the PM on 2026-11-18 from evals/PHASE1_EVALS_DRAFT.md. Every message must be understood as the right kind. Rules mode. Run with: .venv/bin/python evals/run_evals.py evals/phase1_scenarios.json",
- "version": "phase1-2",
+ "version": "phase1-3",
  "scenarios": [
   {
    "id": "P1-T01",
@@ -42,17 +42,18 @@
    "expect": [
     {
      "turn": 1,
-     "kind_not": "NOT_AVAILABLE",
      "not_contains": [
-      "We don't sell"
+      "We don't sell",
+      "How many seats do you need"
      ],
      "product_contains": "sofa",
      "state": {
       "seats": 2
-     }
+     },
+     "kind": "RECOMMEND"
     }
    ],
-   "notes": "Phase 1: asks only for the width. Phase 2: shows 2-seater sofas."
+   "notes": "Updated 2026-11-18 for Phase 2 (B18, search first): sofas are shown straight away instead of asking seats and width first. Planned in the Phase 1 eval note."
   },
   {
    "id": "P1-T03",
@@ -68,17 +69,18 @@
    "expect": [
     {
      "turn": 1,
-     "kind_not": "NOT_AVAILABLE",
      "not_contains": [
-      "seats"
+      "We don't sell",
+      "How many seats do you need"
      ],
      "product_contains": "sofa",
      "state": {
       "seats": 2
-     }
+     },
+     "kind": "RECOMMEND"
     }
    ],
-   "notes": "Answering the seats question with a bare number."
+   "notes": "Updated 2026-11-18 for Phase 2 (B18, search first): sofas are shown straight away instead of asking seats and width first. Planned in the Phase 1 eval note."
   },
   {
    "id": "P1-T04",
@@ -94,16 +96,18 @@
    "expect": [
     {
      "turn": 1,
-     "kind_not": "NOT_AVAILABLE",
      "not_contains": [
-      "seats"
+      "We don't sell",
+      "How many seats do you need"
      ],
      "product_contains": "sofa",
      "state": {
       "seats": 2
-     }
+     },
+     "kind": "RECOMMEND"
     }
-   ]
+   ],
+   "notes": "Updated 2026-11-18 for Phase 2 (B18, search first): sofas are shown straight away instead of asking seats and width first. Planned in the Phase 1 eval note."
   },
   {
    "id": "P1-T05",

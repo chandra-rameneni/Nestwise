@@ -256,6 +256,60 @@ class SqliteCatalog:
             (matches if is_it and has_mods and not accessory else related).append(pid)
         return matches, related
 
+    # --- brands (O-17) and brand / product-name search (B33) -----------------------------
+    _COLOURS = {"red", "black", "blue", "white", "green", "brown", "yellow", "pink", "purple", "grey", "gray",
+                "orange", "maroon", "beige", "gold", "golden", "silver", "multicolor", "multicolour", "cream", "navy",
+                "light", "dark", "glossy", "matte", "violet", "multi", "&", "and", "sky", "off"}
+
+    def _is_colour(self, brand: str | None) -> bool:
+        words = re.findall(r"[a-z&]+", (brand or "").lower())
+        return bool(words) and all(w in self._COLOURS for w in words)
+
+    def _brand_index(self) -> dict[str, str]:
+        """pid -> cleaned brand. A colour in the brand column ("Red") means the dataset put the colour there:
+        take the brand from the start of the product name if it begins with a known brand, else unknown."""
+        if getattr(self, "_brands_by_pid", None) is None:
+            rows = self._con.execute("SELECT pid, name, brand FROM products").fetchall()
+            known = sorted({b for _, _, b in rows if b and not self._is_colour(b)}, key=len, reverse=True)
+            out = {}
+            for pid, name, brand in rows:
+                if brand and not self._is_colour(brand):
+                    out[pid] = brand
+                    continue
+                low = (name or "").lower()
+                out[pid] = next((k for k in known if low.startswith(k.lower() + " ")), None)
+            self._brands_by_pid = out
+        return self._brands_by_pid
+
+    @staticmethod
+    def _norm_brand(s: str) -> str:
+        s = re.sub(r"'s\b|\s+s$", "", (s or "").lower().strip())
+        return re.sub(r"[^a-z0-9]", "", s)
+
+    def brand_products(self, query: str) -> list[str]:
+        """Products whose (cleaned) brand is what the shopper typed: 'jerry', "Jerry's", 'petshop7'."""
+        q = self._norm_brand(query)
+        if len(q) < 3:
+            return []
+        return [pid for pid, b in self._brand_index().items() if b and self._norm_brand(b) == q]
+
+    def name_products(self, query: str, min_terms: int = 3) -> list[str]:
+        """Products whose name contains every word of a longer query (a name copied from the page)."""
+        terms = query_terms(query)
+        if len(terms) < min_terms:
+            return []
+        ids, _ = self.search_text(query, limit=60)
+        if not ids:
+            return []
+        marks = ",".join("?" * len(ids))
+        names = dict(self._con.execute(f"SELECT pid, name FROM products WHERE pid IN ({marks})", ids).fetchall())
+        return [pid for pid in ids if all(any(_word_matches(t, w) for w in re.findall(r"[a-z0-9]+", names[pid].lower()))
+                                          for t in terms)]
+
+    def material_products(self, material: str, limit: int = 60) -> list[str]:
+        ids, _ = self.search_text(material, limit=limit)
+        return ids
+
     def vocabulary(self) -> tuple[set[str], set[str]]:
         """(every word in product names and categories, the product-type words). Used to spot typos (B12):
         'sofaa' isn't a word in the store but is close to the product type 'sofa'."""
@@ -292,7 +346,7 @@ class SqliteCatalog:
             raw.setdefault(k, v)
         price = self._price_override.get(pid, price)
         return ProductView(
-            product_id=pid, title=name, brand=brand, category=cat, description=desc or "", specs=attrs,
+            product_id=pid, title=name, brand=self._brand_index().get(pid, brand), category=cat, description=desc or "", specs=attrs,
             list_price_inr=price, shipping_inr=ship, stock=self._stock_override.get(pid, stock), delivery_days=dd,
             version=self._versions.get(pid, 1), injection_flag=bool(_INJECTION_PATTERNS.search(desc or "")),
             raw_specs=raw, mrp_inr=mrp, category_label=label, category_path=path, url=url, image_url=img,

@@ -1,0 +1,1299 @@
+{
+ "run_at": "20261118T155720Z",
+ "mode": "rules",
+ "model": null,
+ "scenarios_version": "phase2-1",
+ "total": 40,
+ "passed": 4,
+ "core": "4/40",
+ "probes": "0/0",
+ "results": [
+  {
+   "id": "P2-S01",
+   "group": "search_first",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 0,
+     "check": "kind: expected RECOMMEND, got CLARIFY"
+    },
+    {
+     "turn": 0,
+     "check": "message should not contain 'How many seats'"
+    },
+    {
+     "turn": 0,
+     "check": "all recommended totals should be <= 20000 (got [])"
+    }
+   ],
+   "trace_id": "tr_f5bf5c9112dd",
+   "first_failing_event": {
+    "seq": 5,
+    "name": "agent.response",
+    "response_kind": "CLARIFY"
+   },
+   "replies": [
+    {
+     "kind": "CLARIFY",
+     "message": "How many seats do you need? How much wall space is there for it? Please give the maximum width in cm.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P2-S02",
+   "group": "search_first",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 0,
+     "check": "should show at least 1 products, showed 0"
+    },
+    {
+     "turn": 0,
+     "check": "kind: expected RECOMMEND, got CLARIFY"
+    },
+    {
+     "turn": 0,
+     "check": "message should not contain 'How many seats'"
+    }
+   ],
+   "trace_id": "tr_72034318ce0b",
+   "first_failing_event": {
+    "seq": 5,
+    "name": "agent.response",
+    "response_kind": "CLARIFY"
+   },
+   "replies": [
+    {
+     "kind": "CLARIFY",
+     "message": "How many seats do you need? How much wall space is there for it? Please give the maximum width in cm.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P2-S03",
+   "group": "search_first",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_0c6dc85c034a",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "I found 13 option(s) that meet every requirement I could verify (showing the top 3 of 13):\n1. JBC Collection Cotton Printed Single Bedsheet [BDSEJJ7CDYYK8V8Y]: ₹309 total (₹260 + ₹49 delivery), arrives in 6 days.\n2. jaisayram Cotton Abstract Single Bedsheet [BDSEJSJZ6HYKU3KK]: ₹329 total (₹280 + ₹49",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P2-S04",
+   "group": "search_first",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_5fa21ac40752",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "CLARIFY",
+     "message": "What product are you looking for?",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P2-R01",
+   "group": "show_results",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 1,
+     "check": "remembered product should be a 'sofa', got 'results'"
+    },
+    {
+     "turn": 1,
+     "check": "kind: expected RECOMMEND, got NOT_AVAILABLE"
+    },
+    {
+     "turn": 1,
+     "check": "message should not contain \"We don't sell\""
+    }
+   ],
+   "trace_id": "tr_11fc308592b0",
+   "first_failing_event": {
+    "seq": 9,
+    "name": "agent.response",
+    "response_kind": "NOT_AVAILABLE"
+   },
+   "replies": [
+    {
+     "kind": "CLARIFY",
+     "message": "How many seats do you need? How much wall space is there for it? Please give the maximum width in cm.",
+     "cited": []
+    },
+    {
+     "kind": "NOT_AVAILABLE",
+     "message": "We don't sell results. This store sells home décor, kitchen & dining, home furnishing and furniture.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P2-R02",
+   "group": "show_results",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 1,
+     "check": "kind: expected RECOMMEND, got CLARIFY"
+    },
+    {
+     "turn": 1,
+     "check": "all recommended totals should be <= 20000 (got [])"
+    }
+   ],
+   "trace_id": "tr_174d5b4d7bcc",
+   "first_failing_event": {
+    "seq": 9,
+    "name": "agent.response",
+    "response_kind": "CLARIFY"
+   },
+   "replies": [
+    {
+     "kind": "CLARIFY",
+     "message": "How many seats do you need? How much wall space is there for it? Please give the maximum width in cm.",
+     "cited": []
+    },
+    {
+     "kind": "CLARIFY",
+     "message": "I still need the maximum width in cm and the number of seats before I can search. Tell me whenever you're ready.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P2-R03",
+   "group": "show_results",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 1,
+     "check": "kind: expected RECOMMEND, got UNSUPPORTED"
+    }
+   ],
+   "trace_id": "tr_0e9dd9efe424",
+   "first_failing_event": {
+    "seq": 10,
+    "name": "agent.response",
+    "response_kind": "UNSUPPORTED"
+   },
+   "replies": [
+    {
+     "kind": "CLARIFY",
+     "message": "How much wall space is there for it? Please give the maximum width in cm.",
+     "cited": []
+    },
+    {
+     "kind": "UNSUPPORTED",
+     "message": "Sorry, I didn't quite get that. I can help you find and buy things for your home.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P2-R04",
+   "group": "show_results",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 0,
+     "check": "kind: expected CLARIFY, got NOT_AVAILABLE"
+    },
+    {
+     "turn": 0,
+     "check": "message should not contain \"We don't sell\""
+    }
+   ],
+   "trace_id": "tr_2d30ec4002c8",
+   "first_failing_event": {
+    "seq": 5,
+    "name": "agent.response",
+    "response_kind": "NOT_AVAILABLE"
+   },
+   "replies": [
+    {
+     "kind": "NOT_AVAILABLE",
+     "message": "We don't sell results. This store sells home décor, kitchen & dining, home furnishing and furniture.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P2-Q01",
+   "group": "reply_answer",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 1,
+     "check": "remembered seats: expected 3, got None"
+    },
+    {
+     "turn": 1,
+     "check": "remembered max_width_cm: expected 200, got None"
+    },
+    {
+     "turn": 1,
+     "check": "kind: expected RECOMMEND, got NOT_AVAILABLE"
+    },
+    {
+     "turn": 1,
+     "check": "message should not contain \"We don't sell\""
+    }
+   ],
+   "trace_id": "tr_18a4aac73c7b",
+   "first_failing_event": {
+    "seq": 9,
+    "name": "agent.response",
+    "response_kind": "NOT_AVAILABLE"
+   },
+   "replies": [
+    {
+     "kind": "CLARIFY",
+     "message": "How much wall space is there for it? Please give the maximum width in cm.",
+     "cited": []
+    },
+    {
+     "kind": "NOT_AVAILABLE",
+     "message": "We don't sell 200cms. This store sells home décor, kitchen & dining, home furnishing and furniture.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P2-Q02",
+   "group": "reply_answer",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 1,
+     "check": "remembered seats: expected 3, got None"
+    },
+    {
+     "turn": 1,
+     "check": "remembered max_width_cm: expected 200, got None"
+    },
+    {
+     "turn": 1,
+     "check": "kind: expected RECOMMEND, got NOT_AVAILABLE"
+    },
+    {
+     "turn": 1,
+     "check": "message should not contain \"We don't sell\""
+    }
+   ],
+   "trace_id": "tr_85f4ee7dd28b",
+   "first_failing_event": {
+    "seq": 9,
+    "name": "agent.response",
+    "response_kind": "NOT_AVAILABLE"
+   },
+   "replies": [
+    {
+     "kind": "CLARIFY",
+     "message": "How much wall space is there for it? Please give the maximum width in cm.",
+     "cited": []
+    },
+    {
+     "kind": "NOT_AVAILABLE",
+     "message": "We don't sell metres. This store sells home décor, kitchen & dining, home furnishing and furniture.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P2-Q03",
+   "group": "reply_answer",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 1,
+     "check": "remembered seats: expected 3, got None"
+    },
+    {
+     "turn": 1,
+     "check": "remembered max_width_cm: expected 200, got None"
+    },
+    {
+     "turn": 1,
+     "check": "kind: expected RECOMMEND, got NOT_AVAILABLE"
+    },
+    {
+     "turn": 1,
+     "check": "message should not contain \"We don't sell\""
+    }
+   ],
+   "trace_id": "tr_704b65491ef5",
+   "first_failing_event": {
+    "seq": 9,
+    "name": "agent.response",
+    "response_kind": "NOT_AVAILABLE"
+   },
+   "replies": [
+    {
+     "kind": "CLARIFY",
+     "message": "How much wall space is there for it? Please give the maximum width in cm.",
+     "cited": []
+    },
+    {
+     "kind": "NOT_AVAILABLE",
+     "message": "We don't sell centimeters. This store sells home décor, kitchen & dining, home furnishing and furniture.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P2-Q04",
+   "group": "reply_answer",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 1,
+     "check": "remembered seats: expected 3, got None"
+    },
+    {
+     "turn": 1,
+     "check": "kind: expected RECOMMEND, got NOT_AVAILABLE"
+    },
+    {
+     "turn": 1,
+     "check": "message should not contain \"We don't sell\""
+    }
+   ],
+   "trace_id": "tr_57119a66e8ac",
+   "first_failing_event": {
+    "seq": 65,
+    "name": "agent.response",
+    "response_kind": "NOT_AVAILABLE"
+   },
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "I found 7 option(s) that meet every requirement I could verify (showing the top 3 of 7):\n1. HomeTown CIAZ Fabric 3 Seater Sectional [SOFEB7MHGWTHZFVJ]: ₹14,900 total (₹14,900 + ₹0 delivery), arrives in 9 days, 3 seats, 181.5 cm wide.\n2. Durian BID/32625/A/3 Leatherette 3 Seater Sofa [SOFE9FS5PGNNQV9",
+     "cited": []
+    },
+    {
+     "kind": "NOT_AVAILABLE",
+     "message": "We don't sell space. This store sells home décor, kitchen & dining, home furnishing and furniture.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P2-Q05",
+   "group": "reply_answer",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 2,
+     "check": "reply should differ from turn 1 (same reply repeated)"
+    }
+   ],
+   "trace_id": "tr_882d75e08986",
+   "first_failing_event": {
+    "seq": 13,
+    "name": "agent.response",
+    "response_kind": "CLARIFY"
+   },
+   "replies": [
+    {
+     "kind": "CLARIFY",
+     "message": "What product are you looking for?",
+     "cited": []
+    },
+    {
+     "kind": "CLARIFY",
+     "message": "I still need the product you want before I can search. Tell me whenever you're ready.",
+     "cited": []
+    },
+    {
+     "kind": "CLARIFY",
+     "message": "I still need the product you want before I can search. Tell me whenever you're ready.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P2-M01",
+   "group": "memory",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 1,
+     "check": "remembered seats: expected 3, got None"
+    },
+    {
+     "turn": 1,
+     "check": "remembered max_width_cm: expected 200, got None"
+    },
+    {
+     "turn": 1,
+     "check": "remembered max_total_inr: expected 30000, got None"
+    },
+    {
+     "turn": 1,
+     "check": "remembered product should be a 'sofa', got 'mobile'"
+    }
+   ],
+   "trace_id": "tr_62f76038a5d9",
+   "first_failing_event": {
+    "seq": 65,
+    "name": "agent.response",
+    "response_kind": "NOT_AVAILABLE"
+   },
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "I found 2 option(s) that meet every requirement I could verify:\n1. HomeTown CIAZ Fabric 3 Seater Sectional [SOFEB7MHGWTHZFVJ]: ₹14,900 total (₹14,900 + ₹0 delivery), arrives in 9 days, 3 seats, 181.5 cm wide.\n2. Durian BID/32625/A/3 Leatherette 3 Seater Sofa [SOFE9FS5PGNNQV9N]: ₹17,680 total (₹17,68",
+     "cited": []
+    },
+    {
+     "kind": "NOT_AVAILABLE",
+     "message": "We don't sell mobile. This store sells home décor, kitchen & dining, home furnishing and furniture.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P2-M02",
+   "group": "memory",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 1,
+     "check": "message should not contain 'dumber'"
+    }
+   ],
+   "trace_id": "tr_2b4726730606",
+   "first_failing_event": {
+    "seq": 9,
+    "name": "agent.response",
+    "response_kind": "NOT_AVAILABLE"
+   },
+   "replies": [
+    {
+     "kind": "NOT_AVAILABLE",
+     "message": "We don't sell dumber. This store sells home décor, kitchen & dining, home furnishing and furniture.",
+     "cited": []
+    },
+    {
+     "kind": "NOT_AVAILABLE",
+     "message": "We don't sell dumber. This store sells home décor, kitchen & dining, home furnishing and furniture.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P2-H01",
+   "group": "help",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 0,
+     "check": "message should not contain 'not something I can help'"
+    },
+    {
+     "turn": 0,
+     "check": "reason codes should include HELP, got ['OFF_TOPIC']"
+    }
+   ],
+   "trace_id": "tr_6c04564bab59",
+   "first_failing_event": {
+    "seq": 4,
+    "name": "agent.response",
+    "response_kind": "UNSUPPORTED"
+   },
+   "replies": [
+    {
+     "kind": "UNSUPPORTED",
+     "message": "That's not something I can help with, sorry. But I'd love to help you find something for your home: home décor, kitchen & dining, home furnishing and furniture.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P2-H02",
+   "group": "help",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 0,
+     "check": "reason codes should include HELP, got ['OFF_TOPIC']"
+    }
+   ],
+   "trace_id": "tr_532ecb9589c6",
+   "first_failing_event": {
+    "seq": 4,
+    "name": "agent.response",
+    "response_kind": "UNSUPPORTED"
+   },
+   "replies": [
+    {
+     "kind": "UNSUPPORTED",
+     "message": "That's not something I can help with, sorry. But I'd love to help you find something for your home: home décor, kitchen & dining, home furnishing and furniture.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P2-H03",
+   "group": "help",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 0,
+     "check": "reason codes should include HELP, got ['CATCH_ALL']"
+    }
+   ],
+   "trace_id": "tr_9f84a2d475c5",
+   "first_failing_event": {
+    "seq": 4,
+    "name": "agent.response",
+    "response_kind": "UNSUPPORTED"
+   },
+   "replies": [
+    {
+     "kind": "UNSUPPORTED",
+     "message": "Sorry, I didn't quite get that. I can help you find and buy things for your home.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P2-H04",
+   "group": "store_info",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 0,
+     "check": "message should contain '2,043'"
+    },
+    {
+     "turn": 0,
+     "check": "reason codes should include STORE_INFO, got ['OFF_TOPIC']"
+    }
+   ],
+   "trace_id": "tr_c139eeab6e21",
+   "first_failing_event": {
+    "seq": 4,
+    "name": "agent.response",
+    "response_kind": "UNSUPPORTED"
+   },
+   "replies": [
+    {
+     "kind": "UNSUPPORTED",
+     "message": "That's not something I can help with, sorry. But I'd love to help you find something for your home: home décor, kitchen & dining, home furnishing and furniture.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P2-H05",
+   "group": "store_info",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 0,
+     "check": "message should contain 'furniture'"
+    },
+    {
+     "turn": 0,
+     "check": "message should contain 'kitchen'"
+    },
+    {
+     "turn": 0,
+     "check": "reason codes should include STORE_INFO, got []"
+    }
+   ],
+   "trace_id": "tr_8a395d6f008f",
+   "first_failing_event": {
+    "seq": 5,
+    "name": "agent.response",
+    "response_kind": "CLARIFY"
+   },
+   "replies": [
+    {
+     "kind": "CLARIFY",
+     "message": "What product are you looking for?",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P2-H06",
+   "group": "store_info",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 0,
+     "check": "message should contain \"don't have\""
+    },
+    {
+     "turn": 0,
+     "check": "reason codes should include STORE_INFO, got ['CATCH_ALL']"
+    }
+   ],
+   "trace_id": "tr_8ef5c6777e44",
+   "first_failing_event": {
+    "seq": 4,
+    "name": "agent.response",
+    "response_kind": "UNSUPPORTED"
+   },
+   "replies": [
+    {
+     "kind": "UNSUPPORTED",
+     "message": "Sorry, I didn't quite get that. I can help you find and buy things for your home.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P2-H07",
+   "group": "lookalike",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_5c08f647e8bd",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "UNSUPPORTED",
+     "message": "That's not something I can help with, sorry. But I'd love to help you find something for your home: home décor, kitchen & dining, home furnishing and furniture.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P2-K01",
+   "group": "stuck",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 2,
+     "check": "reason codes should include STUCK_RECOVERY, got ['CATCH_ALL']"
+    }
+   ],
+   "trace_id": "tr_658b2f5a4dfd",
+   "first_failing_event": {
+    "seq": 11,
+    "name": "agent.response",
+    "response_kind": "UNSUPPORTED"
+   },
+   "replies": [
+    {
+     "kind": "CLARIFY",
+     "message": "What product are you looking for?",
+     "cited": []
+    },
+    {
+     "kind": "UNSUPPORTED",
+     "message": "Sorry, I didn't understand that. I can help you find, compare and buy home and living products.",
+     "cited": []
+    },
+    {
+     "kind": "UNSUPPORTED",
+     "message": "Sorry, I didn't quite get that. I can help you find and buy things for your home.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P2-K02",
+   "group": "stuck",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 1,
+     "check": "kind: expected RECOMMEND, got CLARIFY"
+    },
+    {
+     "turn": 1,
+     "check": "message should contain 'Sorry'"
+    }
+   ],
+   "trace_id": "tr_93fac3aa63bc",
+   "first_failing_event": {
+    "seq": 9,
+    "name": "agent.response",
+    "response_kind": "CLARIFY"
+   },
+   "replies": [
+    {
+     "kind": "CLARIFY",
+     "message": "How many seats do you need? How much wall space is there for it? Please give the maximum width in cm.",
+     "cited": []
+    },
+    {
+     "kind": "CLARIFY",
+     "message": "I still need the number of seats and the maximum width in cm before I can search. Tell me whenever you're ready.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P2-B01",
+   "group": "brand",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 0,
+     "check": "kind: expected RECOMMEND, got NOT_AVAILABLE"
+    },
+    {
+     "turn": 0,
+     "check": "every recommendation should be a jerry"
+    }
+   ],
+   "trace_id": "tr_75d664c62f17",
+   "first_failing_event": {
+    "seq": 5,
+    "name": "agent.response",
+    "response_kind": "NOT_AVAILABLE"
+   },
+   "replies": [
+    {
+     "kind": "NOT_AVAILABLE",
+     "message": "We don't sell jerry. This store sells home décor, kitchen & dining, home furnishing and furniture.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P2-B02",
+   "group": "brand",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 0,
+     "check": "kind: expected RECOMMEND, got UNSUPPORTED"
+    },
+    {
+     "turn": 0,
+     "check": "every recommendation should be a jerry"
+    }
+   ],
+   "trace_id": "tr_c3d20f48d7a7",
+   "first_failing_event": {
+    "seq": 6,
+    "name": "agent.response",
+    "response_kind": "UNSUPPORTED"
+   },
+   "replies": [
+    {
+     "kind": "UNSUPPORTED",
+     "message": "Sorry, I didn't quite get that. I can help you find and buy things for your home.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P2-B03",
+   "group": "brand",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 0,
+     "check": "kind: expected RECOMMEND, got NOT_AVAILABLE"
+    },
+    {
+     "turn": 0,
+     "check": "every recommendation should be a petshop7"
+    }
+   ],
+   "trace_id": "tr_b661d9da291d",
+   "first_failing_event": {
+    "seq": 5,
+    "name": "agent.response",
+    "response_kind": "NOT_AVAILABLE"
+   },
+   "replies": [
+    {
+     "kind": "NOT_AVAILABLE",
+     "message": "We don't sell petshop7. This store sells home décor, kitchen & dining, home furnishing and furniture.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P2-B04",
+   "group": "material",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 0,
+     "check": "kind: expected RECOMMEND, got NOT_AVAILABLE"
+    },
+    {
+     "turn": 0,
+     "check": "every recommendation should be a wood"
+    }
+   ],
+   "trace_id": "tr_521d5966a393",
+   "first_failing_event": {
+    "seq": 5,
+    "name": "agent.response",
+    "response_kind": "NOT_AVAILABLE"
+   },
+   "replies": [
+    {
+     "kind": "NOT_AVAILABLE",
+     "message": "We don't sell solid wood. This store sells home décor, kitchen & dining, home furnishing and furniture.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P2-B05",
+   "group": "name",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 0,
+     "check": "kind: expected RECOMMEND, got UNSUPPORTED"
+    },
+    {
+     "turn": 0,
+     "check": "every recommendation should be a handiana"
+    }
+   ],
+   "trace_id": "tr_951c12abdedc",
+   "first_failing_event": {
+    "seq": 4,
+    "name": "agent.response",
+    "response_kind": "UNSUPPORTED"
+   },
+   "replies": [
+    {
+     "kind": "UNSUPPORTED",
+     "message": "Sorry, I didn't quite get that. I can help you find and buy things for your home.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P2-B06",
+   "group": "material",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 1,
+     "check": "remembered seats: expected 3, got None"
+    },
+    {
+     "turn": 1,
+     "check": "remembered material: expected 'leather', got None"
+    },
+    {
+     "turn": 1,
+     "check": "kind: expected RECOMMEND, got NOT_AVAILABLE"
+    },
+    {
+     "turn": 1,
+     "check": "every recommendation should be a leather"
+    }
+   ],
+   "trace_id": "tr_8d5e41b01780",
+   "first_failing_event": {
+    "seq": 9,
+    "name": "agent.response",
+    "response_kind": "NOT_AVAILABLE"
+   },
+   "replies": [
+    {
+     "kind": "CLARIFY",
+     "message": "How much wall space is there for it? Please give the maximum width in cm.",
+     "cited": []
+    },
+    {
+     "kind": "NOT_AVAILABLE",
+     "message": "We don't sell leather. This store sells home décor, kitchen & dining, home furnishing and furniture.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P2-B07",
+   "group": "lookalike",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_7ff3d5d084ab",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "NOT_AVAILABLE",
+     "message": "We don't sell mobile. This store sells home décor, kitchen & dining, home furnishing and furniture.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P2-P01",
+   "group": "shown",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 1,
+     "check": "kind: expected ANSWER, got NOT_AVAILABLE"
+    },
+    {
+     "turn": 1,
+     "check": "message should contain 'HomeTown'"
+    },
+    {
+     "turn": 1,
+     "check": "message should contain '9 days'"
+    }
+   ],
+   "trace_id": "tr_ed9286bb69d1",
+   "first_failing_event": {
+    "seq": 65,
+    "name": "agent.response",
+    "response_kind": "NOT_AVAILABLE"
+   },
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "I found 2 option(s) that meet every requirement I could verify:\n1. HomeTown CIAZ Fabric 3 Seater Sectional [SOFEB7MHGWTHZFVJ]: ₹14,900 total (₹14,900 + ₹0 delivery), arrives in 9 days, 3 seats, 181.5 cm wide.\n2. Durian BID/32625/A/3 Leatherette 3 Seater Sofa [SOFE9FS5PGNNQV9N]: ₹17,680 total (₹17,68",
+     "cited": []
+    },
+    {
+     "kind": "NOT_AVAILABLE",
+     "message": "We don't sell fabric. This store sells home décor, kitchen & dining, home furnishing and furniture.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P2-P02",
+   "group": "shown",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 1,
+     "check": "kind: expected CART_PROPOSED, got NOT_AVAILABLE"
+    }
+   ],
+   "trace_id": "tr_857de15d9bdf",
+   "first_failing_event": {
+    "seq": 65,
+    "name": "agent.response",
+    "response_kind": "NOT_AVAILABLE"
+   },
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "I found 2 option(s) that meet every requirement I could verify:\n1. HomeTown CIAZ Fabric 3 Seater Sectional [SOFEB7MHGWTHZFVJ]: ₹14,900 total (₹14,900 + ₹0 delivery), arrives in 9 days, 3 seats, 181.5 cm wide.\n2. Durian BID/32625/A/3 Leatherette 3 Seater Sofa [SOFE9FS5PGNNQV9N]: ₹17,680 total (₹17,68",
+     "cited": []
+    },
+    {
+     "kind": "NOT_AVAILABLE",
+     "message": "We don't sell first. This store sells home décor, kitchen & dining, home furnishing and furniture.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P2-P03",
+   "group": "shown",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 1,
+     "check": "kind: expected ANSWER, got UNSUPPORTED"
+    },
+    {
+     "turn": 1,
+     "check": "message should contain '9 days'"
+    }
+   ],
+   "trace_id": "tr_409ba6f8d922",
+   "first_failing_event": {
+    "seq": 64,
+    "name": "agent.response",
+    "response_kind": "UNSUPPORTED"
+   },
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "I found 2 option(s) that meet every requirement I could verify:\n1. HomeTown CIAZ Fabric 3 Seater Sectional [SOFEB7MHGWTHZFVJ]: ₹14,900 total (₹14,900 + ₹0 delivery), arrives in 9 days, 3 seats, 181.5 cm wide.\n2. Durian BID/32625/A/3 Leatherette 3 Seater Sofa [SOFE9FS5PGNNQV9N]: ₹17,680 total (₹17,68",
+     "cited": []
+    },
+    {
+     "kind": "UNSUPPORTED",
+     "message": "That's not something I can help with, sorry. But I'd love to help you find something for your home: home décor, kitchen & dining, home furnishing and furniture.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P2-P04",
+   "group": "shown",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 1,
+     "check": "kind: expected CLARIFY, got RECOMMEND"
+    },
+    {
+     "turn": 1,
+     "check": "message should contain 'HomeTown'"
+    },
+    {
+     "turn": 1,
+     "check": "message should contain 'Durian'"
+    }
+   ],
+   "trace_id": "tr_bc7b62795c21",
+   "first_failing_event": {
+    "seq": 83,
+    "name": "agent.response",
+    "response_kind": "RECOMMEND"
+   },
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "I found 2 option(s) that meet every requirement I could verify:\n1. HomeTown CIAZ Fabric 3 Seater Sectional [SOFEB7MHGWTHZFVJ]: ₹14,900 total (₹14,900 + ₹0 delivery), arrives in 9 days, 3 seats, 181.5 cm wide.\n2. Durian BID/32625/A/3 Leatherette 3 Seater Sofa [SOFE9FS5PGNNQV9N]: ₹17,680 total (₹17,68",
+     "cited": []
+    },
+    {
+     "kind": "RECOMMEND",
+     "message": "I found 15 option(s) that meet every requirement I could verify (showing the top 3 of 15):\n1. Rama Floral Single Quilts & Comforters Blue [BLAEE6KTJRCUYPFG]: ₹749 total (₹749 + ₹0 delivery), arrives in 5 days.\n2. Spangle Floral Single Quilts & Comforters Blue [BLAEE9GHEEGZYDZP]: ₹840 total (₹840 + ₹",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P2-N01",
+   "group": "nothing_matches",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 0,
+     "check": "should show at least 1 products, showed 0"
+    },
+    {
+     "turn": 0,
+     "check": "kind: expected NO_ELIGIBLE, got CLARIFY"
+    },
+    {
+     "turn": 0,
+     "check": "message should contain 'over'"
+    }
+   ],
+   "trace_id": "tr_feaeff0a3e3d",
+   "first_failing_event": {
+    "seq": 5,
+    "name": "agent.response",
+    "response_kind": "CLARIFY"
+   },
+   "replies": [
+    {
+     "kind": "CLARIFY",
+     "message": "How much wall space is there for it? Please give the maximum width in cm.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P2-N02",
+   "group": "several",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 0,
+     "check": "some shown product should be a bedsheet"
+    },
+    {
+     "turn": 0,
+     "check": "some shown product should be a curtain"
+    },
+    {
+     "turn": 0,
+     "check": "kind: expected RECOMMEND, got NOT_AVAILABLE"
+    }
+   ],
+   "trace_id": "tr_eac01b0672d1",
+   "first_failing_event": {
+    "seq": 5,
+    "name": "agent.response",
+    "response_kind": "NOT_AVAILABLE"
+   },
+   "replies": [
+    {
+     "kind": "NOT_AVAILABLE",
+     "message": "We don't sell bedsheets curtains. This store sells home décor, kitchen & dining, home furnishing and furniture.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P2-N03",
+   "group": "several",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 0,
+     "check": "some shown product should be a sofa"
+    },
+    {
+     "turn": 0,
+     "check": "kind: expected RECOMMEND, got CLARIFY"
+    },
+    {
+     "turn": 0,
+     "check": "message should contain 'coffee table'"
+    }
+   ],
+   "trace_id": "tr_62a79756e804",
+   "first_failing_event": {
+    "seq": 5,
+    "name": "agent.response",
+    "response_kind": "CLARIFY"
+   },
+   "replies": [
+    {
+     "kind": "CLARIFY",
+     "message": "How many seats do you need? How much wall space is there for it? Please give the maximum width in cm.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P2-N04",
+   "group": "vague",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 0,
+     "check": "reason codes should include VAGUE_REQUIREMENT, got []"
+    }
+   ],
+   "trace_id": "tr_4a28aa353af1",
+   "first_failing_event": {
+    "seq": 5,
+    "name": "agent.response",
+    "response_kind": "CLARIFY"
+   },
+   "replies": [
+    {
+     "kind": "CLARIFY",
+     "message": "How many seats do you need? How much wall space is there for it? Please give the maximum width in cm.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P2-N05",
+   "group": "quantity",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 0,
+     "check": "remembered cart_qty: expected 2, got 1"
+    }
+   ],
+   "trace_id": "tr_c68a9249ec5e",
+   "first_failing_event": {
+    "seq": 8,
+    "name": "agent.response",
+    "response_kind": "CART_PROPOSED"
+   },
+   "replies": [
+    {
+     "kind": "CART_PROPOSED",
+     "message": "Cart: 1 x HomeTown CIAZ Fabric 3 Seater Sectional [SOFEB7MHGWTHZFVJ]\nItem ₹14,900 + delivery ₹0 = **₹14,900 total** (historical price; delivery simulated). Delivery in 9 days.\nDo you approve buying exactly this cart for this total? Nothing will be ordered without your approval.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  }
+ ]
+}

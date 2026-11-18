@@ -1,0 +1,808 @@
+{
+ "run_at": "20261118T160226Z",
+ "mode": "rules",
+ "model": null,
+ "scenarios_version": "heldout-1",
+ "total": 35,
+ "passed": 24,
+ "core": "24/35",
+ "probes": "0/0",
+ "results": [
+  {
+   "id": "H-01",
+   "group": "followup",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 1,
+     "check": "remembered seats: expected 2, got None"
+    }
+   ],
+   "trace_id": "tr_47e5eb128b93",
+   "first_failing_event": {
+    "seq": 64,
+    "name": "agent.response",
+    "response_kind": "UNSUPPORTED"
+   },
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "I found 52 option(s) that meet every requirement I could verify (showing the top 3 of 52):\n1. Durian BID/32625/A/1 Leatherette 1 Seater Sofa [SOFE9FS5YH6TTNJT]: ₹9,209 total (₹8,710 + ₹499 delivery), arrives in 8 days, 1 seats, 56 cm wide.\n2. Durian BID/32626/A/1 Leatherette 1 Seater Sofa [SOFE9FS5H",
+     "cited": []
+    },
+    {
+     "kind": "UNSUPPORTED",
+     "message": "Sorry, I didn't quite get that. I can help you find and buy things for your home.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H-02",
+   "group": "followup",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_b5cf5caedcdf",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "I found 52 option(s) that meet every requirement I could verify (showing the top 3 of 52):\n1. Durian BID/32625/A/1 Leatherette 1 Seater Sofa [SOFE9FS5YH6TTNJT]: ₹9,209 total (₹8,710 + ₹499 delivery), arrives in 8 days, 1 seats, 56 cm wide.\n2. Durian BID/32626/A/1 Leatherette 1 Seater Sofa [SOFE9FS5H",
+     "cited": []
+    },
+    {
+     "kind": "UNSUPPORTED",
+     "message": "Sorry, I didn't quite get that. I can help you find and buy things for your home.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H-03",
+   "group": "followup",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_a937ac5c8750",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "I found 7 option(s) that meet every requirement I could verify (showing the top 3 of 7):\n1. HomeTown CIAZ Fabric 3 Seater Sectional [SOFEB7MHGWTHZFVJ]: ₹14,900 total (₹14,900 + ₹0 delivery), arrives in 9 days, 3 seats, 181.5 cm wide.\n2. Durian BID/32625/A/3 Leatherette 3 Seater Sofa [SOFE9FS5PGNNQV9",
+     "cited": []
+    },
+    {
+     "kind": "RECOMMEND",
+     "message": "I found 2 option(s) that meet every requirement I could verify:\n1. HomeTown CIAZ Fabric 3 Seater Sectional [SOFEB7MHGWTHZFVJ]: ₹14,900 total (₹14,900 + ₹0 delivery), arrives in 9 days, 3 seats, 181.5 cm wide.\n2. Durian BID/32625/A/3 Leatherette 3 Seater Sofa [SOFE9FS5PGNNQV9N]: ₹17,680 total (₹17,68",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H-04",
+   "group": "followup",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_6e68bbcf23be",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "I found 2 option(s) that meet every requirement I could verify:\n1. HomeTown CIAZ Fabric 3 Seater Sectional [SOFEB7MHGWTHZFVJ]: ₹14,900 total (₹14,900 + ₹0 delivery), arrives in 9 days, 3 seats, 181.5 cm wide.\n2. Durian BID/32625/A/3 Leatherette 3 Seater Sofa [SOFE9FS5PGNNQV9N]: ₹17,680 total (₹17,68",
+     "cited": []
+    },
+    {
+     "kind": "RECOMMEND",
+     "message": "I found 3 option(s) that meet every requirement I could verify:\n1. Durian BID/32625/A/2 Leatherette 2 Seater Sofa [SOFE9FS5ASZFGWVD]: ₹12,220 total (₹12,220 + ₹0 delivery), arrives in 8 days, 2 seats, 110 cm wide.\n2. Durian Leatherette 2 Seater Sofa [SOFEE76DZYFDSVCP]: ₹24,050 total (₹24,050 + ₹0 de",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H-05",
+   "group": "followup",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 1,
+     "check": "remembered max_width_cm: expected None, got 160"
+    },
+    {
+     "turn": 1,
+     "check": "kind: expected RECOMMEND, got UNSUPPORTED"
+    }
+   ],
+   "trace_id": "tr_cca6869ef3dd",
+   "first_failing_event": {
+    "seq": 66,
+    "name": "agent.response",
+    "response_kind": "UNSUPPORTED"
+   },
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "I found 6 option(s) that meet every requirement I could verify (showing the top 3 of 6):\n1. Durian BID/32625/A/2 Leatherette 2 Seater Sofa [SOFE9FS5ASZFGWVD]: ₹12,220 total (₹12,220 + ₹0 delivery), arrives in 8 days, 2 seats, 110 cm wide.\n2. Durian Leatherette 2 Seater Sofa [SOFEE76DZYFDSVCP]: ₹24,0",
+     "cited": []
+    },
+    {
+     "kind": "UNSUPPORTED",
+     "message": "Sorry, I didn't quite get that. I can help you find and buy things for your home.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H-06",
+   "group": "followup",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_9bb68889e804",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "I found 1 option(s) that meet every requirement I could verify:\n1. Durian BID/32625/A/2 Leatherette 2 Seater Sofa [SOFE9FS5ASZFGWVD]: ₹12,220 total (₹12,220 + ₹0 delivery), arrives in 8 days, 2 seats, 110 cm wide.\nI left out 53 product(s) that failed or couldn't be verified against your requirements",
+     "cited": []
+    },
+    {
+     "kind": "RECOMMEND",
+     "message": "I found 6 option(s) that meet every requirement I could verify (showing the top 3 of 6):\n1. Durian BID/32625/A/2 Leatherette 2 Seater Sofa [SOFE9FS5ASZFGWVD]: ₹12,220 total (₹12,220 + ₹0 delivery), arrives in 8 days, 2 seats, 110 cm wide.\n2. Durian Leatherette 2 Seater Sofa [SOFEE76DZYFDSVCP]: ₹24,0",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H-07",
+   "group": "followup",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 1,
+     "check": "remembered max_width_cm: expected 180, got None"
+    }
+   ],
+   "trace_id": "tr_e8f68f8c30cf",
+   "first_failing_event": {
+    "seq": 121,
+    "name": "agent.response",
+    "response_kind": "RECOMMEND"
+   },
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "I found 52 option(s) that meet every requirement I could verify (showing the top 3 of 52):\n1. Durian BID/32625/A/1 Leatherette 1 Seater Sofa [SOFE9FS5YH6TTNJT]: ₹9,209 total (₹8,710 + ₹499 delivery), arrives in 8 days, 1 seats, 56 cm wide.\n2. Durian BID/32626/A/1 Leatherette 1 Seater Sofa [SOFE9FS5H",
+     "cited": []
+    },
+    {
+     "kind": "RECOMMEND",
+     "message": "I found 13 option(s) that meet every requirement I could verify (showing the top 3 of 13):\n1. Durian BID/32625/A/2 Leatherette 2 Seater Sofa [SOFE9FS5ASZFGWVD]: ₹12,220 total (₹12,220 + ₹0 delivery), arrives in 8 days, 2 seats, 110 cm wide.\n2. ARRA Engineered Wood 2 Seater Sofa [SOFEDVYZZJME6AJR]: ₹",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H-08",
+   "group": "followup",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_50d348a2b27f",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "I found 6 option(s) that meet every requirement I could verify (showing the top 3 of 6):\n1. Durian BID/32625/A/2 Leatherette 2 Seater Sofa [SOFE9FS5ASZFGWVD]: ₹12,220 total (₹12,220 + ₹0 delivery), arrives in 8 days, 2 seats, 110 cm wide.\n2. Durian Leatherette 2 Seater Sofa [SOFEE76DZYFDSVCP]: ₹24,0",
+     "cited": []
+    },
+    {
+     "kind": "UNSUPPORTED",
+     "message": "Sorry, I didn't quite get that. I can help you find and buy things for your home.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H-09",
+   "group": "new_product",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 1,
+     "check": "remembered seats: expected None, got 2"
+    },
+    {
+     "turn": 1,
+     "check": "remembered max_width_cm: expected None, got 160"
+    },
+    {
+     "turn": 1,
+     "check": "remembered max_total_inr: expected None, got 15000"
+    },
+    {
+     "turn": 1,
+     "check": "remembered product should be a 'curtain', got 'sofa'"
+    },
+    {
+     "turn": 1,
+     "check": "kind: expected RECOMMEND, got UNSUPPORTED"
+    }
+   ],
+   "trace_id": "tr_8939610344eb",
+   "first_failing_event": {
+    "seq": 64,
+    "name": "agent.response",
+    "response_kind": "UNSUPPORTED"
+   },
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "I found 1 option(s) that meet every requirement I could verify:\n1. Durian BID/32625/A/2 Leatherette 2 Seater Sofa [SOFE9FS5ASZFGWVD]: ₹12,220 total (₹12,220 + ₹0 delivery), arrives in 8 days, 2 seats, 110 cm wide.\nI left out 53 product(s) that failed or couldn't be verified against your requirements",
+     "cited": []
+    },
+    {
+     "kind": "UNSUPPORTED",
+     "message": "That's not something I can help with, sorry. But I'd love to help you find something for your home: home décor, kitchen & dining, home furnishing and furniture.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H-10",
+   "group": "new_product",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_c9e1be50e1b3",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "I found 2 option(s) that meet every requirement I could verify:\n1. HomeTown CIAZ Fabric 3 Seater Sectional [SOFEB7MHGWTHZFVJ]: ₹14,900 total (₹14,900 + ₹0 delivery), arrives in 9 days, 3 seats, 181.5 cm wide.\n2. Durian BID/32625/A/3 Leatherette 3 Seater Sofa [SOFE9FS5PGNNQV9N]: ₹17,680 total (₹17,68",
+     "cited": []
+    },
+    {
+     "kind": "RECOMMEND",
+     "message": "I found 4 option(s) that meet every requirement I could verify (showing the top 3 of 4):\n1. JDX Plain Bed/Sleeping Pillow [PLWE6S4A2TV5KK22]: ₹2,400 total (₹2,400 + ₹0 delivery), arrives in 5 days, 38 cm wide.\n2. JDX Plain Bed/Sleeping Pillow [PLWE6S4AVYSK8KHT]: ₹2,880 total (₹2,880 + ₹0 delivery), ",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H-11",
+   "group": "off_topic",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_df374bdc2b54",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "UNSUPPORTED",
+     "message": "That's not something I can help with, sorry. But I'd love to help you find something for your home: home décor, kitchen & dining, home furnishing and furniture.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H-12",
+   "group": "off_topic",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_af832fb51b88",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "UNSUPPORTED",
+     "message": "That's not something I can help with, sorry. But I'd love to help you find something for your home: home décor, kitchen & dining, home furnishing and furniture.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H-13",
+   "group": "off_topic",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_fe7cfa079b4a",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "UNSUPPORTED",
+     "message": "I'm this store's shopping assistant. I can help you find and buy home décor, kitchen & dining, home furnishing and furniture.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H-14",
+   "group": "off_topic",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_60677b8aa328",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "UNSUPPORTED",
+     "message": "I'm this store's shopping assistant. I can help you find and buy home décor, kitchen & dining, home furnishing and furniture.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H-15",
+   "group": "off_topic",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_484e4cf0d553",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "UNSUPPORTED",
+     "message": "Sorry, I didn't quite get that. I can help you find and buy things for your home.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H-16",
+   "group": "lookalike",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_924ce41f9912",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "NOT_AVAILABLE",
+     "message": "We don't sell laptops. This store sells home décor, kitchen & dining, home furnishing and furniture.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H-17",
+   "group": "lookalike",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_4d0b50a4931d",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "NOT_AVAILABLE",
+     "message": "We don't sell phone. This store sells home décor, kitchen & dining, home furnishing and furniture.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H-18",
+   "group": "lookalike",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_988530aaee9c",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "NOT_AVAILABLE",
+     "message": "We don't sell refrigerator. This store sells home décor, kitchen & dining, home furnishing and furniture.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H-19",
+   "group": "typo",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_a7823e4a3e31",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "NOT_AVAILABLE",
+     "message": "I couldn't find that item. Check the spelling and try again. Did you mean “curtain”?",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H-20",
+   "group": "typo",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_a858bbd2e68d",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "NOT_AVAILABLE",
+     "message": "I couldn't find that item. Check the spelling and try again. Did you mean “cushions”?",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H-21",
+   "group": "typo",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_25ef94cd7286",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "NOT_AVAILABLE",
+     "message": "I couldn't find that item. Check the spelling and try again. Did you mean “mattress”?",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H-22",
+   "group": "nonsense",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_84b7566c7808",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "UNSUPPORTED",
+     "message": "Sorry, I didn't understand that. I can help you find, compare and buy home and living products.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H-23",
+   "group": "nonsense",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_b70c3d7079a5",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "UNSUPPORTED",
+     "message": "Sorry, I didn't understand that. I can help you find, compare and buy home and living products.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H-24",
+   "group": "nonsense",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_3aa350c68975",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "UNSUPPORTED",
+     "message": "Sorry, I didn't quite get that. I can help you find and buy things for your home.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H-25",
+   "group": "rude",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_38590439c1da",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "UNSUPPORTED",
+     "message": "Apologies for the inconvenience. Hope you find what you're looking for.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H-26",
+   "group": "rude",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_8e9745ea99b4",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "I found 13 option(s) that meet every requirement I could verify (showing the top 3 of 13):\n1. JBC Collection Cotton Printed Single Bedsheet [BDSEJJ7CDYYK8V8Y]: ₹309 total (₹260 + ₹49 delivery), arrives in 6 days.\n2. jaisayram Cotton Abstract Single Bedsheet [BDSEJSJZ6HYKU3KK]: ₹329 total (₹280 + ₹49",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H-27",
+   "group": "trick",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 0,
+     "check": "reason codes should include POLICY_REFUSAL, got []"
+    }
+   ],
+   "trace_id": "tr_50bf91203089",
+   "first_failing_event": {
+    "seq": 5,
+    "name": "agent.response",
+    "response_kind": "CLARIFY"
+   },
+   "replies": [
+    {
+     "kind": "CLARIFY",
+     "message": "What product are you looking for?",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H-28",
+   "group": "trick",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_d3ee965e8308",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "UNSUPPORTED",
+     "message": "Sorry, I didn't quite get that. I can help you find and buy things for your home.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H-29",
+   "group": "compare",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 0,
+     "check": "kind: expected DEFER, got RECOMMEND"
+    },
+    {
+     "turn": 0,
+     "check": "reason codes should include WORKFLOW_NOT_AVAILABLE, got []"
+    }
+   ],
+   "trace_id": "tr_f0c480f8d14d",
+   "first_failing_event": {
+    "seq": 61,
+    "name": "agent.response",
+    "response_kind": "RECOMMEND"
+   },
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "I found 52 option(s) that meet every requirement I could verify (showing the top 3 of 52):\n1. Durian BID/32625/A/1 Leatherette 1 Seater Sofa [SOFE9FS5YH6TTNJT]: ₹9,209 total (₹8,710 + ₹499 delivery), arrives in 8 days, 1 seats, 56 cm wide.\n2. Durian BID/32626/A/1 Leatherette 1 Seater Sofa [SOFE9FS5H",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H-30",
+   "group": "compare",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 0,
+     "check": "kind: expected DEFER, got NOT_AVAILABLE"
+    },
+    {
+     "turn": 0,
+     "check": "reason codes should include WORKFLOW_NOT_AVAILABLE, got ['MULTIPLE_PRODUCTS']"
+    }
+   ],
+   "trace_id": "tr_ef2b1ed06861",
+   "first_failing_event": {
+    "seq": 6,
+    "name": "agent.response",
+    "response_kind": "UNSUPPORTED"
+   },
+   "replies": [
+    {
+     "kind": "NOT_AVAILABLE",
+     "message": "Tell pros: Sorry, I didn't quite get that. I can help you find and buy things for your home.\n\nCons of these: Sorry, I didn't quite get that. I can help you find and buy things for your home.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H-31",
+   "group": "hinglish",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 0,
+     "check": "kind: expected CLARIFY, got UNSUPPORTED"
+    },
+    {
+     "turn": 0,
+     "check": "message should contain 'bedsheet'"
+    },
+    {
+     "turn": 0,
+     "check": "reason codes should include LANGUAGE_NOT_SUPPORTED, got ['CATCH_ALL']"
+    }
+   ],
+   "trace_id": "tr_737321037471",
+   "first_failing_event": {
+    "seq": 5,
+    "name": "agent.response",
+    "response_kind": "UNSUPPORTED"
+   },
+   "replies": [
+    {
+     "kind": "UNSUPPORTED",
+     "message": "Sorry, I didn't quite get that. I can help you find and buy things for your home.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H-32",
+   "group": "hinglish",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 0,
+     "check": "kind: expected CLARIFY, got UNSUPPORTED"
+    },
+    {
+     "turn": 0,
+     "check": "message should contain 'sofa'"
+    },
+    {
+     "turn": 0,
+     "check": "reason codes should include LANGUAGE_NOT_SUPPORTED, got ['CATCH_ALL']"
+    }
+   ],
+   "trace_id": "tr_1e70659070bc",
+   "first_failing_event": {
+    "seq": 5,
+    "name": "agent.response",
+    "response_kind": "UNSUPPORTED"
+   },
+   "replies": [
+    {
+     "kind": "UNSUPPORTED",
+     "message": "Sorry, I didn't quite get that. I can help you find and buy things for your home.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H-33",
+   "group": "hinglish",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 0,
+     "check": "kind: expected CLARIFY, got UNSUPPORTED"
+    },
+    {
+     "turn": 0,
+     "check": "message should contain 'curtain'"
+    },
+    {
+     "turn": 0,
+     "check": "reason codes should include LANGUAGE_NOT_SUPPORTED, got ['CATCH_ALL']"
+    }
+   ],
+   "trace_id": "tr_deed9d5eab00",
+   "first_failing_event": {
+    "seq": 5,
+    "name": "agent.response",
+    "response_kind": "UNSUPPORTED"
+   },
+   "replies": [
+    {
+     "kind": "UNSUPPORTED",
+     "message": "Sorry, I didn't quite get that. I can help you find and buy things for your home.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H-34",
+   "group": "other",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 0,
+     "check": "reason codes should include CATCH_ALL, got ['STORE_INFO']"
+    }
+   ],
+   "trace_id": "tr_e6e7a1bc2d5a",
+   "first_failing_event": {
+    "seq": 4,
+    "name": "agent.response",
+    "response_kind": "ANSWER"
+   },
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "I don't have information about payment options. In this demo store, orders are mock and no payment is taken.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H-35",
+   "group": "other",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_f686f1f702ac",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "DEFER",
+     "message": "I can see you'd like a refund. Refunds aren't available in this demo yet. A real refund needs you to sign in so I can find your own order and check the store's return policy. Nothing has been refunded or changed.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  }
+ ]
+}

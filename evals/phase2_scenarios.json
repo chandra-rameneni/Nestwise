@@ -1,0 +1,796 @@
+{
+ "_about": "Phase 2 evals, approved by the PM on 2026-11-18 (evals/PHASE2_EVALS_DRAFT.md). The 4 UI/data checks (P2-U01 to U04) are pytest tests in tests/test_phase2.py. Rules mode. Run with: .venv/bin/python evals/run_evals.py evals/phase2_scenarios.json",
+ "version": "phase2-2",
+ "scenarios": [
+  {
+   "id": "P2-S01",
+   "group": "search_first",
+   "turns": [
+    {
+     "say": "sofas under 20000"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "RECOMMEND",
+     "product_contains": "sofa",
+     "all_totals_at_most": 20000,
+     "contains": [
+      "seats",
+      "cm"
+     ],
+     "not_contains": [
+      "How many seats do you need"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "P2-S02",
+   "group": "search_first",
+   "turns": [
+    {
+     "say": "sofas"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "RECOMMEND",
+     "product_contains": "sofa",
+     "min_recs": 1,
+     "not_contains": [
+      "How many seats do you need"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "P2-S03",
+   "group": "search_first",
+   "turns": [
+    {
+     "say": "show me bedsheets"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "RECOMMEND",
+     "titles_contain": "bedsheet"
+    }
+   ]
+  },
+  {
+   "id": "P2-S04",
+   "group": "search_first",
+   "turns": [
+    {
+     "say": "something to sit on"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "CLARIFY"
+    }
+   ]
+  },
+  {
+   "id": "P2-R01",
+   "group": "show_results",
+   "turns": [
+    {
+     "say": "sofa"
+    },
+    {
+     "say": "first show me the results"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 1,
+     "kind": "RECOMMEND",
+     "product_contains": "sofa",
+     "not_contains": [
+      "We don't sell"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "P2-R02",
+   "group": "show_results",
+   "turns": [
+    {
+     "say": "sofas under 20000"
+    },
+    {
+     "say": "share the results for the query I asked"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 1,
+     "kind": "RECOMMEND",
+     "all_totals_at_most": 20000,
+     "not_contains": [
+      "We don't sell"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "P2-R03",
+   "group": "show_results",
+   "turns": [
+    {
+     "say": "3 seater sofa"
+    },
+    {
+     "say": "just show me what you have"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 1,
+     "kind": "RECOMMEND",
+     "product_contains": "sofa",
+     "state": {
+      "seats": 3
+     }
+    }
+   ]
+  },
+  {
+   "id": "P2-R04",
+   "group": "show_results",
+   "turns": [
+    {
+     "say": "show me the results"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "CLARIFY",
+     "not_contains": [
+      "We don't sell"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "P2-Q01",
+   "group": "reply_answer",
+   "turns": [
+    {
+     "say": "3 seater sofa"
+    },
+    {
+     "say": "200cms"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 1,
+     "kind": "RECOMMEND",
+     "state": {
+      "seats": 3,
+      "max_width_cm": 200
+     },
+     "not_contains": [
+      "We don't sell"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "P2-Q02",
+   "group": "reply_answer",
+   "turns": [
+    {
+     "say": "3 seater sofa"
+    },
+    {
+     "say": "2 metres"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 1,
+     "kind": "RECOMMEND",
+     "state": {
+      "seats": 3,
+      "max_width_cm": 200
+     },
+     "not_contains": [
+      "We don't sell"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "P2-Q03",
+   "group": "reply_answer",
+   "turns": [
+    {
+     "say": "3 seater sofa"
+    },
+    {
+     "say": "200 centimeters"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 1,
+     "kind": "RECOMMEND",
+     "state": {
+      "seats": 3,
+      "max_width_cm": 200
+     },
+     "not_contains": [
+      "We don't sell"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "P2-Q04",
+   "group": "reply_answer",
+   "turns": [
+    {
+     "say": "3 seater sofa that fits 200 cm"
+    },
+    {
+     "say": "no space limit"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 1,
+     "kind": "RECOMMEND",
+     "state": {
+      "seats": 3,
+      "max_width_cm": null
+     },
+     "not_contains": [
+      "We don't sell"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "P2-Q05",
+   "group": "reply_answer",
+   "turns": [
+    {
+     "say": "I need something"
+    },
+    {
+     "say": "not sure"
+    },
+    {
+     "say": "not sure"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 2,
+     "differs_from_turn": 1
+    }
+   ]
+  },
+  {
+   "id": "P2-M01",
+   "group": "memory",
+   "turns": [
+    {
+     "say": "3 seater sofa under 30000 that fits 200 cm"
+    },
+    {
+     "say": "mobile"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 1,
+     "kind": "NOT_AVAILABLE",
+     "product_contains": "sofa",
+     "state": {
+      "seats": 3,
+      "max_width_cm": 200,
+      "max_total_inr": 30000
+     }
+    }
+   ]
+  },
+  {
+   "id": "P2-M02",
+   "group": "memory",
+   "turns": [
+    {
+     "say": "dumber"
+    },
+    {
+     "say": "you can find anything"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 1,
+     "not_contains": [
+      "dumber"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "P2-H01",
+   "group": "help",
+   "turns": [
+    {
+     "say": "what can you help me with?"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "reason": "HELP",
+     "not_contains": [
+      "not something I can help"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "P2-H02",
+   "group": "help",
+   "turns": [
+    {
+     "say": "what can you do"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "reason": "HELP"
+    }
+   ]
+  },
+  {
+   "id": "P2-H03",
+   "group": "help",
+   "turns": [
+    {
+     "say": "help"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "reason": "HELP"
+    }
+   ]
+  },
+  {
+   "id": "P2-H04",
+   "group": "store_info",
+   "turns": [
+    {
+     "say": "how many products are listed here?"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "reason": "STORE_INFO",
+     "contains": [
+      "2,043"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "P2-H05",
+   "group": "store_info",
+   "turns": [
+    {
+     "say": "what categories do you have?"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "reason": "STORE_INFO",
+     "contains": [
+      "furniture",
+      "kitchen"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "P2-H06",
+   "group": "store_info",
+   "turns": [
+    {
+     "say": "can I pay with cash on delivery?"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "reason": "STORE_INFO",
+     "contains": [
+      "don't have"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "P2-H07",
+   "group": "lookalike",
+   "turns": [
+    {
+     "say": "write a song"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "reason": "OFF_TOPIC"
+    }
+   ]
+  },
+  {
+   "id": "P2-K01",
+   "group": "stuck",
+   "turns": [
+    {
+     "say": "I need something"
+    },
+    {
+     "say": "hmm"
+    },
+    {
+     "say": "whatever"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 2,
+     "reason": "STUCK_RECOVERY",
+     "differs_from_turn": 1
+    }
+   ]
+  },
+  {
+   "id": "P2-K02",
+   "group": "stuck",
+   "turns": [
+    {
+     "say": "sofa"
+    },
+    {
+     "say": "are you not capable of understanding? just show me"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 1,
+     "kind": "RECOMMEND",
+     "contains": [
+      "Sorry"
+     ],
+     "product_contains": "sofa"
+    }
+   ]
+  },
+  {
+   "id": "P2-B01",
+   "group": "brand",
+   "turns": [
+    {
+     "say": "jerry"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "RECOMMEND",
+     "titles_contain": "jerry"
+    }
+   ]
+  },
+  {
+   "id": "P2-B02",
+   "group": "brand",
+   "turns": [
+    {
+     "say": "Jerry's"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "RECOMMEND",
+     "titles_contain": "jerry"
+    }
+   ]
+  },
+  {
+   "id": "P2-B03",
+   "group": "brand",
+   "turns": [
+    {
+     "say": "petshop7"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "RECOMMEND",
+     "titles_contain": "petshop7"
+    }
+   ]
+  },
+  {
+   "id": "P2-B04",
+   "group": "material",
+   "turns": [
+    {
+     "say": "solid wood"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "RECOMMEND",
+     "titles_contain": "wood"
+    }
+   ]
+  },
+  {
+   "id": "P2-B05",
+   "group": "name",
+   "turns": [
+    {
+     "say": "Handiana Solid Wood Dining Set"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "RECOMMEND",
+     "titles_contain": "handiana"
+    }
+   ]
+  },
+  {
+   "id": "P2-B06",
+   "group": "material",
+   "turns": [
+    {
+     "say": "3 seater sofa"
+    },
+    {
+     "say": "only leather"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 1,
+     "kind": "RECOMMEND",
+     "state": {
+      "seats": 3,
+      "material": "leather"
+     },
+     "check_passed": "material"
+    }
+   ],
+   "notes": "Changed 2026-11-18: the check was 'every title contains leather', but some sofas are leatherette-upholstered with a solid wood frame, so the name doesn't say leather while the listing's material fields do. Now checks that every shown sofa passes the material check. Same behaviour tested."
+  },
+  {
+   "id": "P2-B07",
+   "group": "lookalike",
+   "turns": [
+    {
+     "say": "mobile"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "NOT_AVAILABLE",
+     "reason": "NOT_SOLD_HERE"
+    }
+   ]
+  },
+  {
+   "id": "P2-P01",
+   "group": "shown",
+   "turns": [
+    {
+     "say": "Find a 3-seater sofa under ₹30,000 that fits 200 cm"
+    },
+    {
+     "say": "I want the fabric one. When can it be delivered?"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 1,
+     "kind": "ANSWER",
+     "contains": [
+      "HomeTown",
+      "9 days"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "P2-P02",
+   "group": "shown",
+   "turns": [
+    {
+     "say": "Find a 3-seater sofa under ₹30,000 that fits 200 cm"
+    },
+    {
+     "say": "the first one"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 1,
+     "kind": "CART_PROPOSED"
+    }
+   ]
+  },
+  {
+   "id": "P2-P03",
+   "group": "shown",
+   "turns": [
+    {
+     "say": "Find a 3-seater sofa under ₹30,000 that fits 200 cm"
+    },
+    {
+     "say": "when can the hometown ciaz be delivered?"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 1,
+     "kind": "ANSWER",
+     "contains": [
+      "9 days"
+     ],
+     "state": {
+      "max_width_cm": 200,
+      "max_total_inr": 30000
+     }
+    }
+   ]
+  },
+  {
+   "id": "P2-P04",
+   "group": "shown",
+   "turns": [
+    {
+     "say": "Find a 3-seater sofa under ₹30,000 that fits 200 cm"
+    },
+    {
+     "say": "the blue one"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 1,
+     "kind": "CLARIFY",
+     "contains": [
+      "HomeTown",
+      "Durian"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "P2-N01",
+   "group": "nothing_matches",
+   "turns": [
+    {
+     "say": "2 seater sofa under 5000"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "NO_ELIGIBLE",
+     "contains": [
+      "over"
+     ],
+     "min_recs": 1
+    }
+   ]
+  },
+  {
+   "id": "P2-N02",
+   "group": "several",
+   "turns": [
+    {
+     "say": "bedsheets and curtains"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "RECOMMEND",
+     "titles_include_each": [
+      "bedsheet",
+      "curtain"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "P2-N03",
+   "group": "several",
+   "turns": [
+    {
+     "say": "a sofa and a coffee table"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "RECOMMEND",
+     "titles_include_each": [
+      "sofa"
+     ],
+     "contains": [
+      "coffee table"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "P2-N04",
+   "group": "vague",
+   "turns": [
+    {
+     "say": "is the hometown sofa wide?"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "CLARIFY",
+     "reason": "VAGUE_REQUIREMENT",
+     "contains": [
+      "space"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "P2-N05",
+   "group": "quantity",
+   "turns": [
+    {
+     "say": "buy 2 of these",
+     "page": "SOFEB7MHGWTHZFVJ"
+    }
+   ],
+   "expect": [
+    {
+     "turn": 0,
+     "kind": "CART_PROPOSED",
+     "state": {
+      "cart_qty": 2
+     }
+    }
+   ]
+  }
+ ]
+}

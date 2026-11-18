@@ -69,8 +69,9 @@ def test_prd09_preferred_brand_absent_offers_alternatives(session):
 
 def test_prd10_no_eligible_explains_blockers(session):
     r = session.handle_message("Mac keyboard and mouse combo under ₹1,000 delivered in 2 days")
-    assert r.kind == "NO_ELIGIBLE" and r.recommendations == []
-    assert "BUDGET_EXCEEDED" in r.reason_codes
+    assert r.kind == "NO_ELIGIBLE" and "BUDGET_EXCEEDED" in r.reason_codes
+    # PRD B21 (Phase 2): the closest options are shown, but none can go in a cart.
+    assert session.eligible_ids == [] and all(x["product_id"] for x in r.recommendations)
 
 
 def test_all_recommended_ids_exist_in_catalog(session):

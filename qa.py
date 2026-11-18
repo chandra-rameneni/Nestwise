@@ -20,6 +20,7 @@ from typing import Optional
 from pydantic import BaseModel, Field
 
 import intent as intent_mod
+import llm
 import policy
 from catalog import ProductView
 
@@ -131,33 +132,19 @@ def _spec_lookup(p: ProductView, question: str) -> QAResult:
     topical = [w for w in words if w not in {"listing", "product", "sofa", "item"}]
     desc = (p.description or "").lower()
     if topical and any(w in desc for w in topical):
-        return QAResult("The description mentions this, but only the specs are structured enough for me to "
-                        "answer reliably without the AI model. See the description on this page.",
+        return QAResult("The description on this page mentions it, but I can't confirm the details from the "
+                        "specs. Take a look at the description.",
                         ["Description"], "spec_lookup")
-    return QAResult("The listing doesn't say.", [], "not_in_listing", status="not_in_listing")
+    return QAResult("The listing doesn't say, so I'd rather not guess.", [], "not_in_listing", status="not_in_listing")
 
 
 def _ask_llm(p: ProductView, question: str) -> tuple[Optional[ProductAnswer], dict]:
-    import anthropic
-
-    client = anthropic.Anthropic()
     listing = json.dumps(listing_fields(p), ensure_ascii=False, indent=1)
-    meta: dict = {"model": intent_mod.MODEL, "prompt_version": QA_PROMPT_VERSION}
-    try:
-        response = client.beta.messages.parse(
-            model=intent_mod.MODEL, max_tokens=2000, betas=["server-side-fallback-2026-07-01"], fallbacks="default",
-            output_config={"effort": "low"}, system=QA_PROMPT_PATH.read_text(),
-            messages=[{"role": "user", "content": f"<product_listing>\n{listing}\n</product_listing>\n\n"
-                                                  f"Shopper's question: {question}"}],
-            output_format=ProductAnswer)
-    except (anthropic.APIStatusError, anthropic.APIConnectionError) as exc:
-        meta["error"] = f"{type(exc).__name__}"
-        return None, meta
-    meta["stop_reason"] = response.stop_reason
-    if response.stop_reason in ("refusal", "max_tokens") or response.parsed_output is None:
-        meta["error"] = f"no parsed output (stop_reason={response.stop_reason})"
-        return None, meta
-    return response.parsed_output, meta
+    ans, meta = llm.structured(QA_PROMPT_PATH.read_text(),
+                               f"<product_listing>\n{listing}\n</product_listing>\n\nShopper's question: {question}",
+                               ProductAnswer, max_tokens=1000)
+    meta["prompt_version"] = QA_PROMPT_VERSION
+    return ans, meta
 
 
 def validate(answer: ProductAnswer, p: ProductView) -> Optional[str]:
@@ -190,7 +177,7 @@ def answer_about_product(p: ProductView, question: str, extracted: intent_mod.In
                 fallback.meta = dict(meta, rejected=problem, rejected_answer=ans.answer)
                 return fallback
             if ans.not_in_listing:
-                return QAResult("The listing doesn't say.", [], "llm", status="not_in_listing", meta=meta)
+                return QAResult("The listing doesn't say, so I'd rather not guess.", [], "llm", status="not_in_listing", meta=meta)
             return QAResult(ans.answer, ans.cited_fields, "llm", meta=meta)
         result = _spec_lookup(p, question)
         result.meta = dict(meta, fallback="spec lookup after LLM failure")

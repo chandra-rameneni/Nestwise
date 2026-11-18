@@ -1,6 +1,7 @@
 """Deterministic eligibility and checkout policy. No model output can override these checks."""
 from __future__ import annotations
 
+import re
 from dataclasses import asdict, dataclass
 
 from catalog import ProductView
@@ -73,6 +74,19 @@ def evaluate(intent: Intent, p: ProductView, qty: int = 1) -> Eligibility:
         else:
             ok = v == intent.seats
             checks.append(Check("seats", intent.seats, v, PASS if ok else FAIL, None if ok else "SEATS_MISMATCH"))
+
+    material = getattr(intent, "material", None)
+    if material:
+        # "only leather" (B33): leather also matches leatherette; checked against the name and material specs.
+        words = {"leather": r"leather", "wood": r"wood", "solid wood": r"solid\s*wood"}.get(material, re.escape(material))
+        specs = getattr(p, "raw_specs", {}) or {}
+        mat_specs = " ".join(str(v) for k, v in specs.items() if re.search(r"material|upholstery|fabric", k, re.I))
+        if re.search(words, f"{p.title} {mat_specs}", re.I):
+            checks.append(Check("material", material, "listed", PASS))
+        elif mat_specs:
+            checks.append(Check("material", material, mat_specs[:60], FAIL, "MATERIAL_MISMATCH"))
+        else:
+            checks.append(Check("material", material, None, UNKNOWN, "MATERIAL_UNVERIFIED"))
 
     notes = getattr(p, "data_notes", {}) or {}
     for limit_field, attr, label in (("max_width_cm", "width_cm", "WIDTH"), ("max_depth_cm", "depth_cm", "DEPTH"),

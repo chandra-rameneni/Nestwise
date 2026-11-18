@@ -47,7 +47,7 @@ def _run(*msgs):
 
 def test_fresh_number_word_is_not_a_product():
     s, r = _run("sofa", "two seats please")
-    assert r.kind == "CLARIFY" and s.intent.product_query == "sofa" and s.intent.seats == 2
+    assert r.kind == "RECOMMEND" and s.intent.product_query == "sofa" and s.intent.seats == 2   # B18
 
 
 def test_fresh_any_width_is_fine_removes_the_width():

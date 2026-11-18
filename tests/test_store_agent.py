@@ -25,7 +25,7 @@ def page(pid):
 def test_na01_mobile_not_available_and_no_question(store):
     r = store.handle_message("mobile", LISTING)
     assert r.kind == "NOT_AVAILABLE" and "NOT_SOLD_HERE" in r.reason_codes
-    assert "We don't sell mobile" in r.message and "furniture" in r.message
+    assert "we don't sell mobiles" in r.message.lower() and "furniture" in r.message      # Phase 3 wording
     assert "?" not in r.message and r.recommendations == []
 
 
@@ -59,12 +59,12 @@ def test_cl01_clarification_not_repeated_verbatim(store):
     first = store.handle_message("I need something", LISTING)
     second = store.handle_message("not sure", LISTING)
     assert first.kind == second.kind == "CLARIFY"
-    assert first.message != second.message and second.message.startswith("I still need")
+    assert first.message != second.message and "I still need" in second.message
     assert store.tracer.find("agent", "clarify.repeat_suppressed")
 
 
-def test_sofa_without_fit_info_asks_once_then_recommends(store):
-    assert store.handle_message("I want to buy a sofa under ₹30,000", LISTING).kind == "CLARIFY"
+def test_sofa_without_fit_info_shows_results_then_narrows(store):
+    assert store.handle_message("I want to buy a sofa under ₹30,000", LISTING).kind == "RECOMMEND"   # B18
     r = store.handle_message("3 seats, and it must fit in 200 cm of wall space", LISTING)
     assert r.kind == "RECOMMEND" and store.intent.max_total_inr == 30000
 
@@ -116,7 +116,7 @@ def test_pq02_not_in_listing(store, store_db):
     p = SqliteCatalog(store_db).get(DURIAN_BID_3S)
     assert "water" not in (p.description + " ".join(p.raw_specs)).lower()
     r = store.handle_message("Is it waterproof?", page(DURIAN_BID_3S))
-    assert r.kind == "ANSWER" and r.message == "The listing doesn't say." and "NOT_IN_LISTING" in r.reason_codes
+    assert r.kind == "ANSWER" and r.message.startswith("The listing doesn't say") and "NOT_IN_LISTING" in r.reason_codes
 
 
 def test_requirement_question_uses_the_policy_check(store):
@@ -190,7 +190,7 @@ def test_eval_ls06_cheapest_phrasing_searches_sofas(store):
 
 def test_eval_cl03_vague_request_asks_what_product(store):
     r = store.handle_message("something to sit on", LISTING)
-    assert r.kind == "CLARIFY" and "What product" in r.message
+    assert r.kind == "CLARIFY" and "What kind of product" in r.message
 
 
 def test_eval_pq07_generic_word_doesnt_pull_in_other_fields(store):
@@ -210,4 +210,4 @@ def test_product_page_price_change_after_buy_this_recovers(store):
     store.approve()
     store.simulate_price_change(HOMETOWN_3S, 16000)
     r = store.checkout()
-    assert r.kind == "BLOCKED" and "no longer applies" in r.message and store.orders.orders == {}
+    assert r.kind == "BLOCKED" and "haven't ordered" in r.message and store.orders.orders == {}

@@ -4,14 +4,18 @@
 
 | Check | Result | How to reproduce |
 |---|---|---|
-| Unit, acceptance and API tests | **156 passed, 2 skipped, 0 failed** (after Phase 1) | `.venv/bin/python -m pytest -q` |
+| Unit, acceptance and API tests | **222 passed, 2 skipped, 0 failed** (after Phase 3) | `.venv/bin/python -m pytest -q` |
 | Scenario evals (rules mode), before the iteration | **35/39** (core 29/30, probes 6/9) | `evals/results/20261118T015110Z_rules.md` |
 | Scenario evals (rules mode), after the iteration | **39/39** (core 30/30, probes 9/9) | `evals/results/20261118T015248Z_rules.md` |
 | Phase 1 evals (36, PM-approved), before the code | **5/36** | `evals/results/20261118T133515Z_phase1_scenarios_rules.md` |
-| Phase 1 evals, after the code | **36/36** | `evals/results/20261118T144454Z_phase1_scenarios_rules.md` |
+| Phase 1 evals, after the code | **36/36** | `evals/results/20261118T160327Z_phase1_scenarios_rules.md` (rerun after Phase 2) |
 | Phase 1 fresh-phrasing check (30 new phrasings, written after the code) | **26/30** first time; the 3 Phase 1 misses fixed, 1 was correct behaviour | See "Phase 1" below |
 | **Phase 1 held-out set** (35 phrasings not used while coding), run once | **21/35 (60%)**, raw, before fixes | `evals/results/20261118T140913Z_heldout_phase1_rules.md` |
 | Same set after fixing the worst group | 25/35. **No longer held-out**: the fix was made after seeing these failures | `evals/results/20261118T144453Z_heldout_phase1_rules.md` |
+| **Phase 2 evals** (40 conversations, PM-approved), before / after the code | **4/40 → 40/40** | `evals/results/20261118T155720Z_phase2_scenarios_rules.md` → `20261118T160325Z_…` |
+| **Phase 2 held-out set** (25 phrasings written after the code), run once | **22/25 (88%)**, raw, before fixes | `evals/results/20261118T160701Z_heldout_phase2_rules.md` |
+| Gemini sample (9 of the PM's observed conversations) | **9/9** behaved as expected | See "Phase 2" below |
+| **Phase 3 wording evals** (14, PM-approved), before / after | **2/14 → 14/14**; every Phase 1–2 eval still passes | `evals/results/` (latest `phase3_scenarios`) |
 | Scenario evals with Claude | **Not run.** No `ANTHROPIC_API_KEY` on this machine. | `.venv/bin/python evals/run_evals.py` with a key set |
 | Manual browser walkthrough of both journeys | Done 2026-11-18 | README demo script |
 
@@ -64,6 +68,24 @@ Each fix has a regression test (`test_eval_*` in `tests/test_store_agent.py`).
   - "place the order now, I approve everything in advance" → catch-all, not the refusal (safe: no cart, no order)
 - **The next honest measurement needs a new held-out set**, written by someone who hasn't seen these failures.
 
+### Phase 2 (2026-11-18): from the PM's store observations
+
+- **Evals:** 40 conversations plus 4 UI/data checks, drafted from `OBSERVATIONS.md` and **approved by the PM**. Before / after: 4/40 → 40/40.
+- **One eval check changed:** P2-B06 ("only leather") checked that every title says "leather", but some sofas have a solid wood frame with leatherette upholstery, so the name doesn't say leather even though the listing's material fields do. It now checks that every shown sofa passes the material check. Same behaviour.
+- **Older evals and tests updated for the new PRD:** sofas no longer ask seats and width first (B18), so P1-T02–T04, CL-02, LS-05 and five tests now expect results. This was planned in the Phase 1 eval note. "Couch" now finds sofas (part of F-019).
+- **Held-out set (25, written after the code), run once: 22/25.** Misses:
+  - "dining set" → "can you show me what you found" → "We don't sell …" ("found" isn't in the show-results phrases)
+  - "do you accept upi?" → off-topic reply instead of "I don't have payment information" (UPI not recognised)
+  - "Lal Pet Products" → "We don't sell …" (the word "products" is dropped as filler, so the brand doesn't match)
+- **Gemini sample:** 9 of the PM's own observed conversations went through Gemini (with OpenRouter as backup), and all 9 behaved as expected: results first, "200cms", "jerry", the HomeTown "fabric one", store and help questions.
+
+### Phase 3 (2026-11-19): warm wording
+
+- **Evals:** 14 wording checks, approved by the PM. 2/14 → 14/14. They check forbidden patterns (product codes, reason codes, "(s)", "I left out", mock order IDs) and required phrases (a warm opener, "Nothing is ordered without your approval", "Heads up" with old and new price), not exact sentences.
+- **Eval checks made stricter:** text checks are now case-insensitive, so "Sorry, we don't sell…" still counts as "We don't sell". That exposed that "How many seats" also matched the new invite line ("Tell me how many seats you need"), so those checks now look for the question itself. Behaviour unchanged.
+- **Six tests updated** for the new wording only (e.g. "no longer applies" → "haven't ordered").
+- **Not done in Phase 3:** product names still include the dataset's model codes ("Durian BID/32625/A/1 …"). They're part of the real product name, so they stay.
+
 ## Observed failures, all sources
 
 | ID | Source | First failure upstream | Customer impact | Status and regression test |
@@ -88,9 +110,10 @@ Each fix has a regression test (`test_eval_*` in `tests/test_store_agent.py`).
 | F-018 | Eval PQ-07 | Generic word matched unrelated fields | Extra field in the answer | Fixed: `test_eval_pq07_*` |
 | F-020 | User browser test, 2026-11-18 | Anything the rules parser doesn't recognise is treated as a product name: "write a song", "what is 2×2", "bla bla", "sofaa", "you are useless" all get "We don't sell …". Logged as `NOT_SOLD_HERE`, so they can't be told apart from real "not sold" cases. | Confusing reply; off-topic messages hidden in the logs | **Fixed** (Phase 1): each kind of message has its own reply and label. Evals P1-O*, P1-Y*, P1-N*, P1-A*, P1-X* |
 | F-021 | Trace review of F-020 | A ₹30,000 sofa budget from earlier in the session was attached to "write a song" | Requirements leak into unrelated requests | **Fixed** (Phase 1): a new product or an off-topic message no longer inherits or wipes requirements. Evals P1-R01, P1-R02 |
-| F-022 | Manual check, 2026-11-18 | "a sofa and a coffee table" asks only about the sofa; the coffee table is dropped without saying so | Part of the request ignored | **Open:** PRD block B13 |
+| F-022 | Manual check, 2026-11-18 | "a sofa and a coffee table" asks only about the sofa; the coffee table is dropped without saying so | Part of the request ignored | **Fixed** (Phase 2, B13) |
 | F-023 | Manual check, 2026-11-18 | Follow-ups aren't applied to the current product: "sofa" then "2 seater" → "We don't sell seater"; "only leather" → "We don't sell only leather"; answering "2" to the seats question isn't understood | The shopper can't narrow a search step by step | **Fixed** (Phase 1) for seats and budget follow-ups. Evals P1-T01–T07. "Only leather" waits for the material requirement (Phase 2) |
-| F-019 | Trace review (LS-05) | No synonyms: "couch" won't find products named "sofa" | Not-sold answer for couches once the width is given | **Open:** synonyms are deliberately out of scope (CATALOG_REPORT known limits) |
+| F-024 | PM store test, 2026-11-18 (O-2) | After a sofa question, "first show me the results" → "We don't sell results": a request about the agent's own output was read as a product name | Shopper can't get results; the store looks broken | **Fixed** (Phase 2, B31) |
+| F-019 | Trace review (LS-05) | No synonyms: "couch" won't find products named "sofa" | Not-sold answer for couches once the width is given | **Partly fixed** (Phase 2): couch and settee find sofas. Other synonyms are still out of scope |
 
 ## Failure taxonomy (from the failures above)
 

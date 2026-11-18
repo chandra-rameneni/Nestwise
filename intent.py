@@ -23,17 +23,19 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
+import llm
+
 MODEL = "claude-opus-5-5"
-PROMPT_VERSION = "intent_v3"
+PROMPT_VERSION = "intent_v4"
 PROMPT_PATH = Path(__file__).parent / "prompts" / f"{PROMPT_VERSION}.txt"
 
 IntentType = Literal["PRODUCT_DISCOVERY", "PRODUCT_QUESTION", "BUY_THIS", "REFUND_REQUEST", "ORDER_TRACKING",
                      "UNSUPPORTED"]
 # For UNSUPPORTED messages: which kind of non-shopping message it is (PRD §6A blocks B3, B12, B14-B17, B27).
 MessageKind = Literal["GREETING", "THANKS", "OFF_TOPIC", "UNCLEAR", "ABUSIVE", "TRICK", "COMPARE", "HINGLISH",
-                      "CATCH_ALL"]
+                      "CATCH_ALL", "HELP", "STORE_INFO"]
 RemovableField = Literal["max_total_inr", "max_delivery_days", "seats", "max_width_cm", "max_depth_cm",
-                         "max_height_cm"]
+                         "max_height_cm", "material"]
 
 
 class IntentExtraction(BaseModel):
@@ -55,6 +57,12 @@ class IntentExtraction(BaseModel):
     missing_info: list[str] = Field(default_factory=list)
     message_kind: Optional[MessageKind] = None              # set only when intent is UNSUPPORTED
     remove_fields: list[RemovableField] = Field(default_factory=list)   # "forget the width" -> ["max_width_cm"]
+    material: Optional[str] = None           # "only leather", "solid wood" (B33)
+    show_results: bool = False               # "show me the results" (B31)
+    frustrated: bool = False                 # "are you not capable…", "I already told you" (B36)
+    quantity: Optional[int] = None           # "buy 2 of these" (B26)
+    vague_quality: Optional[str] = None      # "is it wide?" with no number (B28)
+    other_products: list[str] = Field(default_factory=list)   # "bedsheets and curtains" -> ["curtains"] (B13)
 
 
 class Intent(IntentExtraction):
@@ -66,12 +74,13 @@ class Intent(IntentExtraction):
     waived: list[str] = Field(default_factory=list)       # requirements the shopper said not to care about
 
     def constraint_fields(self) -> dict:
-        return self.model_dump(include={"category", "product_query", "max_total_inr", "max_delivery_days",
+        return self.model_dump(include={"category", "product_query", "material", "max_total_inr", "max_delivery_days",
                                         "required_compatibility", "preferred_brands", "seats", "max_width_cm",
                                         "max_depth_cm", "max_height_cm"})
 
 
-CONSTRAINT_FIELDS = ("max_total_inr", "max_delivery_days", "seats", "max_width_cm", "max_depth_cm", "max_height_cm")
+CONSTRAINT_FIELDS = ("max_total_inr", "max_delivery_days", "seats", "max_width_cm", "max_depth_cm", "max_height_cm",
+                     "material")
 
 # --------------------------------------------------------------------------- rules fallback
 _NUM_WORDS = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8,
@@ -98,14 +107,14 @@ _CUT = re.compile(r"\b(under|within|below|not more than|no more than|max(?:imum)
 _REQ_WORDS = {"seater", "seaters", "seat", "seats", "people", "persons", "person", "wide", "width", "size",
               "limit", "budget", "rupees", "rs", "inr", "cm", "make", "change", "forget", "remove", "drop",
               "instead", "only", "any", "price", "delivery", "days", "deep", "tall", "high", "long", "smaller",
-              "bigger", "larger", "fine", "ok", "okay", "please", "works", "matter", "matters"}
+              "bigger", "larger", "space", "room", "matter", "fine", "ok", "okay", "please", "works", "matter", "matters"}
 _THANKS = re.compile(r"^\s*(thanks|thank you|thank u|thx|ty|cheers)\b[\s\w!.,]{0,20}$", re.I)
 _TRICK = re.compile(r"ignore (?:all |your |the |previous |my |any )*(?:rules|instructions|policy|policies|limits)|"
                     r"without (?:my |any |an )?approval|skip (?:the )?approval|you(?:'re| are) allowed to|"
                     r"\bpretend\b|act as if|\boverride\b|\bbypass\b|(?:set|change|make) the price|jailbreak|"
                     r"developer mode|system prompt", re.I)
 _COMPARE = re.compile(r"\bcompare\b|\bcomparison\b|which (?:one )?is better|\bvs\.?\b|\bversus\b|"
-                      r"difference between", re.I)
+                      r"difference between|pros and cons|which (?:\w+ )?is (?:the )?best between", re.I)
 _INSULTS = {"useless", "stupid", "idiot", "idiotic", "dumb", "rubbish", "trash", "pathetic", "moron", "garbage",
             "crap", "sucks", "suck", "worst", "hate", "shut", "bloody", "nonsense", "fool", "loser"}
 _OFF_TOPIC = re.compile(r"^\s*(?:please\s+|can you\s+|could you\s+)?(?:write|compose|sing|translate|calculate|"
@@ -120,9 +129,43 @@ _HINGLISH = {"chahiye", "chaiye", "chahie", "dikhao", "dikha", "dikhana", "mujhe
              "acha", "achha", "wala", "wali", "liye", "sasta", "sasti", "batao", "kya", "hai", "hain", "nahi",
              "aur", "mein", "dena", "chahta", "chahti", "bhai", "yaar", "kitna", "kitne"}
 _REMOVE = re.compile(r"\b(?:forget|remove|drop|ignore|clear|never mind|don'?t care about|no)\s+(?:the\s+|my\s+|about\s+)?"
-                     r"(width|size|budget|price|seats?|delivery)(?:\s+limit)?\b|\bany (width|size|price|budget)\b", re.I)
-_REMOVE_MAP = {"width": "max_width_cm", "size": "max_width_cm", "budget": "max_total_inr",
-               "price": "max_total_inr", "seat": "seats", "seats": "seats", "delivery": "max_delivery_days"}
+                     r"(width|size|budget|price|seats?|delivery|space|room|material)(?:\s+limit)?\b|"
+                     r"\bany (width|size|price|budget|material)\b", re.I)
+_REMOVE_MAP = {"width": "max_width_cm", "size": "max_width_cm", "space": "max_width_cm", "room": "max_width_cm",
+               "budget": "max_total_inr", "price": "max_total_inr", "seat": "seats", "seats": "seats",
+               "delivery": "max_delivery_days", "material": "material"}
+# A non-answer to the agent's question about seats or width drops that requirement (B32).
+_NON_ANSWER = re.compile(r"^\s*(no (?:space|limit|preference|idea)|doesn'?t matter|does not matter|any|anything|whatever|"
+                         r"not sure|don'?t know|dunno|idk|no)\b", re.I)
+
+
+_HELP = re.compile(r"\bwhat (?:else )?can you (?:do|help)|how can you help|\bwhat do you do\b|^\s*help\s*[.!?]*$|"
+                   r"how does this work|what are you capable|what can i (?:ask|do|buy)|what can you help", re.I)
+_STORE_INFO = re.compile(r"how many (?:products|items|things)|what (?:categories|kind of (?:products|things|items))|"
+                         r"which categories|what (?:do you|does this store) sell|which brands|what brands|how many brands|"
+                         r"\bpay(?:ment)?\b|cash on delivery|\bcod\b|\bemi\b|\bpolicy\b", re.I)
+_SHOW = re.compile(r"\b(?:show|share|give|see|display|list)\b[^.?!]*\b(?:results?|what you (?:have|got)|options|"
+                   r"everything|all of them|them)\b|\bjust show\b|\bshow (?:me )?(?:now|already)\b", re.I)
+_FRUSTRATED = re.compile(r"are you not capable|aren'?t you capable|can'?t you understand|don'?t you understand|"
+                         r"i already told you|i told you|not listening|are you even listening|i just said", re.I)
+_MATERIALS = ["solid wood", "engineered wood", "leatherette", "leather", "fabric", "wooden", "wood", "metal",
+              "cotton", "velvet", "cane", "bamboo", "rattan", "jute", "marble"]
+_MATERIAL_RE = re.compile(r"\b(" + "|".join(_MATERIALS) + r")\b", re.I)
+_QTY = re.compile(rf"\b(?:buy|order|get|add|want|take)\s+{_NUM}\b(?![- ]?seat)|\b{_NUM}\s+(?:of (?:these|them|this|it)|"
+                  r"pieces|units|nos|pcs)\b", re.I)
+_VAGUE_Q = re.compile(r"\b(?:is|are|will|would)\b.*\b(wide|big|small|large|long|tall|spacious|comfortable|comfy|roomy)\b",
+                      re.I)
+_OUTPUT_WORDS = {"results", "result", "options", "option", "query", "queries", "asked", "have", "got", "first",
+                 "them", "everything", "list", "share", "what", "now", "already", "capable", "understanding",
+                 "understand", "only", "made"}
+
+
+def material_of(text: str) -> Optional[str]:
+    m = _MATERIAL_RE.search(text or "")
+    if not m:
+        return None
+    w = m.group(1).lower()
+    return {"wooden": "wood"}.get(w, w)
 
 
 def message_kind(text: str) -> Optional[str]:
@@ -136,6 +179,10 @@ def message_kind(text: str) -> Optional[str]:
         return "GREETING"
     if _TRICK.search(t):
         return "TRICK"
+    if _HELP.search(t):
+        return "HELP"
+    if _STORE_INFO.search(t):
+        return "STORE_INFO"
     if _COMPARE.search(t):
         return "COMPARE"
     if set(words) & _INSULTS:
@@ -180,7 +227,8 @@ def _without_insults(text: str) -> str:
     return " ".join(p.strip() for p in keep if p.strip())
 
 
-_MEASURE = re.compile(r"\d+(?:\.\d+)?\s*(?:cm|mm|m|inch|inches|in|ft|feet|kg|l|litres?|liters?)\b"
+_MEASURE = re.compile(r"\d+(?:\.\d+)?\s*(?:cms?|centimet(?:er|re)s?|mm|metres?|meters?|mtrs?|m|inch|inches|in|ft|feet|foot|"
+                      r"kg|l|litres?|liters?)\b"
                       r"(?:\s*(?:wide|long|tall|high|deep))?", re.I)
 
 
@@ -201,9 +249,14 @@ def _money(text: str) -> Optional[int]:
     return int(value * 1000) if m.group(2) else int(value)
 
 
+_UNIT = (r"(cms?|centimet(?:er|re)s?|mm|millimet(?:er|re)s?|metres?|meters?|mtrs?|m|inch(?:es)?|in|ft|feet|foot)")
+
+
 def _cm(value: str, unit: str) -> int:
-    return int(round(float(value) * {"cm": 1, "mm": 0.1, "m": 100, "inch": 2.54, "inches": 2.54, "in": 2.54,
-                                     "ft": 30.48, "feet": 30.48}[unit.lower()]))
+    u = unit.lower()
+    f = (1 if u.startswith("c") else 0.1 if u.startswith("mm") or u.startswith("milli") else
+         2.54 if u.startswith("in") else 30.48 if u in ("ft", "feet", "foot") else 100)
+    return int(round(float(value) * f))
 
 
 def product_phrase(text: str) -> Optional[str]:
@@ -224,8 +277,9 @@ def product_phrase(text: str) -> Optional[str]:
         return None                                  # "I want to talk to a human" is an action, not a product
     rest = _CUT.split(rest, maxsplit=1)[0]
     rest = _MEASURE.sub(" ", rest)
+    rest = _MATERIAL_RE.sub(" ", rest)           # a material is a requirement, not the product ("leather sofa")
     words = [w for w in re.findall(r"[a-z0-9][a-z0-9-]*", rest)
-             if w not in _VAGUE and w not in _REQ_WORDS and w not in _NUM_WORDS]
+             if w not in _VAGUE and w not in _REQ_WORDS and w not in _NUM_WORDS and w not in _OUTPUT_WORDS]
     words = [w for w in words if re.search(r"[a-z]", w)]
     return " ".join(words) or None
 
@@ -242,10 +296,21 @@ def head_term(phrase: Optional[str]) -> Optional[str]:
 def extract_rules(text: str, context: Optional[dict] = None, prior: Optional[Intent] = None) -> IntentExtraction:
     page = (context or {}).get("page", "listing")
     t = text.lower()
-    if re.search(r"\b(refund|return|money back)\b", t):
+    if re.search(r"\b(refund|return|money back)\b", t) and not re.search(r"\bpolicy\b", t):
         return IntentExtraction(intent="REFUND_REQUEST")
     if re.search(r"(where is my order|track(ing)?\b|order status|my order\b)", t):
         return IntentExtraction(intent="ORDER_TRACKING")
+    if page == "listing":
+        parts = [s for s in re.split(r"\s+and\s+|\s*&\s*|\s*,\s*", text) if s.strip()]
+        phrases = [product_phrase(s) for s in parts]
+        combo = re.search(r"keyboard", text, re.I) and re.search(r"mouse|mice", text, re.I)
+        refers = re.search(r"\b(these|those|them|both|two|it|pros|cons)\b", text, re.I)
+        if len(parts) >= 2 and all(phrases) and all(looks_like_product(ph) for ph in phrases) \
+                and message_kind(text) is None and not combo and not refers:
+            first = extract_rules(parts[0], context, prior)
+            budget = _money(text)
+            return first.model_copy(update={"other_products": [x for x in phrases[1:]],
+                                            "max_total_inr": first.max_total_inr or budget})     # B13
     kind = message_kind(text)
     if kind == "ABUSIVE":
         rest = _without_insults(text)
@@ -257,6 +322,12 @@ def extract_rules(text: str, context: Optional[dict] = None, prior: Optional[Int
         cand = " ".join(w for w in re.findall(r"[a-z]+", t) if w not in _HINGLISH and w not in _VAGUE
                         and w not in _REQ_WORDS and w not in ("rs", "inr", "k"))
         return IntentExtraction(intent="UNSUPPORTED", message_kind="HINGLISH", product_query=cand or None,
+                                max_total_inr=_money(text))
+    show, frustrated = bool(_SHOW.search(t)), bool(_FRUSTRATED.search(t))
+    if (show or frustrated) and kind not in ("TRICK", "HELP", "STORE_INFO", "COMPARE"):
+        phrase = product_phrase(text)
+        return IntentExtraction(intent="PRODUCT_DISCOVERY", show_results=True, frustrated=frustrated,
+                                product_query=phrase if phrase and looks_like_product(phrase) else None,
                                 max_total_inr=_money(text))
     if kind is not None:
         return IntentExtraction(intent="UNSUPPORTED", message_kind=kind)
@@ -277,22 +348,33 @@ def extract_rules(text: str, context: Optional[dict] = None, prior: Optional[Int
     m = re.search(rf"{_NUM}[- ]?seat(?:er|s)?", t) or re.search(rf"\bfor {_NUM} (?:people|persons|person)\b", t)
     if m:
         seats = _num(m.group(1))
+    pending = list((context or {}).get("pending_question") or (prior.missing_info if prior is not None else []))
     m = re.fullmatch(rf"\s*{_NUM}\s*[.!]?\s*", t)
-    if m and prior is not None and "seats" in prior.missing_info:
-        seats = _num(m.group(1))                     # a bare "2" answers our seats question (B19)
+    if m:
+        n = _num(m.group(1))
+        if "seats" in pending and n <= 10:
+            seats = n                                # a bare "2" answers our seats question (B19)
+        elif "max_width_cm" in pending and n >= 40:
+            width = n                                # a bare "200" answers our width question (B32)
     removed = list(dict.fromkeys(_REMOVE_MAP[(g1 or g2).lower()] for g1, g2 in
                                  (mm.groups() for mm in _REMOVE.finditer(t))))
+    if not removed and _NON_ANSWER.match(t) and any(f in pending for f in ("seats", "max_width_cm")):
+        removed = [f for f in ("seats", "max_width_cm") if f in pending]       # "no space" to our question (B32)
     width = depth = height = None
-    for m in re.finditer(r"(\d+(?:\.\d+)?)\s*(cm|mm|m|inch|inches|ft|feet)\b(?:\s*(wide|width|deep|depth|tall|"
-                         r"high|height|long))?", t):
+    lone_measure = bool(re.fullmatch(rf"\s*(?:about|around|max|upto|up to)?\s*\d+(?:\.\d+)?\s*{_UNIT}\s*[.!]?\s*", t))
+    for m in re.finditer(rf"(\d+(?:\.\d+)?)\s*{_UNIT}\b(?:\s*(wide|width|deep|depth|tall|high|height|long))?", t):
         cm, dim = _cm(m.group(1), m.group(2)), (m.group(3) or "")
         if dim in ("deep", "depth"):
             depth = cm
         elif dim in ("tall", "high", "height"):
             height = cm
-        elif dim in ("wide", "width", "long") or re.search(r"wide|width|space|fit|wall", t):
-            width = cm
-
+        elif dim in ("wide", "width", "long") or re.search(r"wide|width|space|fit|wall", t) or lone_measure:
+            width = cm                               # a lone "200cms" is a width (B32)
+    material = material_of(text)
+    quantity = None
+    mq = _QTY.search(t)
+    if mq:
+        quantity = _num(next(g for g in mq.groups() if g))
     category = None
     if re.search(r"keyboard", t) and re.search(r"mouse|mice", t):
         category = "keyboard_mouse_combo"
@@ -303,8 +385,8 @@ def extract_rules(text: str, context: Optional[dict] = None, prior: Optional[Int
         phrase = {"sofa": "sofa", "keyboard_mouse_combo": "keyboard mouse combo"}[category]
     common = dict(max_total_inr=budget, max_delivery_days=days, required_compatibility=compat,
                   preferred_brands=brands, seats=seats, max_width_cm=width, max_depth_cm=depth, max_height_cm=height,
-                  remove_fields=removed)
-    has_constraint = any([budget, days, compat, brands, seats, width, depth, height, removed])
+                  remove_fields=removed, material=material, quantity=quantity)
+    has_constraint = any([budget, days, compat, brands, seats, width, depth, height, removed, material])
 
     # ---- product page: buy this / similar / a question about this product
     if page == "product":
@@ -326,65 +408,42 @@ def extract_rules(text: str, context: Optional[dict] = None, prior: Optional[Int
         # "I want to talk to a human": a shopping verb, but no product and no requirement (B17)
         return IntentExtraction(intent="UNSUPPORTED", message_kind="CATCH_ALL")
 
+    vague = None
+    mv = _VAGUE_Q.search(t)
+    if mv and page == "listing" and width is None and not re.search(r"\d", t):
+        vague = mv.group(1).lower()                  # "is the hometown sofa wide?" (B28)
     missing = []
     if intent == "PRODUCT_DISCOVERY" and not (category or phrase) and not has_constraint:
         missing.append("product")
     if budget is None and re.search(r"\b(affordable|cheap|budget[- ]friendly|inexpensive|low[- ]cost)\b", t):
         missing.append("budget")
-    if head_term(phrase) in ("sofa", "couch", "settee") or category == "sofa":
-        if seats is None:
-            missing.append("seats")
-        if width is None:
-            missing.append("max_width_cm")
+    # B18 (search first): sofas no longer require seats and width before a search.
     return IntentExtraction(intent=intent, category=category, product_query=phrase, missing_info=missing,
+                            vague_quality=vague,
                             message_kind="CATCH_ALL" if intent == "UNSUPPORTED" and page == "listing" else None,
                             **common)
 
 
 # --------------------------------------------------------------------------- Claude extraction
 def llm_available() -> bool:
-    if os.environ.get("INTENTGUARD_LLM", "").lower() in {"off", "0", "false"}:
-        return False
-    return bool(os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN"))
+    return llm.provider() is not None
 
 
 def extract_llm(text: str, prior: Optional[Intent], context: Optional[dict] = None
                 ) -> tuple[Optional[IntentExtraction], dict]:
-    """Call Claude with structured outputs. Returns (extraction or None, metadata for the trace)."""
-    import anthropic
-
-    client = anthropic.Anthropic()
+    """Ask the configured model (llm.py) for the structured fields. Returns (extraction or None, trace metadata)."""
     prior_json = json.dumps(prior.constraint_fields() if prior else {}, ensure_ascii=False)
     ctx = context or {"page": "listing"}
     page_line = (f"The shopper is on the product page for: {ctx.get('product_title', ctx.get('product_id'))}"
                  if ctx.get("page") == "product" else "The shopper is on the product listing page.")
-    meta: dict = {"model": MODEL, "prompt_version": PROMPT_VERSION}
-    try:
-        response = client.beta.messages.parse(
-            model=MODEL,
-            max_tokens=4000,
-            betas=["server-side-fallback-2026-07-01"],
-            fallbacks="default",
-            output_config={"effort": "low"},
-            system=PROMPT_PATH.read_text(),
-            messages=[{"role": "user", "content":
-                       f"{page_line}\nConstraints already confirmed: {prior_json}\n\n"
-                       f"Shopper's latest message:\n{text}"}],
-            output_format=IntentExtraction,
-        )
-    except anthropic.APIStatusError as exc:
-        meta["error"] = f"APIStatusError {exc.status_code}"
-        return None, meta
-    except anthropic.APIConnectionError as exc:
-        meta["error"] = f"APIConnectionError: {exc}"
-        return None, meta
-    meta["stop_reason"] = response.stop_reason
-    meta["served_by"] = response.model
-    meta["usage"] = {"input_tokens": response.usage.input_tokens, "output_tokens": response.usage.output_tokens}
-    if response.stop_reason in ("refusal", "max_tokens") or response.parsed_output is None:
-        meta["error"] = f"no parsed output (stop_reason={response.stop_reason})"
-        return None, meta
-    return response.parsed_output, meta
+    asked = ctx.get("pending_question")
+    asked_line = (f"\nThe assistant just asked the shopper for: {', '.join(asked)}. Read the reply as an answer to "
+                  "that first (a bare number, a measurement, or 'no limit' / 'doesn't matter')." if asked else "")
+    user = (f"{page_line}\nConstraints already confirmed: {prior_json}{asked_line}\n\n"
+            f"Shopper's latest message:\n{text}")
+    extraction, meta = llm.structured(PROMPT_PATH.read_text(), user, IntentExtraction, max_tokens=1500)
+    meta["prompt_version"] = PROMPT_VERSION
+    return extraction, meta
 
 
 # --------------------------------------------------------------------------- merge
@@ -442,16 +501,12 @@ def merge(prior: Optional[Intent], new: IntentExtraction, extractor: str) -> tup
 
     # Recompute what is still missing from the merged state.
     missing = [m for m in new.missing_info if m != "product" or not (data["category"] or data["product_query"])]
-    if data["category"] == "sofa" or head_term(data["product_query"]) in ("sofa", "couch", "settee"):
-        missing = [m for m in missing if m not in ("seats", "max_width_cm")]
-        if data["seats"] is None and "seats" not in data["waived"]:
-            missing.append("seats")
-        if data["max_width_cm"] is None and "max_width_cm" not in data["waived"]:
-            missing.append("max_width_cm")
+    missing = [m for m in missing if m not in ("seats", "max_width_cm")]     # B18: search first, never required
     if "budget" in missing and data["max_total_inr"] is not None:
         missing.remove("budget")
     data["missing_info"] = list(dict.fromkeys(missing))
-    for f in ("intent", "question", "wants_similar", "wants_cheaper", "message_kind", "remove_fields"):
+    for f in ("intent", "question", "wants_similar", "wants_cheaper", "message_kind", "remove_fields", "show_results",
+              "frustrated", "quantity", "vague_quality", "other_products"):
         data[f] = getattr(new, f)
     data["extractor"] = extractor
     data["stated_now"] = stated
@@ -466,11 +521,11 @@ def extract(text: str, prior: Optional[Intent], context: Optional[dict] = None) 
     if llm_available():
         extraction, meta = extract_llm(text, prior, context)
         if extraction is not None:
-            extractor = f"llm:{MODEL}:{PROMPT_VERSION}"
+            extractor = f"llm:{meta.get('model')}:{PROMPT_VERSION}"     # the model that actually answered
         else:
             meta["fallback"] = "rules_fallback used after LLM failure"
     else:
-        meta["llm"] = "not configured (no ANTHROPIC_API_KEY/ANTHROPIC_AUTH_TOKEN, or INTENTGUARD_LLM=off)"
+        meta["llm"] = "not configured (no ANTHROPIC_API_KEY or OPENROUTER_API_KEY, or INTENTGUARD_LLM=off)"
     if extraction is None:
         extraction = extract_rules(text, context, prior)
     intent, changed = merge(prior, extraction, extractor)

@@ -40,17 +40,30 @@ Most of the top gaps have the **same root cause**. The step that reads the messa
 - **Also:** removing a requirement ("forget the width"), and basic Hinglish: check the product with the shopper before searching.
 - **Files:** `intent.py`, `prompts/intent_v3.txt` (new version; v2 is kept), `agent.py` routing, `tracing.py`.
 
-### Phase 2: Better results
-- **Search first, then narrow (B18):** show sofas straight away; stop requiring seats and width first.
-- **Nothing matches (B21):** say so, then show the closest options and how each differs.
-- **Several products (B13):** a group of results for each.
-- **Vague words (B28):** ask what "wide" means for the shopper, then answer with numbers.
-- **Quantity (B26):** "2 of these" sets the quantity in the cart.
-- **Material requirement:** "only leather", "fabric", "wooden" become a requirement that's checked against the listing (B19 example). *(Added 2026-11-18.)*
-- **Files:** `agent.py`, `policy.py`, `intent.py`, `web/agent.js` (grouped results).
+### Phase 2: Better results *(rescoped 2026-11-18 from the PM's 23 store observations)* — **signed off by the PM 2026-11-19** (evals 40/40; held-out 22/25 raw; PM testing found O-24 to O-29, all fixed)
 
-### Phase 3: Warm wording
+The free model (D11) now handles most *misreading*. Phase 2 fixes the *decisions*, in two parts.
+
+**2a. Stop getting stuck** (what the PM hit most):
+- **Search first (B18):** no required questions; show results with seats, width and price, then invite narrowing. Fixes O-1, O-3, O-7.
+- **"Show me the results" (B31):** runs the current search. Fixes O-2, O-5.
+- **Replies to the agent's question (B32):** numbers, measurements, "no space", "doesn't matter". R2 covers the whole thread. Fixes O-13, O-15.
+- **Failed searches don't change memory (B37).** Fixes O-12, O-21.
+- **Help and store questions (B35).** Fixes O-22, O-23.
+- **Stuck detection (B36).** Fixes O-4.
+- **UI and data:** replace the "Do you sell mobiles?" button (O-8); stop the buttons covering results (O-10); the badge shows when the agent has fallen back to rules; a colour in the brand column counts as "brand unknown" (O-17).
+
+**2b. Better matching:**
+- **Brand, material and product-name search (B33)**, plus "only leather" as a requirement. Fixes O-14, O-16, O-18, O-19.
+- **Pointing at shown results (B34).** Fixes O-11, O-12.
+- **Nothing matches (B21):** closest options. **Several products (B13). Vague words (B28). Quantity (B26).**
+
+- **Files:** `agent.py`, `intent.py`, `prompts/intent_v4.txt`, `policy.py`, `catalog.py`, `build_catalog.py`, `web/index.html`, `web/agent.js`, `web/styles.css`.
+- **Testing:** evals run in **rules mode** (free, repeatable, no daily limit). A small sample also runs through the model.
+
+### Phase 3: Warm wording — **signed off by the PM 2026-11-19** (wording evals 14/14; all earlier evals still pass)
 - Every reply matches the §6A wording and tone, including out of stock (B23), decline (B25), model down (B29), trick (B14) and compare (B27).
+- From store testing: no product codes or "option(s)" in replies, products shown once (O-9); warmer off-topic and "what can you do" replies (O-6, O-20).
 - **Files:** `agent.py` (reply templates), `prompts/product_qa_v2.txt`.
 - This comes after Phases 1 and 2 because those change which replies exist.
 
