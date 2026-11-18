@@ -46,6 +46,7 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 | Traces | `tracing.py` | JSONL in `traces/` plus the inspector |
 
 More detail:
+- `BUSINESS_CASE.md`: why we're building this, for whom, competitor research, and a tracker from pain point to code. **Start here.**
 - `PRD.md`: journeys, rules and acceptance tests.
 - `DECISIONS.md`: decisions and gaps.
 - `EVALS.md`: results and every failure found.

@@ -1,6 +1,7 @@
 # IntentGuard PRD (v2: storefront with an embedded agent)
 
 **Status:** draft for sign-off · **Date:** 2026-11-17 · **Replaces:** the chat-only P0 direction
+**Based on:** [`BUSINESS_CASE.md`](BUSINESS_CASE.md) (why, for whom, competitor research)
 
 ## 1. Problem
 

@@ -30,7 +30,7 @@ The user dropped the Nov 17 deadline: *"the most important thing is we need to f
 | G3 | Claude extraction and product Q&A run against the live API | Code for extraction written; Q&A not yet | User sets `ANTHROPIC_API_KEY` |
 | G4 | `PRD.md` | **Drafted.** Awaiting sign-off. | User review |
 | G5 | `PROJECT_BRIEF.md` | **Done** | — |
-| G5b | `RESEARCH.md` (competitor summary, moved out of the master plan) | Not started | — |
+| G5b | Business case and competitor research | **Done 2026-11-18:** `BUSINESS_CASE.md` (desk research, no hands-on competitor tests) | — |
 | G6 | `evals/scenarios.json`, `evals/annotations.csv` | **Done 2026-11-18** (rules mode): 39 scenarios, 35/39 before and 39/39 after iteration 1. Claude run still needed. | G3 for the Claude run |
 | G7 | OBS-05: link each failed eval case to its trace | **Done 2026-11-18** (`evals/run_evals.py`) | — |
 | G8 | Acceptance tests signed off by the user | In the PRD | User review |
