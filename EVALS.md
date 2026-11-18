@@ -55,6 +55,10 @@ Each fix has a regression test (`test_eval_*` in `tests/test_store_agent.py`).
 | F-016 | Eval LS-06 | "What's the cheapest …" lost the product | "Not sold" for sofas | Fixed: `test_eval_ls06_*` |
 | F-017 | Eval CL-03 | Vague phrase taken as a product | "We don't sell sit on" | Fixed: `test_eval_cl03_*` |
 | F-018 | Eval PQ-07 | Generic word matched unrelated fields | Extra field in the answer | Fixed: `test_eval_pq07_*` |
+| F-020 | User browser test, 2026-11-18 | Anything the rules parser doesn't recognise is treated as a product name: "write a song", "what is 2×2", "bla bla", "sofaa", "you are useless" all get "We don't sell …". Logged as `NOT_SOLD_HERE`, so they can't be told apart from real "not sold" cases. | Confusing reply; off-topic messages hidden in the logs | **Open:** PRD §6A blocks B3, B12, B15, B17 |
+| F-021 | Trace review of F-020 | A ₹30,000 sofa budget from earlier in the session was attached to "write a song" | Requirements leak into unrelated requests | **Open:** PRD R9, block B10 |
+| F-022 | Manual check, 2026-11-18 | "a sofa and a coffee table" asks only about the sofa; the coffee table is dropped without saying so | Part of the request ignored | **Open:** PRD block B13 |
+| F-023 | Manual check, 2026-11-18 | Follow-ups aren't applied to the current product: "sofa" then "2 seater" → "We don't sell seater"; "only leather" → "We don't sell only leather"; answering "2" to the seats question isn't understood | The shopper can't narrow a search step by step | **Open:** PRD R9, block B19 |
 | F-019 | Trace review (LS-05) | No synonyms: "couch" won't find products named "sofa" | Not-sold answer for couches once the width is given | **Open:** synonyms are deliberately out of scope (CATALOG_REPORT known limits) |
 
 ## Failure taxonomy (from the failures above)
