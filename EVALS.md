@@ -130,6 +130,22 @@ Evals approved by the PM: `evals/ROUND2_EVALS_DRAFT.md` → `evals/round2_scenar
 - **Manual (DB-16):** real chats in the store, AI mode → the dashboard showed them (13 chats today, AI share 100%, funnel 13 → 9 → 5 → 2 → 1, one challenge in "needs attention"); "Open trace" opened the right chat in the inspector.
 - **Found in AI mode during the check:** O-59 (a confident guess, "not waterproof", passed the citation check) and O-60 ("do you sell mobiles?" answered with store info). Neither shows on the dashboard as a failure: it can only count what the agent admits. Both go to the model-mode evals.
 
+### Model-mode before/after attempt (2026-11-19): not valid yet
+
+Same exam (round 2 set and held-out set, model-mode scenarios), paced 7 s between messages, AI on, on the code before round 2 (commit `420ee71`, in a side folder) and today's code.
+
+| Run | Score | Messages read by the AI | Fell back to rules | Answers written by the AI |
+|---|---|---|---|---|
+| After, round 2 | 43/43 | 11 | 8 | 17 of 29 |
+| After, held-out | 21/24 | 0 | 9 | 2 of 16 |
+| Before, round 2 | 11/43 | 0 | 41 | 0 of 34 |
+| Before, held-out | 4/24 | 0 | 19 | 0 of 18 |
+
+- **Not a valid AI comparison:** every free model (both Gemini keys, three OpenRouter models) returned HTTP 429 (daily limit), so the "before" runs were 100% rules. The old code in rules mode reproduced the original baseline exactly (6/30), confirming the setup is right.
+- **Partial signal:** in "after, round 2", 17 of 29 answers were written by the AI and all 43 scenarios passed the voice and grounding checks.
+- **Guardrail added:** the runner now labels any AI-mode run with under 80% AI readings as **NOT A VALID AI-MODE RUN**, in the results file and summary.
+- **Next:** run both versions first thing after the daily quotas reset, before any other testing. Add O-59 (confident guess) and O-60 ("do you sell X" as store info) as model-mode evals, with the PM's approval.
+
 ## Observed failures, all sources
 
 | ID | Source | First failure upstream | Customer impact | Status and regression test |
@@ -185,3 +201,20 @@ Evals approved by the PM: `evals/ROUND2_EVALS_DRAFT.md` → `evals/round2_scenar
 - **No validated LLM judge**, and none is needed yet. All checks are code assertions.
 - **The annotations need human confirmation.**
 - **P1 is still to do:** refunds, order tracking, price-drop alerts, and the agent driving the listing page.
+
+## Model-mode evals MM-01 to MM-05 (O-59, O-60), 2026-11-19
+
+Approved by the PM. Scenarios: `evals/model_mode_scenarios.json` (AI mode only). Code checks with a fake AI: `tests/test_model_mode_fixes.py`.
+
+- **O-59 fix:** an AI yes/no on a property the cited fields never mention is rejected; the shopper gets "I don't have that detail".
+- **O-60 fix:** when the AI calls "do you sell mobiles?" store info, the rules' product search wins.
+- **Code tests:** 9 new, all pass; turning either fix off makes 6 fail (sabotage check). Full suite: 333 pass, 2 skipped.
+- **Real AI run:** not done yet (free quotas used up today). Runs with tomorrow's before/after comparison.
+
+## PM manual check, 2026-11-19 (evals/MANUAL_CHECK.md)
+
+- **Score:** 10/14 tested (71%), AI on for rows 1 to 9, out of quota after that (O-65).
+- **Fails found:** O-61 and O-62 (policy questions broke in a long chat, one shared cause), O-63 (store-wide question on a product page), O-64 (robotic raw listing text).
+- **Fixed:** all four. `tests/test_manual_check.py` replays the PM's whole chat as one conversation; 5 tests pass, and undoing the fixes makes 3 fail.
+- **Lesson:** our scripted evals start every scenario fresh; real shoppers have long chats. Long-chat replays are now part of the tests.
+- Full suite: 338 pass, 2 skipped.

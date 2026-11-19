@@ -154,8 +154,23 @@ def _say(p: ProductView, field_name: str, value: str) -> str:
         return f"It's made of {v.lower()}."
     if field_name == "Primary Material Subtype":
         return f"Specifically, {v}."
-    if field_name == "Care Instructions":
-        return f"Care: {v}."
+    if field_name == "Care Instructions":              # O-64: plain words, not "Care: Handle with Care, …"
+        v = v.split("...View More")[0]
+        tips = [t.strip().rstrip(".") for t in v.split(",") if t.strip()]
+        tips = [t.lower() for t in tips if t.lower() != "handle with care"][:4] or ["handle it with care"]
+        joined = tips[0] if len(tips) == 1 else ", ".join(tips[:-1]) + " and " + tips[-1]
+        return f"To look after it, {joined}."
+    if field_name == "Delivery Condition":             # O-64
+        low = v.lower()
+        if "knock" in low:
+            return "It comes unassembled (flat-packed)."
+        if "diy" in low or "do-it-yourself" in low:
+            return "It comes unassembled, for you to put together."
+        if "assembled" in low:
+            return "It comes already assembled."
+        return f"It's delivered {low}."
+    if field_name == "Installation & Demo Details":    # O-64: already a sentence, so no field label
+        return v + "."
     if field_name == "Photos":
         return "There's one photo of it."
     if field_name in ("Suitable For", "Ideal For"):
@@ -235,6 +250,28 @@ def validate(answer: ProductAnswer, p: ProductView) -> Optional[str]:
     return None
 
 
+# O-59 (MM-01/02): "is it waterproof?" -> the model said "not waterproof" because the care text mentions spills.
+# A citation proves the field exists, not that it says so. A yes/no on a property must use the property's own word.
+_PROPERTY_Q = re.compile(r"^\s*(?:is|are|does|will|would)\s+(?:it|this|they|these|that)\s+(?:be\s+)?(?:a\s+)?([a-z-]{4,})\b")
+_NOT_PROPERTIES = {"made", "come", "have", "include", "fit", "need", "work", "available", "safe", "good", "easy"}
+
+
+def unsupported_verdict(question: str, answer: ProductAnswer, p: ProductView) -> Optional[str]:
+    m = _PROPERTY_Q.match((question or "").lower())
+    if not m or m.group(1) in _NOT_PROPERTIES or answer.not_in_listing:
+        return None
+    word = m.group(1)
+    stem = word[:6]
+    fields = listing_fields(p)
+    cited_text = " ".join(str(fields.get(f, "")) for f in answer.cited_fields).lower()
+    if stem in cited_text:
+        return None                      # the listing really talks about it
+    verdict = re.compile(rf"(?:\b(?:not|no|is|it's|are|yes|fully|definitely)|n't)\s+(?:\w+\s+)?{re.escape(word)}\b")
+    if verdict.search(answer.answer.lower().replace("’", "'")):
+        return f"says yes/no on {word!r} but the cited fields never mention it"
+    return None
+
+
 # ---- measurements and unit conversion (PRD B38): done in code, so it works even when no model answers
 MEASURE_FIELDS = ("Width", "Depth", "Height", "Length")
 _TO_MM = {"mm": 1, "cm": 10, "m": 1000, "in": 25.4, "inch": 25.4, "inches": 25.4}
@@ -291,7 +328,7 @@ def answer_about_product(p: ProductView, question: str, extracted: intent_mod.In
     if use_llm:
         ans, meta = _ask_llm(p, question, history)
         if ans is not None:
-            problem = validate(ans, p)
+            problem = validate(ans, p) or unsupported_verdict(question, ans, p)
             if problem:
                 fallback = _spec_lookup(p, question)
                 fallback.method, fallback.status = "rejected_llm_answer", "rejected"

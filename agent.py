@@ -280,6 +280,9 @@ class Session:
             convo = self._conversation(text, current)      # R11: follow-ups and challenges (B38, B39)
             if convo is not None:
                 return convo
+            browse = self._browse(text)                   # O-63: a store-wide "what home decor items do you have?"
+            if browse is not None:
+                return browse
         else:
             self.context["page"] = "listing"
             convo = self._conversation(text, self.current)

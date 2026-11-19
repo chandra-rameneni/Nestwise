@@ -525,7 +525,8 @@ def merge(prior: Optional[Intent], new: IntentExtraction, extractor: str) -> tup
         missing.remove("budget")
     data["missing_info"] = list(dict.fromkeys(missing))
     for f in ("intent", "question", "wants_similar", "wants_cheaper", "message_kind", "remove_fields", "show_results",
-              "frustrated", "quantity", "vague_quality", "other_products"):
+              "frustrated", "quantity", "vague_quality", "other_products",
+              "policy_topic"):                         # O-61/O-62: lost after the first message, so policy failed
         data[f] = getattr(new, f)
     data["extractor"] = extractor
     data["stated_now"] = stated
@@ -566,6 +567,13 @@ def extract(text: str, prior: Optional[Intent], context: Optional[dict] = None) 
         extraction, meta = extract_llm(text, prior, context)
         if extraction is not None:
             extractor = f"llm:{meta.get('model')}:{PROMPT_VERSION}"     # the model that actually answered
+            # O-60 (MM-03/04): "do you sell mobiles?" names a product, so it's a search, never store info. The
+            # model sometimes says store info; when the rules see a named product and no store question, they win.
+            rules = quick or extract_rules(text, context, prior)
+            if (extraction.message_kind == "STORE_INFO" and rules.message_kind != "STORE_INFO"
+                    and rules.intent == "PRODUCT_DISCOVERY" and rules.product_query):
+                meta["corrected"] = f"model said store info; rules saw a product search for {rules.product_query!r} (O-60)"
+                extraction, extractor = rules, extractor + "+rules_override"
         else:
             meta["fallback"] = "rules_fallback used after LLM failure"
     else:

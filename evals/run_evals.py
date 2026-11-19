@@ -171,7 +171,10 @@ def main() -> int:
         if (mode == "rules" and "R" not in run_in) or (mode != "rules" and "M" not in run_in):
             skipped.append(sc["id"])
             continue
-        s = Session(catalog=SqliteCatalog(), tracer=Tracer(), source="eval")
+        try:
+            s = Session(catalog=SqliteCatalog(), tracer=Tracer(), source="eval")
+        except TypeError:          # older code (before PRD §14) has no `source`; used for before/after comparisons
+            s = Session(catalog=SqliteCatalog(), tracer=Tracer())
         responses, states, error = [], [], None
         try:
             for turn in sc["turns"]:
@@ -189,6 +192,9 @@ def main() -> int:
         if "expect_orders" in sc and len(s.orders.orders) != sc["expect_orders"]:
             failures.append({"turn": None, "check": f"orders: expected {sc['expect_orders']}, got {len(s.orders.orders)}"})
         reply_events = [e for e in s.tracer.events if e["name"] == "agent.response"]
+        extractors = [e["attrs"].get("extractor", "") for e in s.tracer.events if e["name"] == "intent.extracted"]
+        answers = [(e["attrs"].get("result") or {}).get("method") for e in s.tracer.events
+                   if e["name"] in ("answer_about_product", "answer_store_policy")]
         first_bad = None
         if failures:
             t = next((f["turn"] for f in failures if f["turn"] is not None), None)
@@ -200,6 +206,9 @@ def main() -> int:
                 ev = reply_events[idx]
                 first_bad = {"seq": ev["seq"], "name": ev["name"], "response_kind": ev["attrs"].get("response_kind")}
         results.append({"id": sc["id"], "group": sc["group"], "probe": sc.get("probe", False), "passed": not failures,
+                        "ai_readings": sum(x.startswith("llm") for x in extractors),
+                        "rules_fallbacks": sum(x == "rules_fallback" for x in extractors),
+                        "ai_answers": sum(a == "llm" for a in answers), "answers": len(answers),
                         "failures": failures, "trace_id": s.tracer.trace_id, "first_failing_event": first_bad,
                         "replies": [None if r is None else {"kind": r.kind, "message": r.message[:300],
                                                             "cited": r.cited_fields} for r in responses],
@@ -214,12 +223,27 @@ def main() -> int:
                "scenarios_version": spec["version"], "total": n, "passed": passed,
                "core": f"{sum(r['passed'] for r in core)}/{len(core)}",
                "probes": f"{sum(r['passed'] for r in probes)}/{len(probes)}", "skipped_for_mode": skipped,
+               "ai_readings": sum(r["ai_readings"] for r in results),
+               "rules_fallbacks": sum(r["rules_fallbacks"] for r in results),
+               "ai_answers": sum(r["ai_answers"] for r in results), "answers": sum(r["answers"] for r in results),
                "results": results}
+    # A run in AI mode only counts if the AI really answered (found 2026-11-19: three "AI" runs were mostly rules
+    # because the free daily quotas ran out). Below 80% of readings by the AI, the run is labelled not valid.
+    readings = summary["ai_readings"] + summary["rules_fallbacks"]
+    summary["ai_share"] = round(summary["ai_readings"] / readings, 2) if readings else None
+    summary["valid_ai_run"] = None if mode == "rules" else bool(readings and summary["ai_share"] >= 0.8)
     out = RESULTS / f"{stamp}_{mode}" if path == SCENARIOS else RESULTS / f"{stamp}_{path.stem}_{mode}"
     out.with_suffix(".json").write_text(json.dumps(summary, indent=1, ensure_ascii=False))
     lines = [f"# Eval run {stamp} ({mode} mode)", "",
              f"**{passed}/{n} scenarios passed.** Core: {summary['core']} · Probes (phrasings the rules weren't written for): {summary['probes']}."
-             + (f" Skipped in {mode} mode: {len(skipped)}." if skipped else ""), "",
+             + (f" Skipped in {mode} mode: {len(skipped)}." if skipped else "")
+             + (f" Who answered: {summary['ai_readings']} messages read by the AI, {summary['rules_fallbacks']} fell "
+                f"back to the rules; {summary['ai_answers']} of {summary['answers']} answers written by the AI."
+                if mode != "rules" else "")
+             + ("" if summary["valid_ai_run"] in (None, True) else
+                f"\n\n**NOT A VALID AI-MODE RUN:** only {summary['ai_readings']} of {readings} message readings came "
+                "from the AI (needs 80%). Most answers came from the rules, so this measures the rules, not the AI."),
+             "",
              "| Scenario | Group | Probe | Result | What failed | Trace (first failing event) |", "|---|---|---|---|---|---|"]
     for r in results:
         what = "; ".join(f"turn {f['turn']}: {f['check']}" for f in r["failures"]) or ""

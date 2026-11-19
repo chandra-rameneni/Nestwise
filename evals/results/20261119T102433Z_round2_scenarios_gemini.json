@@ -1,0 +1,1103 @@
+{
+ "run_at": "20261119T102433Z",
+ "mode": "gemini",
+ "model": "gemini-2.5-flash",
+ "scenarios_version": "round2-1",
+ "total": 43,
+ "passed": 43,
+ "core": "43/43",
+ "probes": "0/0",
+ "skipped_for_mode": [
+  "R2-V07",
+  "R2-B05",
+  "R2-B06",
+  "R2-B07",
+  "R2-B08"
+ ],
+ "ai_readings": 11,
+ "rules_fallbacks": 8,
+ "ai_answers": 17,
+ "answers": 29,
+ "results": [
+  {
+   "id": "R2-C01",
+   "group": "conversation",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 0,
+   "ai_answers": 1,
+   "answers": 1,
+   "failures": [],
+   "trace_id": "tr_7d9a293d5662",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "This bed is 1650 mm wide, which is 165 cm.",
+     "cited": [
+      "Width"
+     ]
+    },
+    {
+     "kind": "ANSWER",
+     "message": "That's 1.65 m wide.",
+     "cited": [
+      "Width"
+     ]
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-C02",
+   "group": "conversation",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 0,
+   "ai_answers": 1,
+   "answers": 1,
+   "failures": [],
+   "trace_id": "tr_7267e353130e",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "This bed is 1650 mm wide, which is 165 cm.",
+     "cited": [
+      "Width"
+     ]
+    },
+    {
+     "kind": "ANSWER",
+     "message": "That's 1.65 m wide.",
+     "cited": [
+      "Width"
+     ]
+    },
+    {
+     "kind": "ANSWER",
+     "message": "Sorry about that! That's 1.65 m wide.",
+     "cited": [
+      "Width"
+     ]
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-C03",
+   "group": "conversation",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 0,
+   "ai_answers": 1,
+   "answers": 1,
+   "failures": [],
+   "trace_id": "tr_30008d9bae0a",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "This bed is 2100 mm, or 2.1 meters, long.",
+     "cited": [
+      "Depth"
+     ]
+    },
+    {
+     "kind": "ANSWER",
+     "message": "That's 6.9 ft long.",
+     "cited": [
+      "Depth"
+     ]
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-C04",
+   "group": "conversation",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 2,
+   "rules_fallbacks": 0,
+   "ai_answers": 1,
+   "answers": 2,
+   "failures": [],
+   "trace_id": "tr_bfec71f860cb",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "It's made from Rosewood (Sheesham).",
+     "cited": [
+      "Primary Material Subtype"
+     ]
+    },
+    {
+     "kind": "ANSWER",
+     "message": "Sorry, the mattress isn't included.",
+     "cited": [
+      "With Mattress"
+     ]
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-C05",
+   "group": "conversation",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 1,
+   "rules_fallbacks": 0,
+   "ai_answers": 0,
+   "answers": 1,
+   "failures": [],
+   "trace_id": "tr_0af58594c284",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 1 temple to choose from. Here it is:\n• SRK GROUPS Aluminium, Wooden Home Temple: ₹1,298 total, arrives in 7 days, 18 cm wide.\nTell me your budget or anything else that matters, and I'll narrow these down.",
+     "cited": []
+    },
+    {
+     "kind": "ANSWER",
+     "message": "There's one photo of it. Tap the card to see it larger on its page.",
+     "cited": [
+      "Photos"
+     ]
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-C06",
+   "group": "conversation",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 1,
+   "rules_fallbacks": 0,
+   "ai_answers": 0,
+   "answers": 0,
+   "failures": [],
+   "trace_id": "tr_4e493fa10837",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 1 temple to choose from. Here it is:\n• SRK GROUPS Aluminium, Wooden Home Temple: ₹1,298 total, arrives in 7 days, 18 cm wide.\nTell me your budget or anything else that matters, and I'll narrow these down.",
+     "cited": []
+    },
+    {
+     "kind": "ANSWER",
+     "message": "Yes, the SRK GROUPS Aluminium, Wooden Home Temple I just showed you. What would you like to know about it?",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-C07",
+   "group": "conversation",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 1,
+   "rules_fallbacks": 0,
+   "ai_answers": 0,
+   "answers": 0,
+   "failures": [],
+   "trace_id": "tr_0c80bf654576",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 16 sofas are under ₹20,000. Here are the 3 best value:\n• Durian BID/32625/A/1 Leatherette 1 Seater Sofa: ₹9,209 total, arrives in 8 days, 1 seat, 56 cm wide.\n• Durian BID/32626/A/1 Leatherette 1 Seater Sofa: ₹11,375 total, arrives in 9 days, 1 seat, 80 cm wide.\n• Durian BID/32625/A/2 Leat",
+     "cited": []
+    },
+    {
+     "kind": "CLARIFY",
+     "message": "Which one do you mean? I showed: 1. Durian BID/32625/A/1 Leatherette 1 Seater Sofa; 2. Durian BID/32626/A/1 Leatherette 1 Seater Sofa; 3. Durian BID/32625/A/2 Leatherette 2 Seater Sofa.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-C08",
+   "group": "conversation",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 2,
+   "rules_fallbacks": 0,
+   "ai_answers": 0,
+   "answers": 0,
+   "failures": [],
+   "trace_id": "tr_b6b83a8245d1",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 1 temple to choose from. Here it is:\n• SRK GROUPS Aluminium, Wooden Home Temple: ₹1,298 total, arrives in 7 days, 18 cm wide.\nTell me your budget or anything else that matters, and I'll narrow these down.",
+     "cited": []
+    },
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 13 bedsheets to choose from. Here are the 3 best value:\n• JBC Collection Cotton Printed Single Bedsheet: ₹309 total, arrives in 6 days.\n• jaisayram Cotton Abstract Single Bedsheet: ₹329 total, arrives in 6 days.\n• Abhomedecor Cotton Abstract Double Bedsheet: ₹599 total, arrives in 5 days.",
+     "cited": []
+    },
+    {
+     "kind": "CLARIFY",
+     "message": "Which one do you mean? I showed: 1. JBC Collection Cotton Printed Single Bedsheet; 2. jaisayram Cotton Abstract Single Bedsheet; 3. Abhomedecor Cotton Abstract Double Bedsheet.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-X01",
+   "group": "challenge",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 1,
+   "rules_fallbacks": 0,
+   "ai_answers": 1,
+   "answers": 1,
+   "failures": [],
+   "trace_id": "tr_8ef546bc83cc",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 1 temple to choose from. Here it is:\n• SRK GROUPS Aluminium, Wooden Home Temple: ₹1,298 total, arrives in 7 days, 18 cm wide.\nTell me your budget or anything else that matters, and I'll narrow these down.",
+     "cited": []
+    },
+    {
+     "kind": "ANSWER",
+     "message": "Good eye! It is made from multi-ply wood and aluminium, and it's silver in colour, which might be why it doesn't look like traditional wood.",
+     "cited": [
+      "Name",
+      "Material",
+      "Description",
+      "Color"
+     ]
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-X02",
+   "group": "challenge",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 0,
+   "ai_answers": 0,
+   "answers": 0,
+   "failures": [],
+   "trace_id": "tr_b67f32c4ead8",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "Plenty! We have 761 home décor products, including showpieces (311), table decor & handicrafts (147), wall decor & clocks (140), decorative lighting & lamps (86), flowers, plants & vases (24) and festive decor (18). Which would you like to see?",
+     "cited": []
+    },
+    {
+     "kind": "ANSWER",
+     "message": "Fair point, sorry about that! I'm a shopping assistant: I can find products, answer questions about them and help you order. Tell me what you're looking for and I'll take another look.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-X03",
+   "group": "challenge",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 0,
+   "ai_answers": 1,
+   "answers": 1,
+   "failures": [],
+   "trace_id": "tr_85e7903ed59c",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "Going by the care instructions, you should clean it with a dry cloth and wipe up spills right away. It doesn't specifically mention coffee or other types of stains, so I can't say more than that.",
+     "cited": [
+      "Care Instructions"
+     ]
+    },
+    {
+     "kind": "ANSWER",
+     "message": "Sorry, I can only answer from what's in this product's details, like its size, materials, delivery and care. I'm a shopping assistant: I can help you find things and answer questions about this product.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-X04",
+   "group": "challenge",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 0,
+   "ai_answers": 1,
+   "answers": 1,
+   "failures": [],
+   "trace_id": "tr_a394907b05f7",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "Sorry, this bed is not waterproof. The care instructions advise cleaning immediately if water spills.",
+     "cited": [
+      "Care Instructions"
+     ]
+    },
+    {
+     "kind": "ANSWER",
+     "message": "Sorry, I can only answer from what's in this product's details, like its size, materials, delivery and care. I'm a shopping assistant: I can help you find things and answer questions about this product.",
+     "cited": []
+    },
+    {
+     "kind": "ANSWER",
+     "message": "Sorry, that detail just isn't in this product's information, so I can't tell you more. Want to know its size, materials, delivery time or care instead?",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-V01",
+   "group": "voice",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 1,
+   "rules_fallbacks": 0,
+   "ai_answers": 1,
+   "answers": 1,
+   "failures": [],
+   "trace_id": "tr_edd055b943b1",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "Sorry, the mattress isn't included with this bed.",
+     "cited": [
+      "With Mattress"
+     ]
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-V02",
+   "group": "voice",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 0,
+   "ai_answers": 1,
+   "answers": 1,
+   "failures": [],
+   "trace_id": "tr_7b9be8e7d71d",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "It will be delivered in 5 days.",
+     "cited": [
+      "Delivery time"
+     ]
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-V03",
+   "group": "voice",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 0,
+   "ai_answers": 1,
+   "answers": 1,
+   "failures": [],
+   "trace_id": "tr_b21c25b46b6e",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "You can clean it with a soft dry cloth, and if water spills, please wipe it up immediately.",
+     "cited": [
+      "Care Instructions"
+     ]
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-V04",
+   "group": "voice",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 0,
+   "ai_answers": 1,
+   "answers": 1,
+   "failures": [],
+   "trace_id": "tr_536bc9436907",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "Yes, this bed is suitable for a kids' room.",
+     "cited": [
+      "Suitable For"
+     ]
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-V05",
+   "group": "voice",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 0,
+   "ai_answers": 1,
+   "answers": 1,
+   "failures": [],
+   "trace_id": "tr_d667c2a15828",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "Going by the care instructions, you should clean it with a dry cloth and wipe up spills right away. It doesn't specifically mention coffee or other types of stains, so I can't say more than that.",
+     "cited": [
+      "Care Instructions"
+     ]
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-V06",
+   "group": "voice",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 0,
+   "ai_answers": 1,
+   "answers": 1,
+   "failures": [],
+   "trace_id": "tr_baf1ae75f777",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "Sorry, this bed is not waterproof. The care instructions advise cleaning immediately if water spills on it.",
+     "cited": [
+      "Care Instructions"
+     ]
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-V08",
+   "group": "voice",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 1,
+   "rules_fallbacks": 0,
+   "ai_answers": 2,
+   "answers": 2,
+   "failures": [],
+   "trace_id": "tr_8152a65745cc",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "It's made from solid Rosewood (Sheesham).",
+     "cited": [
+      "Primary Material",
+      "Primary Material Subtype"
+     ]
+    },
+    {
+     "kind": "ANSWER",
+     "message": "It is 1650 mm wide, which is 165 cm.",
+     "cited": [
+      "Width"
+     ]
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-P01",
+   "group": "policy",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 0,
+   "ai_answers": 1,
+   "answers": 1,
+   "failures": [],
+   "trace_id": "tr_62afa3c3ab1e",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "If your order arrives damaged, please tell us within 48 hours of delivery and include a photo of the damage and the packaging. We'll send you a free replacement, or a full refund if a replacement isn't available, and you won't pay for the return pickup.",
+     "cited": [
+      "P1 Damaged in delivery"
+     ]
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-P02",
+   "group": "policy",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 0,
+   "ai_answers": 0,
+   "answers": 1,
+   "failures": [],
+   "trace_id": "tr_833b99f73abd",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "Some products (mostly furniture) come with free installation; the product page says so. If the installer damages the product or your home during installation, tell us within 48 hours and we'll arrange a repair or replacement of the product at no cost.",
+     "cited": [
+      "P2 Installation"
+     ]
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-P03",
+   "group": "policy",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 0,
+   "ai_answers": 0,
+   "answers": 1,
+   "failures": [],
+   "trace_id": "tr_fea4262a11ff",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "Some products (mostly furniture) come with free installation; the product page says so. If you install the product yourself, or someone else does, the warranty becomes void, and damage caused during that installation isn't covered.",
+     "cited": [
+      "P2 Installation"
+     ]
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-P04",
+   "group": "policy",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 0,
+   "ai_answers": 0,
+   "answers": 1,
+   "failures": [],
+   "trace_id": "tr_3ebb830dc921",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "Home décor, home furnishing and kitchen & dining: return within 10 days of delivery if unused and in the original packaging. Furniture: returns only if it's damaged, defective or not what you ordered (wrong item, colour or size), reported within 10 days of delivery.",
+     "cited": [
+      "P3 Returns"
+     ]
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-P05",
+   "group": "policy",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 0,
+   "ai_answers": 0,
+   "answers": 1,
+   "failures": [],
+   "trace_id": "tr_00c58e82d70d",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "Sorry, this one can't be returned: it's one of our small no-return items. If it arrives broken, send us a photo within 48 hours and we'll review it and send a replacement (no refunds on these).",
+     "cited": [
+      "P3 Returns"
+     ]
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-P06",
+   "group": "policy",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 0,
+   "ai_answers": 0,
+   "answers": 1,
+   "failures": [],
+   "trace_id": "tr_42bdf0f98361",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "You can order from 1 up to 5 of these at a time (21 in stock). For more, contact us.",
+     "cited": [
+      "P6 Order limits"
+     ]
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-P07",
+   "group": "policy",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 0,
+   "ai_answers": 0,
+   "answers": 1,
+   "failures": [],
+   "trace_id": "tr_70d9f225d77f",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "Payments run through Razorpay in test mode, by card only for now, using Razorpay's test card details. Cash on delivery: not offered.",
+     "cited": [
+      "P7 Payment"
+     ]
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-P08",
+   "group": "policy",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 0,
+   "ai_answers": 0,
+   "answers": 1,
+   "failures": [],
+   "trace_id": "tr_7b472531f70a",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "Once a return is picked up and checked, the refund goes back to the original payment method within 5–7 business days. Delivery charges are refunded if the return is because of our mistake or damage, and not otherwise.",
+     "cited": [
+      "P4 Refunds"
+     ]
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-N01",
+   "group": "not_policy",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 0,
+   "ai_answers": 1,
+   "answers": 1,
+   "failures": [],
+   "trace_id": "tr_c7a9222911c2",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "Going by the care instructions, you should clean it with a dry cloth and wipe up spills right away. It doesn't specifically mention coffee or other types of stains, so I can't say more than that.",
+     "cited": [
+      "Care Instructions"
+     ]
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-N02",
+   "group": "not_policy",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 1,
+   "rules_fallbacks": 0,
+   "ai_answers": 0,
+   "answers": 0,
+   "failures": [],
+   "trace_id": "tr_0e35fd63d1e5",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "UNSUPPORTED",
+     "message": "That's not something I can help with, sorry. But I'd love to help you find something for your home: home décor, kitchen & dining, home furnishing and furniture.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-N03",
+   "group": "not_policy",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 0,
+   "ai_answers": 0,
+   "answers": 1,
+   "failures": [],
+   "trace_id": "tr_72352ef3e8a2",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "Delivery Condition: Knock Down. Installation & Demo Details: Installation and demo for this product is done free of cost as part of this purchase. Our service partner will visit your location within 72 business hours from the delivery of the product.",
+     "cited": [
+      "Delivery Condition",
+      "Installation & Demo Details"
+     ]
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-N04",
+   "group": "not_policy",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 1,
+   "ai_answers": 0,
+   "answers": 0,
+   "failures": [],
+   "trace_id": "tr_a0850ca0e940",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "UNSUPPORTED",
+     "message": "That's not something I can help with, sorry. But I'd love to help you find something for your home: home décor, kitchen & dining, home furnishing and furniture.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-N05",
+   "group": "not_policy",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 1,
+   "ai_answers": 0,
+   "answers": 0,
+   "failures": [],
+   "trace_id": "tr_6c9d95608e6d",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "DEFER",
+     "message": "Sorry, I can't handle refunds or returns just yet. I can help you find and buy products, though.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-N06",
+   "group": "not_policy",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 1,
+   "ai_answers": 0,
+   "answers": 0,
+   "failures": [],
+   "trace_id": "tr_c74c96ca3aec",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "UNSUPPORTED",
+     "message": "That's not something I can help with, sorry. But I'd love to help you find something for your home: home décor, kitchen & dining, home furnishing and furniture.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-F01",
+   "group": "frustration",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 1,
+   "ai_answers": 0,
+   "answers": 0,
+   "failures": [],
+   "trace_id": "tr_5a2e59c761d8",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "Sorry, that's fair. I can only answer from this bed's details, and they don't cover everything. I can tell you about its size, materials, delivery and care, or help you order it.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-F02",
+   "group": "frustration",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 0,
+   "ai_answers": 0,
+   "answers": 2,
+   "failures": [],
+   "trace_id": "tr_403c5d764743",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "Sorry, I don't have that detail for this bed. I can tell you about its size, materials, delivery or care.",
+     "cited": []
+    },
+    {
+     "kind": "ANSWER",
+     "message": "Sorry, I don't have that one either. For this bed, I can tell you its size, materials, delivery time and care, or help you order it.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-F03",
+   "group": "frustration",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 1,
+   "ai_answers": 0,
+   "answers": 0,
+   "failures": [],
+   "trace_id": "tr_a90e8b5875a1",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "For this bed, I can tell you its size, materials, delivery time and care, or help you order it. I can also find other products for your home.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-F04",
+   "group": "trick",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 1,
+   "ai_answers": 0,
+   "answers": 0,
+   "failures": [],
+   "trace_id": "tr_eba49b04df96",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "UNSUPPORTED",
+     "message": "Sorry, I can't help with that. I can only help you pick the right product and buy it, with your approval.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-F05",
+   "group": "trick",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 1,
+   "ai_answers": 0,
+   "answers": 0,
+   "failures": [],
+   "trace_id": "tr_3fdcf125a107",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "UNSUPPORTED",
+     "message": "Sorry, I can't help with that. I can only help you pick the right product and buy it, with your approval.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-F06",
+   "group": "frustration",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 1,
+   "ai_answers": 0,
+   "answers": 0,
+   "failures": [],
+   "trace_id": "tr_c55e6e3e0efa",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "UNSUPPORTED",
+     "message": "Apologies for the inconvenience. Hope you find what you're looking for.",
+     "cited": []
+    }
+   ],
+   "notes": "lookalike: a real insult still gets B15"
+  },
+  {
+   "id": "R2-B01",
+   "group": "fit",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 0,
+   "ai_answers": 0,
+   "answers": 0,
+   "failures": [],
+   "trace_id": "tr_ace01bb479f1",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "CLARIFY",
+     "message": "It's 165 cm wide and 210 cm long. How much space do you have for it? Tell me and I'll check.",
+     "cited": [
+      "Width",
+      "Depth"
+     ]
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-B02",
+   "group": "fit",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 0,
+   "ai_answers": 0,
+   "answers": 0,
+   "failures": [],
+   "trace_id": "tr_c2f4fa4fe9ea",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "CLARIFY",
+     "message": "It's 165 cm wide and 210 cm long. How much space do you have for it? Tell me and I'll check.",
+     "cited": [
+      "Width",
+      "Depth"
+     ]
+    },
+    {
+     "kind": "ANSWER",
+     "message": "Good news, it fits! It's 165 × 210 cm, and your space is 300 × 250 cm.",
+     "cited": [
+      "Width",
+      "Depth"
+     ]
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-B03",
+   "group": "fit",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 0,
+   "ai_answers": 0,
+   "answers": 0,
+   "failures": [],
+   "trace_id": "tr_67e1ef41b98e",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "CLARIFY",
+     "message": "It's 165 cm wide and 210 cm long. How much space do you have for it? Tell me and I'll check.",
+     "cited": [
+      "Width",
+      "Depth"
+     ]
+    },
+    {
+     "kind": "ANSWER",
+     "message": "Sorry, it won't fit: it's 165 cm wide, 15 cm more than your 150 cm.",
+     "cited": [
+      "Width",
+      "Depth"
+     ]
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-B04",
+   "group": "browse",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 0,
+   "ai_answers": 0,
+   "answers": 0,
+   "failures": [],
+   "trace_id": "tr_a98b5f8638a4",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "Plenty! We have 761 home décor products, including showpieces (311), table decor & handicrafts (147), wall decor & clocks (140), decorative lighting & lamps (86), flowers, plants & vases (24) and festive decor (18). Which would you like to see?",
+     "cited": []
+    }
+   ],
+   "notes": null
+  }
+ ]
+}
