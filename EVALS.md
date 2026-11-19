@@ -120,7 +120,7 @@ Evals approved by the PM: `evals/ROUND2_EVALS_DRAFT.md` → `evals/round2_scenar
   - RZ-17 (failure path) confirmed: the card payment failed inside Razorpay; nothing was ordered, the cart and approval were kept. Found two bugs and fixed them: the failure message showed twice (Razorpay reports a failure more than once) and carried an "Approved" label.
   - RZ-18 (closed window) confirmed after the fix: one message, Pay re-enabled, no order.
   - Pay button disabled from the click until the outcome (PM request), confirmed.
-  - **RZ-16 (a successful payment) not yet confirmed live:** Razorpay's test bank page opens as a pop-up, which the built-in browser blocks. To be done by the PM in Chrome.
+  - **RZ-16 (a successful payment) confirmed live by the PM in Chrome (2026-11-19):** test card, ₹24,999 paid; the store's trace shows approval granted → Pay clicked → re-check passed → Razorpay order `order_U1ypo3ixLHuzQj` created for 2,499,900 paise → window opened → **signature verified** → order created, paid, test mode. No signature is stored in the trace. (The built-in browser blocks Razorpay's test bank pop-up, so success can't be shown there.)
 - 283 tests pass in total.
 
 ## Observed failures, all sources
