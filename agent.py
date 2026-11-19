@@ -98,9 +98,13 @@ def default_catalog():
 
 
 class Session:
-    def __init__(self, catalog=None, tracer: Optional[Tracer] = None, orders: Optional[MockOrderService] = None):
+    def __init__(self, catalog=None, tracer: Optional[Tracer] = None, orders: Optional[MockOrderService] = None,
+                 source: str = "test"):
+        """source (PRD §14): 'store' for a chat in the web store, 'eval' for an eval run, 'test' for automated tests.
+        Test sessions keep their trace in memory only, so traces/ grows only from real use and evals."""
         self.catalog = catalog or default_catalog()
-        self.tracer = tracer or Tracer()
+        self.source = source
+        self.tracer = tracer or Tracer(persist=source != "test")
         self.orders = orders or MockOrderService()
         self.intent: Optional[Intent] = None
         self.eligible_ids: list[str] = []
@@ -128,7 +132,8 @@ class Session:
         self._rzp_order: Optional[dict] = None      # PRD §13: Razorpay test order for the current approval
         self._pending_qty: Optional[dict] = None    # B26: "Shall I make it 5?"
         self.tracer.event("session", "session.start", catalog_version=self.catalog.meta.get("version"),
-                          llm_configured=intent_mod.llm_available())
+                          llm_configured=intent_mod.llm_available(), source=source,
+                          payments=payments.mode())
 
     # ------------------------------------------------------------------ helpers
     @staticmethod
@@ -160,6 +165,7 @@ class Session:
             self._challenges = 0
         self.history.append(("assistant", r.message))
         self.tracer.event("agent", "agent.response", response_kind=r.kind, reason_codes=r.reason_codes,
+                          message=r.message[:300],
                           recommended_ids=[x["product_id"] for x in r.recommendations],
                           cart_id=r.cart.cart_id if r.cart else None,
                           order_id=r.order.order_id if r.order else None,

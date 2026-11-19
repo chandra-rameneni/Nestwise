@@ -171,7 +171,7 @@ def main() -> int:
         if (mode == "rules" and "R" not in run_in) or (mode != "rules" and "M" not in run_in):
             skipped.append(sc["id"])
             continue
-        s = Session(catalog=SqliteCatalog(), tracer=Tracer())
+        s = Session(catalog=SqliteCatalog(), tracer=Tracer(), source="eval")
         responses, states, error = [], [], None
         try:
             for turn in sc["turns"]:

@@ -27,3 +27,4 @@ Every AI product management skill this project uses, where it lives, and whether
 | 20 | Routing: deciding which source or tool answers (listing, policy, code, refusal) | `store_policy.topic_of`, `intent.extract` (B41 routing) | Yes (2026-11-19) |
 | 21 | Rate limits and fair eval runs (pacing, cool-downs, checking what actually ran) | `llm.py`, `evals/run_evals.py` (INTENTGUARD_EVAL_PACE_S) | Yes (2026-11-19) |
 | 22 | Separating permissions around money (agent prepares, code sets the amount, human clicks, signature confirms) | `payments.py`, PRD §13 (RZ1–RZ10) | Yes (2026-11-19) |
+| 23 | Observability across all chats (a dashboard: health, failures, safety, funnel; labelled traffic; the loop to evals) | `dashboard.py`, `web/dashboard.html`, PRD §14 | Yes (2026-11-19) |

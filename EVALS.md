@@ -123,6 +123,13 @@ Evals approved by the PM: `evals/ROUND2_EVALS_DRAFT.md` → `evals/round2_scenar
   - **RZ-16 (a successful payment) confirmed live by the PM in Chrome (2026-11-19):** test card, ₹24,999 paid; the store's trace shows approval granted → Pay clicked → re-check passed → Razorpay order `order_U1ypo3ixLHuzQj` created for 2,499,900 paise → window opened → **signature verified** → order created, paid, test mode. No signature is stored in the trace. (The built-in browser blocks Razorpay's test bank pop-up, so success can't be shown there.)
 - 283 tests pass in total.
 
+### Observability dashboard (2026-11-19)
+
+- `tests/test_dashboard.py`: 16 tests (DB-01 to DB-15 plus routes) on planted traces with known counts. Sabotage check: with the store/test label ignored, 8 tests failed as they should.
+- Tests no longer write to `traces/` (they used to add thousands of files); store chats are labelled `store`, eval runs `eval`.
+- **Manual (DB-16):** real chats in the store, AI mode → the dashboard showed them (13 chats today, AI share 100%, funnel 13 → 9 → 5 → 2 → 1, one challenge in "needs attention"); "Open trace" opened the right chat in the inspector.
+- **Found in AI mode during the check:** O-59 (a confident guess, "not waterproof", passed the citation check) and O-60 ("do you sell mobiles?" answered with store info). Neither shows on the dashboard as a failure: it can only count what the agent admits. Both go to the model-mode evals.
+
 ## Observed failures, all sources
 
 | ID | Source | First failure upstream | Customer impact | Status and regression test |

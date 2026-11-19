@@ -4,13 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Agent Inspector · Nestwise</title>
-<link rel="stylesheet" href="/static/styles.css?v=6">
+<link rel="stylesheet" href="/static/styles.css?v=7">
 </head>
 <body>
 <header class="top">
   <div class="wrap top-inner">
     <a class="logo" href="/" aria-label="Nestwise home">Nest<span>wise</span><small>with IntentGuard</small></a>
-    <nav class="nav-links"><a href="/">Back to the store</a></nav>
+    <nav class="nav-links"><a href="/dashboard">Dashboard</a><a href="/">Back to the store</a></nav>
   </div>
 </header>
 <main class="inspector">
@@ -51,7 +51,14 @@
         <pre>${esc(JSON.stringify(a, null, 2))}</pre></details>`;
     }).join("");
   }
-  async function load() { events = (await fetch("/api/trace").then((r) => r.json())).events; render(); }
+  // /inspector?trace=tr_... opens a saved trace (linked from the dashboard, PRD §14); otherwise the current chat.
+  const wanted = new URLSearchParams(location.search).get("trace");
+  async function load() {
+    const url = wanted ? "/api/trace/" + encodeURIComponent(wanted) : "/api/trace";
+    const r = await fetch(url);
+    events = r.ok ? (await r.json()).events : [];
+    render();
+  }
   document.getElementById("kinds").addEventListener("click", (e) => {
     const b = e.target.closest("button[data-k]"); if (!b) return;
     hidden.has(b.dataset.k) ? hidden.delete(b.dataset.k) : hidden.add(b.dataset.k); render();

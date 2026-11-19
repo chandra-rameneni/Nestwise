@@ -752,3 +752,44 @@ P7 (Payment) is updated once built: *"Payments run through Razorpay in test mode
 3. Phone and email are **mandatory, pre-filled** with fake demo values the shopper can edit.
 
 **Note on test-mode limits:** Razorpay doesn't promise 100% uptime, and its API has rate limits; I couldn't confirm exact test-mode numbers without checking their docs, so RZ9 treats any refusal, error or timeout the same way.
+
+## 14. Observability dashboard *(approved by the PM 2026-11-19: candidates button now, old traces kept and excluded; built 2026-11-19: `dashboard.py`, `web/dashboard.html`, `/api/dashboard`, `/api/trace/{id}`, `/api/eval-candidates`)*
+
+**Who it's for:** the team running the agent (PM, support lead, engineers), not shoppers. In the demo: the PM showing how the agent would be run in production.
+
+**What it's for:** answering four questions at a glance, from real chats, and feeding the improvement loop: **the dashboard spots a new failure → it becomes an eval → it gets fixed → the eval stops it coming back.** The inspector shows one chat in detail (a microscope); the dashboard summarises all chats (a map).
+
+**Where the data comes from:** the traces the agent already writes. No new data is collected and no shopper personal data exists (§13 Customer data).
+
+### First, separate real chats from test traffic
+Today `traces/` holds 11,273 files, mostly from tests and eval runs, with nothing saying which is which. Every number would be wrong.
+- Each trace records its **source** at the start: `store` (a chat in the web store), `eval` (an eval run), `test` (automated tests). Old traces have no source and count as `unknown`.
+- The dashboard shows **store** chats by default, with a switch to include eval runs.
+- Tests stop writing trace files to disk (they keep traces in memory), so `traces/` only grows from real use and evals.
+- **A known limit (found while building, O-59):** the dashboard can only count what the agent *admits*. A confident wrong answer ("this bed is not waterproof", a guess) shows as a normal answer, not a "don't know". Catching those needs evals in AI mode and spot checks of traces, not counting.
+
+### What it shows
+
+| Section | Shows | Answers |
+|---|---|---|
+| **Headline numbers** (for the chosen period: today, 7 days, all) | Chats · messages · **AI share** (replies understood by the AI vs the rules, and why: quota, timeout) · **reply time** (typical and slowest 1 in 10) · **"don't know" rate** · paid orders and amount | Is the agent healthy? |
+| **Where it struggles** | Counts of: "don't know" answers, challenges ("can't you answer that?"), frustration, catch-all / didn't-understand, off-topic, stuck recoveries; **top unanswered questions** (grouped wording, with counts) | Where is it failing? What should we add (a policy line, a rule, an eval)? |
+| **Safety** | Tricks refused · "pay for me" refused · payments not verified · approvals cancelled (price change, quantity change, requirement change) · product text flagged as instructions | Is it safe? |
+| **Funnel** | Chats → added to cart → approved → payment opened → ordered (a strict funnel; "searched" is shown beside it, because shoppers can buy straight from a product page) | Is it working for the business? |
+| **Needs attention** | The latest 25 replies that were a "don't know", catch-all, challenge, frustration or fallback, with the shopper's message, the reply, the time, and **a link to its full trace in the inspector** | What exactly went wrong? |
+
+### The improvement loop, built in *(proposed)*
+Each row in "Needs attention" has **Add to eval candidates**: it saves the shopper's message, the page and the reply to `evals/candidates.jsonl`. The PM reviews candidates and turns the good ones into evals (as with OBSERVATIONS.md today). Nothing is added to the evals automatically.
+
+### How it looks
+One page, `/dashboard`, in the same style as the store: a row of headline numbers, the funnel as a simple bar chart, two short tables (where it struggles; safety), and the "needs attention" list. Plain HTML and JavaScript, no new libraries. A link from the inspector and from the store footer.
+
+### Rules
+- **Counts only from traces;** every number links back to the traces behind it (no number without evidence).
+- **No secrets or payment details** ever appear (traces are already redacted).
+- **Internal page:** the demo runs locally; if it's ever hosted, the dashboard needs a login (out of scope now).
+- **Fast enough:** the page loads in under 2 seconds with a few thousand chats (results are cached and refreshed every minute).
+
+### Questions for the PM
+1. **"Add to eval candidates" button:** build it now (recommended: it shows the loop in the demo), or later?
+2. **Old traces** (11,273 files, 207 MB, mostly tests): delete them, or keep them and just exclude them from the dashboard (recommended: keep, they back earlier eval results)?

@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent Dashboard · Nestwise</title>
+<link rel="stylesheet" href="/static/styles.css?v=7">
+<style>
+  .dash { max-width: 1120px; margin: 0 auto; padding: 28px 22px 60px; }
+  .dash h1 { font-size: clamp(28px, 4vw, 38px); }
+  .dash .lede { color: var(--muted); margin: 6px 0 20px; max-width: 70ch; }
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 22px; }
+  .filters .pill[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+  .filters label { font-size: 14px; color: var(--muted); display: flex; gap: 6px; align-items: center; margin-left: 8px; }
+  .tiles2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 26px; }
+  .stat { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px; }
+  .stat .k { font-size: 13px; color: var(--muted); }
+  .stat .v { font: 700 30px var(--display); letter-spacing: -0.02em; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .stat .s { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+  .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; margin-bottom: 18px; }
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px; min-width: 0; }
+  .panel h2 { font-size: 19px; margin-bottom: 4px; }
+  .panel .hint { font-size: 13px; color: var(--muted); margin: 0 0 12px; }
+  .funnel { display: grid; gap: 8px; }
+  .frow { display: grid; grid-template-columns: 120px minmax(0, 1fr) 44px; gap: 10px; align-items: center; font-size: 14px; }
+  .frow .bar { height: 18px; background: var(--alt); border-radius: 4px; position: relative; }
+  .frow .bar i { position: absolute; inset: 0 auto 0 0; background: var(--accent); border-radius: 4px; min-width: 2px; }
+  .frow .n { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+  .frow .bar:hover i { filter: brightness(1.15); }
+  .kv { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .kv td { padding: 7px 2px; border-bottom: 1px solid var(--line); }
+  .kv td:last-child { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+  .att { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  .att th { text-align: left; color: var(--muted); font-weight: 500; padding: 8px 6px; border-bottom: 1px solid var(--line); }
+  .att td { padding: 9px 6px; border-bottom: 1px solid var(--line); vertical-align: top; overflow-wrap: anywhere; }
+  .att .why { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 980px; background: var(--unk-bg); color: var(--unk); white-space: nowrap; }
+  .att .reply { color: var(--muted); }
+  .empty2 { color: var(--muted); padding: 20px 0; }
+  .tablewrap { overflow-x: auto; }
+  details.tableview summary { cursor: pointer; font-size: 13px; color: var(--muted); margin-top: 10px; }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap top-inner">
+    <a class="logo" href="/" aria-label="Nestwise home">Nest<span>wise</span><small>with IntentGuard</small></a>
+    <nav class="nav-links" style="margin-left:auto"><a href="/inspector">Inspector</a><a href="/">Store</a></nav>
+  </div>
+</header>
+<main class="dash">
+  <h1>Agent dashboard.</h1>
+  <p class="lede">How the shopping assistant is doing across all chats in the store: is it healthy, where it struggles, is it safe, and does it lead to orders. Every number comes from the recorded traces; every failure links to its full trace.</p>
+
+  <div class="filters" role="group" aria-label="Filters">
+    <button class="pill" type="button" data-period="today">Today</button>
+    <button class="pill" type="button" data-period="7d">Last 7 days</button>
+    <button class="pill" type="button" data-period="all">All time</button>
+    <label><input type="checkbox" id="evals"> Include eval runs</label>
+  </div>
+
+  <section class="tiles2" id="tiles" aria-label="Headline numbers"></section>
+
+  <div class="grid2">
+    <section class="panel"><h2>Funnel.</h2><p class="hint" id="funnel-hint">Chats that reached each step.</p><div class="funnel" id="funnel"></div>
+      <details class="tableview"><summary>Show as a table</summary><table class="kv" id="funnel-table"></table></details></section>
+    <section class="panel"><h2>Where it struggles.</h2><p class="hint">Replies that didn't fully help.</p><table class="kv" id="struggles"></table></section>
+  </div>
+  <div class="grid2">
+    <section class="panel"><h2>Top unanswered questions.</h2><p class="hint">Grouped wording, most asked first. Candidates for a policy line, a rule or an eval.</p><table class="kv" id="unanswered"></table></section>
+    <section class="panel"><h2>Safety.</h2><p class="hint">Guardrails that stepped in.</p><table class="kv" id="safety"></table></section>
+  </div>
+  <section class="panel"><h2>Needs attention.</h2><p class="hint">The latest replies that didn't fully help. Open the trace to see every step, or save it as an eval candidate for review.</p>
+    <div class="tablewrap"><table class="att" id="attention"></table></div></section>
+</main>
+<script>
+(function () {
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const inr = (n) => "₹" + Number(n || 0).toLocaleString("en-IN");
+  const st = { period: "7d", evals: false };
+  let rows = [];
+
+  const fmtMs = (ms) => ms == null ? "–" : ms < 1000 ? `${Math.round(ms)} ms` : `${(ms / 1000).toFixed(1)} s`;
+  function tile(k, v, s) { return `<div class="stat"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div>${s ? `<div class="s">${esc(s)}</div>` : ""}</div>`; }
+  function kv(obj, empty) {
+    const entries = Object.entries(obj);
+    return entries.length ? entries.map(([k, v]) => `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join("") : `<tr><td class="empty2">${esc(empty)}</td></tr>`;
+  }
+
+  async function load() {
+    document.querySelectorAll("[data-period]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.period === st.period)));
+    const d = await fetch(`/api/dashboard?period=${st.period}&include_eval=${st.evals}`).then((r) => r.json());
+    const h = d.headline;
+    if (!h.chats) {
+      document.getElementById("tiles").innerHTML = `<div class="stat" style="grid-column:1/-1"><div class="k">No chats yet</div><div class="s">Chat with the assistant in the store, then come back. Eval runs show up with "Include eval runs".</div></div>`;
+    } else {
+      const why = Object.entries(h.fallback_reasons || {}).map(([k, v]) => `${v} ${k}`).join(", ");
+      document.getElementById("tiles").innerHTML =
+        tile("Chats", h.chats.toLocaleString("en-IN"), `${h.messages} messages`) +
+        tile("AI share", h.ai_share_pct == null ? "–" : h.ai_share_pct + "%", h.rules_fallbacks ? `${h.rules_fallbacks} fell back to rules${why ? " (" + why + ")" : ""}` : "no fallbacks") +
+        tile("Reply time", fmtMs(h.reply_ms_typical), h.reply_ms_slowest_10pct == null ? "" : `typical; slowest 1 in 10: ${fmtMs(h.reply_ms_slowest_10pct)}`) +
+        tile("“Don't know” rate", h.dont_know_pct == null ? "–" : h.dont_know_pct + "%", `${h.dont_know} of ${h.product_answers} product answers`) +
+        tile("Paid orders", h.paid_orders, h.paid_orders ? `${inr(h.paid_amount_inr)} (test mode)` : `${h.orders} orders in total`);
+    }
+    const top = Math.max(1, ...d.funnel.map((f) => f.count));
+    document.getElementById("funnel").innerHTML = d.funnel.map((f) => `<div class="frow"><span>${esc(f.step)}</span>
+      <span class="bar" title="${esc(f.step)}: ${f.count} chats${d.funnel[0].count ? " (" + Math.round(100 * f.count / d.funnel[0].count) + "% of chats)" : ""}"><i style="width:${(100 * f.count / top).toFixed(1)}%"></i></span>
+      <span class="n">${f.count}</span></div>`).join("");
+    document.getElementById("funnel-hint").textContent = `Chats that reached each step. ${d.searched_chats} of ${d.headline.chats} chats searched for products; the rest started from a product page.`;
+    document.getElementById("funnel-table").innerHTML = kv(Object.fromEntries(d.funnel.map((f) => [f.step, f.count])), "");
+    document.getElementById("struggles").innerHTML = kv(d.struggles, "Nothing yet.");
+    document.getElementById("safety").innerHTML = kv(d.safety, "Nothing yet.");
+    document.getElementById("unanswered").innerHTML = d.top_unanswered.length
+      ? d.top_unanswered.map((u) => `<tr><td>${esc(u.question)}</td><td>${u.count}</td></tr>`).join("") : `<tr><td class="empty2">Nothing yet.</td></tr>`;
+    rows = d.needs_attention;
+    document.getElementById("attention").innerHTML = rows.length ? `<thead><tr><th>When</th><th>Why</th><th>Shopper said</th><th>Assistant replied</th><th></th></tr></thead><tbody>` +
+      rows.map((r, i) => `<tr><td>${esc(new Date(r.ts).toLocaleString())}</td><td><span class="why">${esc(r.why)}</span></td>
+        <td>${esc(r.said)}</td><td class="reply">${esc(r.reply)}</td>
+        <td style="white-space:nowrap"><a href="/inspector?trace=${encodeURIComponent(r.trace_id)}">Open trace</a><br>
+        <button class="btn link small" type="button" data-cand="${i}">Add to eval candidates</button></td></tr>`).join("") + "</tbody>"
+      : `<tr><td class="empty2">Nothing needs attention.</td></tr>`;
+  }
+
+  document.querySelector(".filters").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-period]"); if (!b) return; st.period = b.dataset.period; load();
+  });
+  document.getElementById("evals").addEventListener("change", (e) => { st.evals = e.target.checked; load(); });
+  document.getElementById("attention").addEventListener("click", async (e) => {
+    const b = e.target.closest("[data-cand]"); if (!b) return;
+    b.disabled = true;
+    const r = await fetch("/api/eval-candidates", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(rows[+b.dataset.cand]) });
+    b.textContent = r.ok ? "Saved for review ✓" : "Couldn't save";
+  });
+  load();
+})();
+</script>
+</body>
+</html>

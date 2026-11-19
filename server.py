@@ -18,6 +18,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 import intent as intent_mod
+import dashboard
 import llm
 import payments
 from agent import Response as AgentResponse
@@ -41,7 +42,7 @@ def _session(sid: Optional[str], response: HTTPResponse) -> Session:
     if len(_sessions) >= MAX_SESSIONS:
         _sessions.pop(next(iter(_sessions)))
     sid = secrets.token_urlsafe(16)
-    _sessions[sid] = Session(catalog=SqliteCatalog(STORE_DB_PATH))
+    _sessions[sid] = Session(catalog=SqliteCatalog(STORE_DB_PATH), source="store")
     response.set_cookie(COOKIE, sid, httponly=True, samesite="lax")
     return _sessions[sid]
 
@@ -144,6 +145,39 @@ def index_page():
 @app.get("/product/{pid}", include_in_schema=False)
 def product_page(pid: str):
     return FileResponse(WEB / "product.html")
+
+
+@app.get("/dashboard", include_in_schema=False)
+def dashboard_page():
+    return FileResponse(WEB / "dashboard.html")
+
+
+@app.get("/api/dashboard")
+def dashboard_data(period: str = "7d", include_eval: bool = False):
+    if period not in ("today", "7d", "all"):
+        raise HTTPException(400, "period must be today, 7d or all")
+    return dashboard.summary(period=period, include_eval=include_eval)
+
+
+class Candidate(BaseModel):
+    trace_id: str = ""
+    page: Optional[str] = ""
+    said: str = ""
+    reply: str = ""
+    why: str = ""
+
+
+@app.post("/api/eval-candidates")
+def eval_candidate(body: Candidate):
+    return {"saved": dashboard.add_candidate(body.model_dump())}
+
+
+@app.get("/api/trace/{trace_id}")
+def trace_by_id(trace_id: str):
+    events = dashboard.trace(trace_id)
+    if events is None:
+        raise HTTPException(404, "No such trace")
+    return {"trace_id": trace_id, "events": events}
 
 
 @app.get("/inspector", include_in_schema=False)

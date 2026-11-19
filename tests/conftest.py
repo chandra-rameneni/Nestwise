@@ -16,6 +16,13 @@ KEYBOARD_REQUEST = ("Find a Mac-compatible wireless keyboard and mouse combo wit
 
 
 @pytest.fixture(autouse=True)
+def traces_to_tmp(monkeypatch, tmp_path_factory):
+    """PRD §14: tests never write to the real traces/ folder (it feeds the observability dashboard)."""
+    import tracing
+    monkeypatch.setattr(tracing, "TRACE_DIR", tmp_path_factory.mktemp("traces"))
+
+
+@pytest.fixture(autouse=True)
 def rules_only(monkeypatch, request):
     """Deterministic tests use the rules extractor unless a test is marked `llm`."""
     if "llm" not in request.keywords:
