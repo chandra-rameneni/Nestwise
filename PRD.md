@@ -381,7 +381,30 @@ B20 (ordering), B21 (nothing meets everything), B23 (out of stock), B29 (model d
 #### B26. Quantity ("2 of these")
 - **Must:** allow any quantity up to the stock available. There's no per-customer limit unless a product has an explicit one (none in this data). The cart and reply state the quantity and the total clearly. A budget applies to the whole total. If there isn't enough stock, say how many are available.
 - **Example reply:** *"Sure! 2 × ₹14,900 = ₹29,800, plus ₹0 shipping, so ₹29,800 in total for 2 sofas. Approve this exact cart when you're ready."*
-- **Status:** **Built** on the product page (Phase 2, 2026-11-18; P2-N05).
+- **Status:** **Built** on the product page (Phase 2, 2026-11-18; P2-N05). **Broken in practice (O-57, PM 2026-11-19):** only the exact phrase "buy 2 of these" worked; there was no quantity control.
+- **Fix approved by the PM and built 2026-11-19** (tests Q-01–Q-13 in `tests/test_cart.py`):
+  1. **Quantity control in the cart:** − 1 + buttons, from 1 up to the store limit (P6: 5, or the stock if lower). Changing it updates the total, cancels any approval (R7), and, above 1, still needs the RZ8 "Is 2 right?" confirmation before Approve.
+  2. **Quantity in chat**, whenever a cart exists or on a product page: "I want 2 of these", "add 2 to cart", "make it 2", "change the quantity to 3", "2 please", "buy two". Never read as a budget ("make it 2" isn't ₹2).
+  3. **"Add to cart" is never a product search.** "add this to cart" / "add 2 to cart" on a product page = buy this (with the quantity).
+  4. **Over the limit:** "buy 10 of these" → *"Sorry, you can order up to 5 of these at a time (21 in stock). Shall I make it 5?"*
+- **Evals (draft):** Q-01 cart buttons + and − change the quantity and total (UI test); Q-02 "+" past 5 is disabled; Q-03 a changed quantity cancels an approval; Q-04–Q-09 the six chat phrasings above set the quantity (rules mode and model); Q-10 "make it 2" with a cart never becomes a ₹2 budget; Q-11 "add 2 to cart" never shows a product search; Q-12 "buy 10 of these" offers 5; Q-13 quantity 2 → RZ8 confirmation → Approve → Pay charges 2 × price + delivery; Q-14 all earlier tests pass.
+
+#### B47. A cart with several products *(approved by the PM 2026-11-19; O-58)*
+- **Situation:** the shopper adds a second product (from its page, from recommendations, or in chat: "add this too", "also the lamp").
+- **Must:**
+  - **Add, never replace.** The cart keeps every product as its own line: product, quantity (with B26 controls), price, delivery, and "No returns" where it applies. *"Added! Your cart now has 2 items: the queen bed and the bean bag, ₹26,647 in total."*
+  - Adding the same product again increases its quantity instead of making a second line.
+  - **Remove a line** with a button or in chat ("remove the bean bag"). **"What's in my cart?"** lists the lines and the total.
+  - **One approval for the whole cart:** the exact lines and grand total. Any change to any line (added, removed, quantity) cancels the approval (R7).
+  - **The re-check covers every line.** If one item's price or stock changed, stop and say which: *"Heads up: the bean bag's price changed from ₹1,149 to ₹1,299, so I haven't charged anything. Approve the new total of ₹26,797?"*
+  - **One Razorpay order for the grand total** (one payment); one order record with all lines.
+  - RZ8 applies per line: any line above 1 is confirmed before approval.
+  - Requirements from a search (budget, size) apply to items picked from those results; a budget is checked against each item, not the cart total (the cart total is shown, not limited).
+  - A cart limit of ⚙ 10 lines, to keep the demo simple.
+- **Must not:** silently replace or drop an item; charge for a cart that changed after approval.
+- **Outcome / reason:** CART_PROPOSED / `ITEM_ADDED`, `ITEM_REMOVED`; BLOCKED / `PRICE_CHANGED` with the item named.
+- **Evals (draft):** M-01 add bed then bean bag → 2 lines, correct total; M-02 add the bed again → quantity 2, still 2 lines; M-03 remove a line → total updates, approval cancelled; M-04 "what's in my cart?" lists both; M-05 approve → Pay → one Razorpay order for the grand total (in paise); M-06 one item's price changes after approval → stopped, names the item, nothing charged; M-07 one item goes out of stock → stopped, offers to remove it; M-08 a line with quantity 2 → RZ8 confirmation before Approve; M-09 a "No returns" item shows its label on its line; M-10 adding after approval cancels the approval; M-11 11th line → "Your cart can hold up to 10 items"; M-12 chat "pay for me" still refused (RZ1); M-13 all earlier tests and evals pass (single-product flows unchanged).
+- **Status:** **Built** (2026-11-19): `checkout.py` (cart lines), `policy.checkout_gate` (every line), `agent.py`, `/api/cart/*`, `web/agent.js`. Tests M-01–M-13 in `tests/test_cart.py`.
 
 #### B27. "Compare these two"
 - **Must:** say kindly that side-by-side comparison isn't available yet, and offer what we can do.

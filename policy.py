@@ -114,22 +114,29 @@ def rank(intent: Intent, products: list[ProductView]) -> list[ProductView]:
                                            p.delivery_days, p.product_id))
 
 
-def checkout_gate(*, intent: Intent, cart, approval, current: ProductView | None) -> list[str]:
-    """Trusted pre-checkout check. Returns blocking reason codes; empty list means allowed."""
+def checkout_gate(*, intent: Intent, cart, approval, current=None, currents: dict | None = None) -> list[str]:
+    """Trusted pre-checkout check, for every line of the cart (B47). Returns blocking reason codes; empty = allowed.
+    `currents` maps product_id -> the product as it is now; `current` is the one-product form kept for older code."""
     reasons: list[str] = []
     if approval is None or approval.status != "APPROVED":
         return ["NO_VALID_APPROVAL"]
     if approval.cart_id != cart.cart_id:
         reasons.append("APPROVAL_CART_MISMATCH")
-    if current is None:
-        return reasons + ["PRODUCT_NOT_FOUND"]
-    if current.version != approval.data_version:
-        reasons.append("APPROVAL_STALE_DATA_CHANGED")
-    if current.total_for(cart.qty) != approval.approved_total_inr:
-        reasons.append("PRICE_CHANGED_SINCE_APPROVAL")
-    if intent.version != approval.intent_version:
-        reasons.append("CONSTRAINTS_CHANGED_SINCE_APPROVAL")
-    elig = evaluate(intent, current, cart.qty)
-    reasons.extend(elig.reason_codes)
-    # de-duplicate, keep order
+    if currents is None:
+        currents = {cart.lines[0].product_id: current}
+    for ln in cart.lines:
+        cur = currents.get(ln.product_id)
+        if cur is None:
+            reasons.append("PRODUCT_NOT_FOUND")
+            continue
+        if cur.version != approval.line_versions.get(ln.product_id, approval.data_version):
+            reasons.append("APPROVAL_STALE_DATA_CHANGED")
+        if cur.total_for(ln.qty) != approval.line_totals.get(ln.product_id, approval.approved_total_inr):
+            reasons.append("PRICE_CHANGED_SINCE_APPROVAL")
+        # each line is checked against the requirements it was added with (a search's budget applies to the items
+        # picked from that search, not to a bean bag added later from its own page)
+        checks_against = ln.checked_with if ln.checked_with is not None else Intent(intent="BUY_THIS")
+        reasons.extend(evaluate(checks_against, cur, ln.qty).reason_codes)
+    if cart.total_inr != approval.approved_total_inr:
+        reasons.append("CART_CHANGED_SINCE_APPROVAL")
     return list(dict.fromkeys(reasons))

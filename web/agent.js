@@ -154,21 +154,34 @@
       const rzp = s.payments === "razorpay_test";
       if (c && c.status === "PROPOSED") {
         const approved = a && a.status === "APPROVED";
+        const lines = c.lines || [];
         cartEl.innerHTML = `<div class="cart">
-          <div class="item">${thumb(c.image_url, c.title)}
-            <div class="line">${esc(c.qty)} × <a href="/product/${esc(c.product_id)}">${esc(c.title)}</a></div></div>
-          <div class="total">${inr(c.total_inr)}<small>incl. delivery</small></div>
-          ${c.returnable === false ? `<div class="noreturn">No returns on this item. If it arrives broken, we'll replace it after a quick review.</div>` : ""}
-          ${c.qty > 1 && !c.qty_confirmed && !approved ? `<div class="qtycheck">Just checking: you're buying <strong>${esc(c.qty)}</strong> of these. Is ${esc(c.qty)} right?
-            <div class="actions"><button class="btn small" data-act="confirm_qty" type="button">Yes, ${esc(c.qty)} is right</button>
-            <button class="btn small" data-act="qty_one" type="button">Change to 1</button></div></div>` : ""}
+          ${lines.map((ln) => `<div class="cline">
+            ${thumb(ln.image_url, ln.title)}
+            <div class="cbody">
+              <a class="name" href="/product/${esc(ln.product_id)}">${esc(ln.title)}</a>
+              <span class="meta">${inr(ln.total_inr)}${ln.qty > 1 ? ` · ${esc(ln.qty)} × ${inr(ln.unit_price_inr)}` : ""}${ln.shipping_inr ? ` + ${inr(ln.shipping_inr)} delivery` : ""}</span>
+              ${ln.returnable === false ? `<span class="noreturn">No returns on this item. If it arrives broken, we'll replace it after a quick review.</span>` : ""}
+              <div class="qty" role="group" aria-label="Quantity of ${esc(ln.title)}">
+                <button type="button" class="qbtn" data-qty="${esc(ln.qty - 1)}" data-pid="${esc(ln.product_id)}" aria-label="One less"${ln.qty <= 1 ? " disabled" : ""}>−</button>
+                <span class="qn">${esc(ln.qty)}</span>
+                <button type="button" class="qbtn" data-qty="${esc(ln.qty + 1)}" data-pid="${esc(ln.product_id)}" aria-label="One more"${ln.qty >= ln.max_qty ? " disabled" : ""}>+</button>
+                <button type="button" class="btn link small" data-remove="${esc(ln.product_id)}">Remove</button>
+              </div>
+            </div></div>`).join("")}
+          <div class="total">${inr(c.total_inr)}<small>${lines.length > 1 ? `${lines.length} items, ` : ""}incl. delivery</small></div>
+          ${!c.qty_confirmed && !approved ? (() => { const many = lines.filter((ln) => !ln.qty_confirmed);
+            const what = many.map((ln) => `<strong>${esc(ln.qty)}</strong> × ${esc(ln.title)}`).join(", ");
+            return `<div class="qtycheck"><span>Just checking: you're buying ${what}. Is that right?</span>
+            <div class="actions"><button class="btn small" data-act="confirm_qty" type="button">Yes, that's right</button>
+            <button class="btn small" data-act="qty_one" type="button">Change to 1</button></div></div>`; })() : ""}
           <div class="status">${approved
             ? (rzp ? "Approved. When you tap Pay, I'll check the price and stock again, then Razorpay (test mode) takes the payment." : "Approved. I'll check the price and stock again before ordering.")
             : "Nothing is ordered until you approve this exact total."}</div>
           <div class="actions">
             ${approved ? (rzp ? `<button class="btn primary" data-act="pay" type="button"${s.payments_paused ? " disabled" : ""}>Pay ${inr(c.total_inr)} (test mode)</button>`
                               : `<button class="btn primary" data-act="checkout" type="button">Place order</button>`)
-                       : `<button class="btn primary" data-act="approve" type="button"${c.qty > 1 && !c.qty_confirmed ? " disabled" : ""}>Approve this exact cart</button>`}
+                       : `<button class="btn primary" data-act="approve" type="button"${!c.qty_confirmed ? " disabled" : ""}>Approve this exact cart</button>`}
             <button class="btn link" data-act="decline" type="button">Decline</button>
           </div>
           ${approved && rzp ? `<div class="testcard">Test mode: use card 4100 2800 0000 1007, any future expiry, any CVV, OTP 1234. No real money moves.</div>` : ""}
@@ -286,6 +299,8 @@
       if (t.dataset.say) send(t.dataset.say);
       else if (t.dataset.select) run(api("/api/agent/select", { product_id: t.dataset.select }), "Add to cart: " + t.dataset.title, stagesFor("select", context));
       else if (t.dataset.act === "pay") pay();
+      else if (t.dataset.qty && t.dataset.pid) run(api("/api/cart/qty", { product_id: t.dataset.pid, qty: parseInt(t.dataset.qty, 10) }), null, ["Updating your cart"]);
+      else if (t.dataset.remove) run(api("/api/cart/remove", { product_id: t.dataset.remove }), null, ["Updating your cart"]);
       else if (t.dataset.act) run(api("/api/agent/" + t.dataset.act), { approve: "Approve", checkout: "Place order", decline: "Decline", confirm_qty: "Yes, that's right", qty_one: "Change to 1" }[t.dataset.act], stagesFor(t.dataset.act, context));
     });
     $("ig-setprice").addEventListener("click", async () => {

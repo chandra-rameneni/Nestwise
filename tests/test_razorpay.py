@@ -58,10 +58,11 @@ def rzp(monkeypatch):
 
 def approved_session(qty=1):
     s = Session()
-    s.handle_message("buy this", {"page": "product", "product_id": BED})
-    if qty > 1:
+    if qty > 1:                      # B47: adding the same product again adds to it, so start with the quantity
         s.select_product(BED, qty=qty, from_product_page=True)
         s.confirm_quantity()
+    else:
+        s.handle_message("buy this", {"page": "product", "product_id": BED})
     assert s.approve().kind == "APPROVED"
     return s
 
@@ -224,7 +225,6 @@ def test_rz15_trace_shows_the_payment_chain(rzp):
 
 def test_rz20_quantity_above_one_needs_confirmation(rzp):
     s = Session()
-    s.handle_message("buy this", {"page": "product", "product_id": BED})
     r = s.select_product(BED, qty=2, from_product_page=True)
     assert "**2**" in r.message and "Is 2 right?" in r.message
     r = s.approve()
@@ -235,7 +235,6 @@ def test_rz20_quantity_above_one_needs_confirmation(rzp):
 
 def test_rz21_change_to_one(rzp):
     s = Session()
-    s.handle_message("buy this", {"page": "product", "product_id": BED})
     s.select_product(BED, qty=2, from_product_page=True)
     r = s.set_quantity_one()
     assert s.cart.qty == 1 and s.cart.total_inr == 24999 and s.approve().kind == "APPROVED"

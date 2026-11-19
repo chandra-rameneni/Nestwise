@@ -1,0 +1,338 @@
+{
+ "run_at": "20261119T093823Z",
+ "mode": "rules",
+ "model": null,
+ "scenarios_version": "heldout-round2-1",
+ "total": 15,
+ "passed": 14,
+ "core": "14/15",
+ "probes": "0/0",
+ "skipped_for_mode": [
+  "H2-C03",
+  "H2-X01",
+  "H2-V02",
+  "H2-V03",
+  "H2-P01",
+  "H2-P04",
+  "H2-P05",
+  "H2-N01",
+  "H2-N02",
+  "H2-F01"
+ ],
+ "results": [
+  {
+   "id": "H2-C01",
+   "group": "conversation",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_5b157467365c",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "It's 70 cm wide (700 mm).",
+     "cited": [
+      "Width"
+     ]
+    },
+    {
+     "kind": "ANSWER",
+     "message": "That's 0.7 m wide.",
+     "cited": [
+      "Width"
+     ]
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-C02",
+   "group": "conversation",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_6d3d70a7d469",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "It's 76 cm deep (760 mm).",
+     "cited": [
+      "Depth"
+     ]
+    },
+    {
+     "kind": "ANSWER",
+     "message": "That's 29.9 in deep.",
+     "cited": [
+      "Depth"
+     ]
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-C04",
+   "group": "conversation",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_3bb112983569",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 1 temple to choose from. Here it is:\n• SRK GROUPS Aluminium, Wooden Home Temple: ₹1,298 total, arrives in 7 days, 18 cm wide.\nTell me your budget or anything else that matters, and I'll narrow these down.",
+     "cited": []
+    },
+    {
+     "kind": "ANSWER",
+     "message": "It's made of aluminium, wooden.",
+     "cited": [
+      "Material"
+     ]
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-X02",
+   "group": "challenge",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_8d0b27703622",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "Care: Protect fabric from direct sunlight and sources of heat to prevent colour fading. For general cleaning only use a dry soft cloth .If vacuum cleaning, use a soft brush nozzle to avoid scratching the surfaces.",
+     "cited": [
+      "Care Instructions"
+     ]
+    },
+    {
+     "kind": "ANSWER",
+     "message": "Sorry, I can only answer from what's in this product's details, like its size, materials, delivery and care. I'm a shopping assistant: I can help you find things and answer questions about this product.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-V01",
+   "group": "voice",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 0,
+     "check": "message should match '10 days'"
+    }
+   ],
+   "trace_id": "tr_e08a7d884ec2",
+   "first_failing_event": {
+    "seq": 7,
+    "name": "agent.response",
+    "response_kind": "ANSWER"
+   },
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "Sorry, I don't have that detail for this sofa. I can tell you about its size, materials, delivery or care.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-V04",
+   "group": "voice",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_333d9ca3ad3c",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "Sorry, I don't have that detail for this sofa. I can tell you about its size, materials, delivery or care.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-P02",
+   "group": "policy",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_4cfc80d1b8b6",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "Sorry, this one can't be returned: it's one of our small no-return items. If it arrives broken, send us a photo within 48 hours and we'll review it and send a replacement (no refunds on these).",
+     "cited": [
+      "P3 Returns"
+     ]
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-P03",
+   "group": "policy",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_f43a9f888bd8",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "You can order from 1 up to 5 of these at a time (5 in stock). For more, contact us.",
+     "cited": [
+      "P6 Order limits"
+     ]
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-N03",
+   "group": "not_policy",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_fe143a1b6d0d",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "DEFER",
+     "message": "Sorry, I can't handle refunds or returns just yet. I can help you find and buy products, though.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-F02",
+   "group": "trick",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_cbb836d18627",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "UNSUPPORTED",
+     "message": "Sorry, I can't help with that. I can only help you pick the right product and buy it, with your approval.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-F03",
+   "group": "frustration",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_a3bd56c039b9",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "Sorry, I don't have that detail for this sofa. I can tell you about its size, materials, delivery or care.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-B01",
+   "group": "fit",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_f9cff34b5c8e",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "CLARIFY",
+     "message": "It's 70 cm wide and 76 cm long. How much space do you have for it? Tell me and I'll check.",
+     "cited": [
+      "Width",
+      "Depth"
+     ]
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-B02",
+   "group": "fit",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_f16a68ee1fee",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "CLARIFY",
+     "message": "It's 70 cm wide and 76 cm long. How much space do you have for it? Tell me and I'll check.",
+     "cited": [
+      "Width",
+      "Depth"
+     ]
+    },
+    {
+     "kind": "ANSWER",
+     "message": "Good news, it fits! It's 70 cm wide, within your 80 cm.",
+     "cited": [
+      "Width",
+      "Depth"
+     ]
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-B03",
+   "group": "browse",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_695ad907d62b",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "Plenty! We have 639 kitchen & dining products, including coffee mugs (302), cookware (100), kitchen tools (70), containers & bottles (46), lighting (39) and bar & glassware (27). Which would you like to see?",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-B04",
+   "group": "closest",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_a77d58df4ab4",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "NO_ELIGIBLE",
+     "message": "Sorry, our only home temple is the SRK GROUPS Aluminium, Wooden Home Temple at ₹1,298, which is ₹498 over your budget. Would you like it anyway?",
+     "cited": []
+    }
+   ],
+   "notes": null
+  }
+ ]
+}

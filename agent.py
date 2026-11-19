@@ -22,7 +22,8 @@ import payments
 import qa
 import store_policy
 from catalog import STORE_DB_PATH, Catalog, ProductView, SqliteCatalog, _head_noun
-from checkout import Approval, Cart, MockOrder, MockOrderService, new_approval, new_cart
+from checkout import (MAX_LINES, MAX_QTY_PER_LINE, Approval, Cart, MockOrder, MockOrderService, new_approval,
+                      new_cart, new_line)
 from intent import Intent
 from tracing import Tracer
 
@@ -125,6 +126,7 @@ class Session:
         self._pending_override: Optional[dict] = None   # B21 option A: "over your budget, add it anyway?"
         self._closest_ids: list[str] = []           # closest options just shown (B21)
         self._rzp_order: Optional[dict] = None      # PRD §13: Razorpay test order for the current approval
+        self._pending_qty: Optional[dict] = None    # B26: "Shall I make it 5?"
         self.tracer.event("session", "session.start", catalog_version=self.catalog.meta.get("version"),
                           llm_configured=intent_mod.llm_available())
 
@@ -241,6 +243,14 @@ class Session:
                    + ("When you're ready, just tap the Pay button and Razorpay will take it from there."
                       if has_cart else "Once something's in your cart and approved, you'll see a Pay button to tap."))
             return self._respond(Response("ANSWER", msg, reason_codes=["PAYMENT_IS_MANUAL"]))
+        pend_qty, self._pending_qty = self._pending_qty, None
+        if pend_qty is not None and _YES.match(text):        # "Shall I make it 5?" -> yes
+            return self.set_line_quantity(pend_qty["pid"], pend_qty["qty"])
+        page_pid = self.context.get("product_id") if self.context.get("page") == "product" else None
+        cart_r = (None if intent_mod._TRICK.search(text)       # safety first: a trick is never a cart command
+                  else self._cart_chat(text, self._get(page_pid) if page_pid else None))
+        if cart_r is not None:
+            return cart_r
         override, self._pending_override = self._pending_override, None
         if override is not None:                       # B21 option A: answer to "add it anyway?"
             if _YES.match(text):
@@ -319,9 +329,9 @@ class Session:
         self._turn_labels = self._requirement_labels(self.intent, new_intent, changed)
         self._prev_intent = self.intent
         if changed and self.intent is not None:
+            # R7: a changed requirement cancels the approval. The cart itself is kept (B47): each line was checked
+            # against its own requirements when it was added, and is checked again before payment.
             self._invalidate_approval(f"constraints changed: {', '.join(changed)}")
-            if self.cart and self.cart.status == "PROPOSED":
-                self.cart.status = "SUPERSEDED"
         self.intent = new_intent
 
         if current is not None:
@@ -1008,14 +1018,16 @@ class Session:
             if pid:
                 self.tracer.event("payment", "payment.found_already_paid", order_ref=rz["order"]["id"])
                 return "reply", self._place_paid(pid)
-        current = self._get(self.cart.product_id)
-        reasons = policy.checkout_gate(intent=self.intent, cart=self.cart, approval=self.approval, current=current)
+        currents = {ln.product_id: self._get(ln.product_id) for ln in self.cart.lines}
+        current = currents[self.cart.product_id]
+        reasons = policy.checkout_gate(intent=self.intent, cart=self.cart, approval=self.approval, currents=currents)
         self.tracer.event("policy", "checkout.gate", status="block" if reasons else "pass", cart_id=self.cart.cart_id,
                           approval_id=self.approval.approval_id, approved_total_inr=self.approval.approved_total_inr,
-                          current_total_inr=current.total_for(self.cart.qty) if current else None, reason_codes=reasons,
-                          before="payment")
+                          current_total_inr=sum((c.total_for(ln.qty) or 0) for ln in self.cart.lines
+                                                for c in [currents[ln.product_id]] if c),
+                          lines=len(self.cart.lines), reason_codes=reasons, before="payment")
         if reasons:
-            return "reply", self._recover(reasons, current)
+            return "reply", self._recover(reasons, current, currents)
         if rz is None:
             try:
                 order = payments.create_order(self.approval.approved_total_inr, self.approval.approval_id,
@@ -1067,17 +1079,144 @@ class Session:
     def confirm_quantity(self) -> Response:
         if self.cart is None or self.cart.status != "PROPOSED":
             return self._respond(Response("BLOCKED", "There's no cart to confirm.", reason_codes=["NO_ACTIVE_CART"]))
-        self.cart.qty_confirmed = True
-        self.tracer.event("cart", "cart.qty_confirmed", cart_id=self.cart.cart_id, qty=self.cart.qty)
-        return self._respond(Response("CART_PROPOSED", f"Great, {self.cart.qty} it is: {_inr(self.cart.total_inr)} in "
-                                      "total. Tap **Approve this exact cart** when you're ready.", cart=self.cart))
+        for ln in self.cart.lines:
+            ln.qty_confirmed = True
+        self.tracer.event("cart", "cart.qty_confirmed", cart_id=self.cart.cart_id,
+                          quantities={ln.product_id: ln.qty for ln in self.cart.lines})
+        what = (f"{self.cart.qty} it is" if len(self.cart.lines) == 1 else "Quantities confirmed")
+        return self._respond(Response("CART_PROPOSED", f"Great, {what}: {_inr(self.cart.total_inr)} in total. Tap "
+                                      "**Approve this exact cart** when you're ready.", cart=self.cart))
 
     def set_quantity_one(self) -> Response:
         if self.cart is None or self.cart.status != "PROPOSED":
             return self._respond(Response("BLOCKED", "There's no cart to change.", reason_codes=["NO_ACTIVE_CART"]))
-        pid = self.cart.product_id
-        self.tracer.event("cart", "cart.qty_changed", cart_id=self.cart.cart_id, qty_from=self.cart.qty, qty_to=1)
-        return self.select_product(pid, qty=1, from_product_page=True)
+        last = None
+        for ln in [ln for ln in self.cart.lines if ln.qty > 1]:
+            last = self.set_line_quantity(ln.product_id, 1)
+        return last or self.cart_summary()
+
+    # ------------------------------------------------------------------ B26 / B47: cart lines
+    @staticmethod
+    def _has_requirements(it) -> bool:
+        return bool(it) and any(getattr(it, f, None) for f in intent_mod.CONSTRAINT_FIELDS)
+
+    def _added_message(self, p: ProductView, qty: int) -> str:
+        n = len(self.cart.lines)
+        names = [qa.product_noun_title(ln.title) for ln in self.cart.lines]
+        listed = names[0] if n == 1 else ", ".join(names[:-1]) + " and " + names[-1]
+        msg = (f"Added! Your cart now has {n} items: {listed}, {_inr(self.cart.total_inr)} in total."
+               if n > 1 else f"Added! {_inr(self.cart.total_inr)} in total.")
+        return msg + " " + self._next_step()
+
+    def _next_step(self) -> str:
+        unconfirmed = [ln for ln in self.cart.lines if ln.qty > 1 and not ln.qty_confirmed]
+        if unconfirmed:
+            ln = unconfirmed[0]
+            return (f"Just checking: you're buying **{ln.qty}** of the {qa.product_noun_title(ln.title)}. "
+                    f"Is {ln.qty} right?")
+        return "Tap **Approve this exact cart** when you're ready. Nothing is ordered without your approval."
+
+    def set_line_quantity(self, product_id: str, qty: int) -> Response:
+        """B26: change how many of one product. Above the limit, offer the limit; any change cancels the approval."""
+        if self.cart is None or self.cart.status != "PROPOSED" or self.cart.line(product_id) is None:
+            return self._respond(Response("BLOCKED", "That product isn't in your cart.", reason_codes=["NOT_IN_CART"]))
+        ln = self.cart.line(product_id)
+        p = self._get(product_id)
+        limit = min(MAX_QTY_PER_LINE, p.stock if p else MAX_QTY_PER_LINE)
+        if qty < 1:
+            return self.remove_line(product_id)
+        if qty > limit:
+            self._pending_qty = {"pid": product_id, "qty": limit}
+            stock = f" ({p.stock} in stock)" if p and p.stock < 100 else ""
+            return self._respond(Response("CLARIFY", f"Sorry, you can order up to {limit} of these at a time{stock}. "
+                                          f"Shall I make it {limit}?", cart=self.cart, reason_codes=["QTY_LIMIT"]))
+        old = ln.qty
+        ln.qty, ln.qty_confirmed = qty, False
+        if p is not None:                       # quantity changes use today's price
+            ln.unit_price_inr, ln.shipping_inr, ln.data_version = p.list_price_inr, p.shipping_inr, p.version
+        self._invalidate_approval("quantity changed")
+        self.approval = None
+        self.tracer.event("cart", "cart.qty_changed", cart_id=self.cart.cart_id, product_id=product_id,
+                          qty_from=old, qty_to=qty, total_inr=self.cart.total_inr)
+        noun = qa.product_noun_title(ln.title)
+        lead = (f"Done, {qty} × {noun}" if len(self.cart.lines) > 1 else f"Done, {qty} of these")
+        return self._respond(Response("CART_PROPOSED", f"{lead}: {_inr(self.cart.total_inr)} in total. "
+                                      + self._next_step(), cart=self.cart, product_id=product_id,
+                                      reason_codes=["QTY_CHANGED"]))
+
+    def remove_line(self, product_id: str) -> Response:
+        if self.cart is None or self.cart.status != "PROPOSED" or self.cart.line(product_id) is None:
+            return self._respond(Response("BLOCKED", "That product isn't in your cart.", reason_codes=["NOT_IN_CART"]))
+        ln = self.cart.line(product_id)
+        self.cart.lines.remove(ln)
+        self._invalidate_approval("item removed")
+        self.approval = None
+        self.tracer.event("cart", "cart.item_removed", cart_id=self.cart.cart_id, product_id=product_id)
+        noun = qa.product_noun_title(ln.title)
+        if not self.cart.lines:
+            self.cart.status = "DECLINED"
+            return self._respond(Response("ANSWER", f"Removed the {noun}. Your cart is empty now.",
+                                          reason_codes=["ITEM_REMOVED"]))
+        return self._respond(Response("CART_PROPOSED", f"Removed the {noun}. {_inr(self.cart.total_inr)} in total now. "
+                                      + self._next_step(), cart=self.cart, reason_codes=["ITEM_REMOVED"]))
+
+    def cart_summary(self) -> Response:
+        if self.cart is None or self.cart.status != "PROPOSED" or not self.cart.lines:
+            return self._respond(Response("ANSWER", "Your cart is empty. Tell me what you're looking for, or tap "
+                                          "Buy this on a product page.", reason_codes=["CART_SUMMARY"]))
+        rows = "\n".join(f"\u2022 {ln.qty} × {ln.title}: {_inr(ln.total_inr)}" for ln in self.cart.lines)
+        return self._respond(Response("CART_PROPOSED", f"Here's your cart:\n{rows}\nTotal: **{_inr(self.cart.total_inr)}**. "
+                                      + self._next_step(), cart=self.cart, reason_codes=["CART_SUMMARY"]))
+
+    # chat: "make it 2", "I want 2 of these", "add 2 to cart", "remove the bean bag", "what's in my cart?"
+    _NUM = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10}
+    _QTY_SAY = re.compile(
+        r"\b(?:make it|change (?:the )?(?:quantity|qty) to|set (?:the )?(?:quantity|qty) to|(?:i|we) (?:want|need|'?ll take|"
+        r"will take)|add|buy|get me|order|i'?d like)\s+(\d{1,2}|one|two|three|four|five|six|seven|eight|nine|ten)\b"
+        r"(?!\s*(?:k\b|000|rs|rupees|inr|seater|seat))|"
+        r"^\s*(\d{1,2}|one|two|three|four|five|six|seven|eight|nine|ten)\s+(?:of (?:these|this|them|it)|please|pcs|pieces|units?)\b", re.I)
+    _REMOVE_ITEM = re.compile(r"\b(?:remove|delete|take out|drop)\b(.*?)(?:\bfrom (?:my |the )?cart\b|$)", re.I)
+    _CART_Q = re.compile(r"\b(?:what'?s|what is|show(?: me)?|view|see) (?:in )?(?:my |the )?cart\b|^\s*(?:my )?cart\??\s*$", re.I)
+    _ADD_TO_CART = re.compile(r"\badd (?:it|this|that|this one|that one)?\s*(?:to (?:my |the )?cart|too|as well)\b|"
+                              r"\badd to (?:my |the )?cart\b|\balso (?:add|buy|get) (?:this|it)\b", re.I)
+
+    def _cart_chat(self, text: str, page_product: Optional[ProductView]) -> Optional[Response]:
+        low = text.lower()
+        if self._CART_Q.search(low):
+            return self.cart_summary()
+        has_cart = self.cart is not None and self.cart.status == "PROPOSED" and self.cart.lines
+        m = self._REMOVE_ITEM.search(low)
+        if m and has_cart and re.search(r"\bcart\b|^\s*(remove|delete|drop)\b", low):
+            words = set(re.findall(r"[a-z]{3,}", m.group(1))) - {"the", "this", "that", "item", "one", "from", "please"}
+            hits = [ln for ln in self.cart.lines if words & set(re.findall(r"[a-z]{3,}", ln.title.lower()))]
+            if not hits and page_product is not None and self.cart.line(page_product.product_id) and \
+                    re.search(r"\b(this|it)\b", m.group(1)):
+                hits = [self.cart.line(page_product.product_id)]
+            if len(hits) == 1:
+                return self.remove_line(hits[0].product_id)
+            if len(self.cart.lines) == 1 and not words:
+                return self.remove_line(self.cart.lines[0].product_id)
+            names = "; ".join(ln.title for ln in self.cart.lines)
+            return self._respond(Response("CLARIFY", f"Which one should I remove? Your cart has: {names}.",
+                                          cart=self.cart, reason_codes=["WHICH_ITEM"]))
+        q = self._QTY_SAY.search(low)
+        if q:
+            n_raw = (q.group(1) or q.group(2)).lower()
+            n = self._NUM.get(n_raw) or int(n_raw)
+            if n > 99:
+                return None
+            if page_product is not None:
+                return self.select_product(page_product.product_id, qty=n, from_product_page=True, set_qty=True)
+            if has_cart and len(self.cart.lines) == 1:
+                return self.set_line_quantity(self.cart.lines[0].product_id, n)
+            if has_cart:
+                names = "; ".join(ln.title for ln in self.cart.lines)
+                return self._respond(Response("CLARIFY", f"Which one should be {n}? Your cart has: {names}.",
+                                              cart=self.cart, reason_codes=["WHICH_ITEM"]))
+            return None
+        if page_product is not None and self._ADD_TO_CART.search(low):
+            return self.select_product(page_product.product_id, from_product_page=True)
+        return None
 
     # ------------------------------------------------------------------ R11: holding a conversation
     _CHALLENGE = re.compile(
@@ -1186,7 +1325,7 @@ class Session:
 
     # ------------------------------------------------------------------ cart / approval / checkout
     def select_product(self, product_id: str, qty: int = 1, from_product_page: bool = False,
-                       waived: Optional[list] = None) -> Response:
+                       waived: Optional[list] = None, set_qty: bool = False) -> Response:
         """Propose a cart. From a recommendation list, only products just checked are allowed; from a product
         page ("buy this") the product itself is checked against the shopper's stated requirements."""
         if not from_product_page:
@@ -1221,10 +1360,26 @@ class Session:
                 return self._blocked_with_alternatives(p, e.reason_codes, lead)
             return self._respond(Response("BLOCKED", f"Sorry, that one doesn't work anymore: {_reasons(e.reason_codes)}.",
                                           reason_codes=e.reason_codes))
-        if self.cart and self.cart.status == "PROPOSED":
-            self.cart.status = "SUPERSEDED"
+        checked_with = None if (waived or from_product_page and not self._has_requirements(self.intent)) \
+            else self.intent.model_copy(deep=True)
+        if self.cart is not None and self.cart.status == "PROPOSED":
+            line = self.cart.line(p.product_id)
+            if line is None and len(self.cart.lines) >= MAX_LINES:
+                return self._respond(Response("BLOCKED", f"Your cart can hold up to {MAX_LINES} different products. "
+                                              "Remove one to add this.", cart=self.cart, reason_codes=["CART_FULL"]))
+            if line is not None:                   # the same product again: more of it, not a second line (B47)
+                return self.set_line_quantity(p.product_id, qty if set_qty else line.qty + qty)
+            new_qty = min(qty, MAX_QTY_PER_LINE, max(p.stock, 1))
+            self.cart.lines.append(new_line(p, new_qty, checked_with))
+            self._invalidate_approval("item added to the cart")
+            self.approval = None
+            self.tracer.event("cart", "cart.item_added", cart_id=self.cart.cart_id, product_id=p.product_id,
+                              qty=new_qty, lines=len(self.cart.lines), total_inr=self.cart.total_inr)
+            return self._respond(Response("CART_PROPOSED", self._added_message(p, new_qty), cart=self.cart,
+                                          product_id=p.product_id, reason_codes=["ITEM_ADDED"]))
         self._invalidate_approval("new cart proposed")
-        self.cart = new_cart(p, qty)
+        self.cart = new_cart(p, min(qty, MAX_QTY_PER_LINE, max(p.stock, 1)), checked_with)
+        qty = self.cart.qty
         self.approval = None
         self.tracer.event("cart", "cart.created", cart_id=self.cart.cart_id, product_id=p.product_id, qty=qty,
                           unit_price_inr=p.list_price_inr, shipping_inr=p.shipping_inr,
@@ -1290,8 +1445,9 @@ class Session:
         if payments.enabled():                       # with Razorpay on, an order is only placed after payment
             return self._respond(Response("BLOCKED", "Tap **Pay** to complete your order. Nothing is ordered until "
                                           "the payment goes through.", cart=self.cart, reason_codes=["PAYMENT_REQUIRED"]))
-        current = self._get(self.cart.product_id)
-        reasons = policy.checkout_gate(intent=self.intent, cart=self.cart, approval=self.approval, current=current)
+        currents = {ln.product_id: self._get(ln.product_id) for ln in self.cart.lines}
+        current = currents[self.cart.product_id]
+        reasons = policy.checkout_gate(intent=self.intent, cart=self.cart, approval=self.approval, currents=currents)
         self.tracer.event("policy", "checkout.gate", status="block" if reasons else "pass",
                           cart_id=self.cart.cart_id,
                           approval_id=self.approval.approval_id if self.approval else None,
@@ -1300,7 +1456,7 @@ class Session:
                           approved_version=self.approval.data_version if self.approval else None,
                           current_version=current.version if current else None, reason_codes=reasons)
         if reasons:
-            return self._recover(reasons, current)
+            return self._recover(reasons, current, currents)
 
         order, created = self.orders.place(self.cart, self.approval)
         self.cart.status = "ORDERED"
@@ -1312,10 +1468,12 @@ class Session:
             f"Done! Your order for the {self.cart.title} ({_inr(order.total_inr)}) is placed. This is a demo, so no "
             "payment was taken and nothing will ship."), cart=self.cart, order=order))
 
-    def _recover(self, reasons: list[str], current: Optional[ProductView]) -> Response:
+    def _recover(self, reasons: list[str], current: Optional[ProductView], currents: Optional[dict] = None) -> Response:
         if "NO_VALID_APPROVAL" in reasons:
             return self._respond(Response("BLOCKED", "I can't place the order yet: please approve this exact cart "
                                           "first.", cart=self.cart, reason_codes=reasons))
+        if currents and len(self.cart.lines) > 1:
+            return self._recover_lines(reasons, currents)
         self._invalidate_approval(", ".join(reasons))
         old_total = self.approval.approved_total_inr if self.approval else self.cart.total_inr
         self.cart.status = "SUPERSEDED"
@@ -1340,6 +1498,35 @@ class Session:
         alt.reason_codes = reasons
         alt.cart = None
         return self._respond(alt)
+
+    def _recover_lines(self, reasons: list[str], currents: dict) -> Response:
+        """B47: something changed in a cart with several items. Name the item, charge nothing, keep the cart with
+        today's prices, and ask for approval of the new total (or offer to remove an item that ran out)."""
+        old_total = self.approval.approved_total_inr if self.approval else self.cart.total_inr
+        self._invalidate_approval(", ".join(reasons))
+        self.approval = None
+        notes, gone = [], []
+        for ln in self.cart.lines:
+            cur = currents.get(ln.product_id)
+            noun = qa.product_noun_title(ln.title)
+            if cur is None or cur.stock < ln.qty:
+                gone.append(ln)
+                notes.append(f"the {noun} is out of stock now")
+                continue
+            if cur.list_price_inr != ln.unit_price_inr or cur.shipping_inr != ln.shipping_inr:
+                notes.append(f"the {noun}'s price changed from {_inr(ln.unit_price_inr)} to {_inr(cur.list_price_inr)}")
+                ln.unit_price_inr, ln.shipping_inr = cur.list_price_inr, cur.shipping_inr
+            ln.data_version = cur.version
+        self.tracer.event("policy", "cart.recheck_failed", status="block", reasons=reasons, notes=notes)
+        what = "; ".join(notes) or "something in your cart changed"
+        if gone:
+            names = " and ".join(f"the {qa.product_noun_title(ln.title)}" for ln in gone)
+            msg = (f"Heads up: {what}, so I haven't charged anything. Shall I remove {names}? Then you can approve the "
+                   "rest.")
+        else:
+            msg = (f"Heads up: {what}, so I haven't charged anything. The new total is "
+                   f"**{_inr(self.cart.total_inr)}** (was {_inr(old_total)}). Approve it if it works for you.")
+        return self._respond(Response("BLOCKED", msg, cart=self.cart, reason_codes=reasons))
 
     # ------------------------------------------------------------------ demo simulation hooks
     def simulate_price_change(self, product_id: str, new_price_inr: int) -> None:

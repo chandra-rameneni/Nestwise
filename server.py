@@ -91,6 +91,14 @@ def _image(s: Session, pid: str):
         return None
 
 
+def _max_qty(s: Session, pid: str) -> int:
+    from checkout import MAX_QTY_PER_LINE
+    try:
+        return max(1, min(MAX_QTY_PER_LINE, s.catalog.get(pid).stock))
+    except Exception:
+        return MAX_QTY_PER_LINE
+
+
 def _returnable(s: Session, pid: str) -> bool:
     try:
         return s.catalog.get(pid).returnable
@@ -104,6 +112,13 @@ def state(s: Session) -> dict:
         "cart": None if cart is None else {"cart_id": cart.cart_id, "product_id": cart.product_id, "title": cart.title,
                                            "qty": cart.qty, "total_inr": cart.total_inr, "status": cart.status,
                                            "qty_confirmed": cart.qty_confirmed,
+                                           "lines": [{"product_id": ln.product_id, "title": ln.title, "qty": ln.qty,
+                                                      "unit_price_inr": ln.unit_price_inr,
+                                                      "shipping_inr": ln.shipping_inr, "total_inr": ln.total_inr,
+                                                      "qty_confirmed": ln.qty == 1 or ln.qty_confirmed,
+                                                      "returnable": ln.returnable,
+                                                      "max_qty": _max_qty(s, ln.product_id),
+                                                      "image_url": _image(s, ln.product_id)} for ln in cart.lines],
                                            "image_url": _image(s, cart.product_id),
                                            "returnable": _returnable(s, cart.product_id)},
         "approval": None if s.approval is None else {"approval_id": s.approval.approval_id,
@@ -217,6 +232,28 @@ def agent_action(action: str, response: HTTPResponse, ig_session: Optional[str] 
 
 print(f"[IntentGuard] payments mode at start: {payments.mode()}"
       + (" (a live Razorpay key was found and refused: payments stay off)" if payments.mode() == "refused_live" else ""))
+
+
+# ----------------------------------------------------------------------------- cart lines (B26, B47)
+class LineQty(BaseModel):
+    product_id: str
+    qty: int
+
+
+class LineRef(BaseModel):
+    product_id: str
+
+
+@app.post("/api/cart/qty")
+def cart_qty(body: LineQty, response: HTTPResponse, ig_session: Optional[str] = Cookie(None)):
+    s = _session(ig_session, response)
+    return agent_json(s, s.set_line_quantity(body.product_id, body.qty))
+
+
+@app.post("/api/cart/remove")
+def cart_remove(body: LineRef, response: HTTPResponse, ig_session: Optional[str] = Cookie(None)):
+    s = _session(ig_session, response)
+    return agent_json(s, s.remove_line(body.product_id))
 
 
 # ----------------------------------------------------------------------------- payments (PRD §13)

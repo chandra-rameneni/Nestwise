@@ -117,6 +117,16 @@ def product_noun(p: ProductView) -> str:
     return last if last and len(last) > 2 and last not in {"set", "pack", "combo", "piece"} else "product"
 
 
+def product_noun_title(title: str) -> str:
+    """A short name for a product in replies: 'Ethnic Handicrafts Solid Wood Queen Bed' -> 'queen bed',
+    'ABCD XL Bean Bag With Foam Filling' -> 'bean bag' (the part after "with"/"for" is a feature, not the product)."""
+    head = re.split(r"\s+(?:with|for|-|\(|\|)\s*", title or "", maxsplit=1, flags=re.I)[0]
+    words = [w for w in re.findall(r"[A-Za-z]+", head) if len(w) > 1]
+    if not words:
+        return "item"
+    return " ".join(words[-2:]).lower() if len(words) >= 2 else words[-1].lower()
+
+
 def not_in_listing_reply(p: ProductView) -> str:
     """B5, round 2: warm, honest, and offers what it can answer (never "I'd rather not guess")."""
     return (f"Sorry, I don't have that detail for this {product_noun(p)}. "
