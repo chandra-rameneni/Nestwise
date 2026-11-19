@@ -196,7 +196,7 @@ Update this table when anything changes. It's the reference point for "where are
 
 | Pain point | PRD requirement | Code | Proof | Status |
 |---|---|---|---|---|
-| P1 wrong facts | R5 grounded answers, R6 product text is data | `qa.py`, `prompts/product_qa_v1.txt` | `test_pq01`, `test_pq02`, `test_pq04*` | Built; **Claude path unmeasured** |
+| P1 wrong facts | R5 grounded answers, R6 product text is data | `qa.py`, `prompts/product_qa_v2.txt` | `test_pq01`, `test_pq02`, `test_pq04*` | Built; **Claude path unmeasured** |
 | P2 forgotten requirements | Intent kept across turns; requirement changes reset approval | `intent.py` (`merge`), `agent.py` | `test_ls02`, `test_sofa_without_fit_info_*` | Built |
 | P3 dead-end loops | R1 not sold here, R2 no repeat questions, R3 greeting, R4 one outcome | `agent.py`, `catalog.find_products` | `test_na01–03`, `test_cl01` | Built |
 | P4 stale data | Checkout gate rechecks price, stock and data version | `policy.checkout_gate` | `test_px01`, `test_product_page_price_change_*` | Built |

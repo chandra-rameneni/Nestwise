@@ -1,13 +1,14 @@
-// IntentGuard assistant panel, shared by the listing and product pages.
-// IGAgent.mount({ el, context, title, intro, suggestions, onState }) renders the chat, the cart and
-// the demo controls into `el`. All decisions happen on the server; this file only displays them.
+// IntentGuard assistant panel, shared by the listing and product pages (PRD §5A).
+// const ig = IGAgent.mount({ el, context, title, intro, suggestions, onState }) renders the chat, the cart and the
+// demo controls into `el`, a slide-over panel. ig.open(), ig.close() and ig.send(text) let the page drive it.
+// All decisions happen on the server; this file only displays them.
 (function () {
   const inr = (n) => (n == null ? "price not listed" : "₹" + Number(n).toLocaleString("en-IN"));
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  // Short status labels, shown only where the state matters to the shopper.
   const KIND_LABEL = {
-    RECOMMEND: "RECOMMENDATIONS", ANSWER: "ANSWER", CLARIFY: "QUESTION", NOT_AVAILABLE: "NOT SOLD HERE",
-    NO_ELIGIBLE: "NOTHING ELIGIBLE", CART_PROPOSED: "CART READY", APPROVED: "APPROVED", DECLINED: "DECLINED",
-    ORDER_PLACED: "MOCK ORDER PLACED", BLOCKED: "STOPPED", DEFER: "NOT AVAILABLE YET", UNSUPPORTED: "",
+    NOT_AVAILABLE: "Not sold here", NO_ELIGIBLE: "Nothing matches everything", CART_PROPOSED: "Cart ready",
+    APPROVED: "Approved", ORDER_PLACED: "Order placed", BLOCKED: "Stopped",
   };
 
   function format(text) {
@@ -18,6 +19,11 @@
       .replace(/\n/g, "<br>");
   }
 
+  function thumb(url, title, cls = "thumb") {
+    const initials = esc((title || "?").slice(0, 2).toUpperCase());
+    return `<span class="${cls}">${url ? `<img src="${esc(url)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'ph',textContent:'${initials}'}))">` : `<span class="ph">${initials}</span>`}</span>`;
+  }
+
   async function api(path, body) {
     const opts = body === undefined ? { method: "POST" } : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) };
     const r = await fetch(path, opts);
@@ -26,10 +32,48 @@
     return data;
   }
 
+  // One check -> a friendly chip, e.g. "✓ 3 seats", "✓ 198 cm wide", "✗ ₹36,000".
+  function checkChip(c) {
+    const mark = c.status === "pass" ? "✓" : c.status === "fail" ? "✗" : "?";
+    const num = (v) => (typeof v === "number" ? Math.round(v) : v);
+    const has = c.observed !== null && c.observed !== undefined && c.observed !== "listed";
+    let text;
+    if (c.constraint.startsWith("max_total_inr")) text = has ? inr(c.observed) : "price";
+    else if (c.constraint === "seats") text = has ? `${num(c.observed)} seats` : "seats";
+    else if (c.constraint === "max_width_cm") text = has ? `${num(c.observed)} cm wide` : "width";
+    else if (c.constraint === "max_depth_cm") text = has ? `${num(c.observed)} cm deep` : "depth";
+    else if (c.constraint === "max_height_cm") text = has ? `${num(c.observed)} cm high` : "height";
+    else if (c.constraint === "max_delivery_days") text = has ? `${num(c.observed)} days` : "delivery";
+    else if (c.constraint === "material") text = String(c.required);
+    else text = c.constraint;
+    const tip = `${c.constraint}: you asked for ${c.required}, the listing says ${c.observed ?? "nothing"}`;
+    return `<span class="v ${esc(c.status)}" title="${esc(tip)}">${mark} ${esc(text)}</span>`;
+  }
+
+  let catalogSize = null;
+  fetch("/api/meta").then((r) => r.json()).then((m) => {
+    catalogSize = (m.categories || []).reduce((a, c) => a + c.count, 0);
+  }).catch(() => {});
+
+  // The steps the agent really takes, shown in order while waiting. Not live progress from the server.
+  function stagesFor(kind, context) {
+    if (kind === "approve") return ["Recording your approval"];
+    if (kind === "checkout") return ["Checking the latest price and stock", "Placing your order"];
+    if (kind === "decline") return ["Cancelling the cart"];
+    if (kind === "select") return ["Building your cart", "Checking price and stock"];
+    if (context.page === "product") return ["Reading your question", "Checking this product's listing", "Writing your answer"];
+    const n = catalogSize ? catalogSize.toLocaleString("en-IN") + " products" : "the catalog";
+    return ["Understanding your request", `Searching ${n}`, "Checking each requirement", "Writing your answer"];
+  }
+
   function mount({ el, context, title, intro, suggestions = [], onState }) {
+    el.setAttribute("role", "dialog");
+    el.setAttribute("aria-modal", "false");
     el.innerHTML = `
       <div class="dock-head">
-        <div class="row"><h2>${esc(title)}</h2><span class="mode" id="ig-mode">…</span></div>
+        <div class="row"><h2>${esc(title)}</h2>
+          <div class="right"><span class="mode" id="ig-mode">…</span>
+            <button class="close" id="ig-close" type="button" aria-label="Close the assistant">×</button></div></div>
         <p>${esc(intro)}</p>
       </div>
       <div class="msgs" id="ig-msgs" aria-live="polite"></div>
@@ -44,38 +88,52 @@
       </details>
       <div class="suggest" id="ig-suggest"></div>
       <form class="composer" id="ig-form">
-        <label for="ig-input" class="sr-only" hidden>Message</label>
+        <label for="ig-input" class="sr-only">Message</label>
         <input id="ig-input" autocomplete="off" maxlength="1000" placeholder="Ask or tell me what you need…">
         <button class="btn primary" type="submit">Send</button>
       </form>`;
     const $ = (id) => el.querySelector("#" + id);
     const msgs = $("ig-msgs");
+    const fab = document.getElementById("ig-fab");
     let state = null;
+    let lastFocus = null;
+
+    function open() {
+      if (el.classList.contains("open")) return;
+      lastFocus = document.activeElement;
+      el.classList.add("open");
+      if (fab) fab.setAttribute("aria-expanded", "true");
+      setTimeout(() => $("ig-input").focus({ preventScroll: true }), 50);
+    }
+    function close() {
+      el.classList.remove("open");
+      if (fab) fab.setAttribute("aria-expanded", "false");
+      if (lastFocus && lastFocus.focus) lastFocus.focus({ preventScroll: true });
+    }
 
     function addUser(text) {
       msgs.insertAdjacentHTML("beforeend", `<div class="msg user">${esc(text)}</div>`);
     }
-    function checksHtml(checks) {
-      return (checks || []).filter((c) => c.constraint !== "in_stock").map((c) =>
-        `<span class="v ${c.status}" title="${esc(c.constraint)}: required ${esc(c.required)}, listing ${esc(c.observed)}">${esc(c.constraint.replace("max_", "").replace("_inr (incl. shipping)", " price").replace("_cm", ""))} ${c.status === "pass" ? "✓" : c.status === "fail" ? "✗" : "?"}</span>`).join("");
-    }
     function addBot(r) {
-      const label = KIND_LABEL[r.kind] ?? r.kind;
+      const label = KIND_LABEL[r.kind];
       let html = `<div class="msg bot">${label ? `<span class="kind ${esc(r.kind)}">${esc(label)}</span><br>` : ""}${format(r.message)}`;
       if (r.cited_fields && r.cited_fields.length) {
-        html += `<div class="cite">Source: ${r.cited_fields.map((f) => `<span>${esc(f)}</span>`).join("")}</div>`;
+        html += `<div class="cite">From the listing: ${r.cited_fields.map((f) => `<span>${esc(f)}</span>`).join("")}</div>`;
       }
       if (r.recommendations && r.recommendations.length) {
         html += `<div class="recs">` + r.recommendations.map((x) => `
           <div class="rec">
-            <a href="/product/${esc(x.product_id)}">${esc(x.title)}</a>
-            <span class="meta">${inr(x.total_inr)} total · arrives in ${esc(x.delivery_days)} days (simulated)</span>
-            <span class="checks">${checksHtml(x.checks)}</span>
-            <div><button class="btn small" data-select="${esc(x.product_id)}" type="button">Add to cart</button></div>
+            <a href="/product/${esc(x.product_id)}" tabindex="-1" aria-hidden="true">${thumb(x.image_url, x.title)}</a>
+            <div class="body">
+              <a class="name" href="/product/${esc(x.product_id)}">${esc(x.title)}</a>
+              <span class="meta"><strong>${inr(x.total_inr)}</strong> incl. delivery · ${esc(x.delivery_days)} days</span>
+              <span class="checks">${(x.checks || []).filter((c) => c.constraint !== "in_stock").map(checkChip).join("")}</span>
+              <button class="btn small" data-select="${esc(x.product_id)}" data-title="${esc(x.title)}" type="button">Add to cart</button>
+            </div>
           </div>`).join("") + `</div>`;
       }
       if (r.rejected && r.rejected.length) {
-        html += `<details class="ruled"><summary>Ruled out (${r.rejected_count})</summary><ul>` +
+        html += `<details class="ruled"><summary>Why others were left out (${r.rejected_count})</summary><ul>` +
           r.rejected.map((x) => `<li><a href="/product/${esc(x.product_id)}">${esc(x.title)}</a>: ${esc(x.reason_codes.join(", "))}</li>`).join("") +
           (r.rejected_count > r.rejected.length ? `<li>…and ${r.rejected_count - r.rejected.length} more</li>` : "") + `</ul></details>`;
       }
@@ -87,7 +145,7 @@
       state = s;
       const mode = $("ig-mode");
       const ai = s.mode && s.mode !== "rules";
-      const fellBack = ai && s.last_extractor && !s.last_extractor.startsWith("llm");
+      const fellBack = ai && s.last_extractor && s.last_extractor.startsWith("rules");   // fast_path (O-31) is not a fallback
       mode.textContent = fellBack ? "Rules (AI busy)" : ai ? "AI mode" : "Rules mode";
       mode.className = "mode " + (ai && !fellBack ? "claude" : "rules");
       mode.title = fellBack ? "No AI model answered the last message (busy or out of free requests), so the rules handled it." :
@@ -98,21 +156,24 @@
       if (c && c.status === "PROPOSED") {
         const approved = a && a.status === "APPROVED";
         cartEl.innerHTML = `<div class="cart">
-          <div class="line">${esc(c.qty)} × <a href="/product/${esc(c.product_id)}">${esc(c.title)}</a></div>
-          <div class="total">${inr(c.total_inr)}</div>
-          <div class="status">${approved ? `Approved (${esc(a.approval_id)}). Price and stock are checked again before ordering.` : "Waiting for your approval. Nothing is ordered until you approve."}</div>
+          <div class="item">${thumb(c.image_url, c.title)}
+            <div class="line">${esc(c.qty)} × <a href="/product/${esc(c.product_id)}">${esc(c.title)}</a></div></div>
+          <div class="total">${inr(c.total_inr)}<small>incl. delivery</small></div>
+          <div class="status">${approved ? "Approved. I'll check the price and stock again before ordering." : "Nothing is ordered until you approve this exact total."}</div>
           <div class="actions">
-            ${approved ? "" : `<button class="btn primary small" data-act="approve" type="button">Approve this exact cart</button>`}
-            <button class="btn small ${approved ? "primary" : ""}" data-act="checkout" type="button">Place mock order</button>
-            <button class="btn small" data-act="decline" type="button">Decline</button>
+            ${approved ? `<button class="btn primary" data-act="checkout" type="button">Place order</button>`
+                       : `<button class="btn primary" data-act="approve" type="button">Approve this exact cart</button>`}
+            <button class="btn link" data-act="decline" type="button">Decline</button>
           </div></div>`;
         $("ig-demo").hidden = false;
         if (!$("ig-price").value) $("ig-price").value = (c.total_inr || 0) + 500;
       } else if (c && c.status === "ORDERED") {
         const o = s.orders[s.orders.length - 1];
-        cartEl.innerHTML = `<div class="cart"><div class="line">Mock order <strong>${esc(o ? o.order_id : "")}</strong> placed for ${esc(c.title)}.</div>
-          <div class="status">Simulation only: no payment taken, nothing ships.</div>
-          <div class="actions"><button class="btn small" data-act="checkout" type="button">Retry checkout (should not create a second order)</button></div></div>`;
+        cartEl.innerHTML = `<div class="cart done"><span class="tick" aria-hidden="true">✓</span>
+          <div class="total">${inr(o ? o.total_inr : c.total_inr)}</div>
+          <div class="line">Order placed for ${esc(c.title)}.</div>
+          <div class="status">Demo order ${esc(o ? o.order_id : "")}: no payment taken, nothing ships.</div>
+          <button class="btn link" data-act="checkout" type="button">Try placing it again (no second order is made)</button></div>`;
         $("ig-demo").hidden = true;
       } else {
         cartEl.innerHTML = "";
@@ -121,22 +182,37 @@
       if (onState) onState(s);
     }
 
-    async function run(promise, userText) {
+    async function run(promise, userText, stages) {
       $("ig-suggest").hidden = true;              // suggestions only before the chat starts (O-10)
       if (userText) addUser(userText);
       const wait = document.createElement("div");
-      wait.className = "typing"; wait.textContent = "Checking…";
+      wait.className = "working";
+      wait.setAttribute("role", "status");
+      wait.innerHTML = `<span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="stage"></span>`;
+      const steps = stages && stages.length ? stages : ["Checking"];
+      let i = 0;
+      const show = () => { wait.querySelector(".stage").textContent = steps[i] + "…"; };
+      show();
+      const timer = setInterval(() => { if (i < steps.length - 1) { i++; show(); } }, 1100);
       msgs.appendChild(wait); scroll();
       try {
         const r = await promise;
-        wait.remove();
         addBot(r);
         renderState(r.state);
       } catch (e) {
+        msgs.insertAdjacentHTML("beforeend", `<div class="msg bot"><span class="kind BLOCKED">Something went wrong</span><br>${esc(e.message)}</div>`);
+      } finally {
+        clearInterval(timer);
         wait.remove();
-        msgs.insertAdjacentHTML("beforeend", `<div class="msg bot"><span class="kind BLOCKED">ERROR</span><br>${esc(e.message)}</div>`);
       }
       scroll();
+    }
+
+    function send(text) {
+      text = (text || "").trim();
+      if (!text) return;
+      open();
+      run(api("/api/agent/message", { text, context }), text, stagesFor("message", context));
     }
 
     $("ig-form").addEventListener("submit", (e) => {
@@ -144,15 +220,17 @@
       const input = $("ig-input"), text = input.value.trim();
       if (!text) return;
       input.value = "";
-      run(api("/api/agent/message", { text, context }), text);
+      send(text);
     });
     $("ig-suggest").innerHTML = suggestions.map((s) => `<button type="button" data-say="${esc(s)}">${esc(s)}</button>`).join("");
+    $("ig-close").addEventListener("click", close);
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && el.classList.contains("open")) close(); });
     el.addEventListener("click", (e) => {
       const t = e.target.closest("button");
       if (!t) return;
-      if (t.dataset.say) run(api("/api/agent/message", { text: t.dataset.say, context }), t.dataset.say);
-      else if (t.dataset.select) run(api("/api/agent/select", { product_id: t.dataset.select }), "Add to cart: " + t.closest(".rec").querySelector("a").textContent);
-      else if (t.dataset.act) run(api("/api/agent/" + t.dataset.act), { approve: "Approve", checkout: "Place mock order", decline: "Decline" }[t.dataset.act]);
+      if (t.dataset.say) send(t.dataset.say);
+      else if (t.dataset.select) run(api("/api/agent/select", { product_id: t.dataset.select }), "Add to cart: " + t.dataset.title, stagesFor("select", context));
+      else if (t.dataset.act) run(api("/api/agent/" + t.dataset.act), { approve: "Approve", checkout: "Place order", decline: "Decline" }[t.dataset.act], stagesFor(t.dataset.act, context));
     });
     $("ig-setprice").addEventListener("click", async () => {
       if (!state || !state.cart) return;
@@ -184,15 +262,10 @@
       renderState(s); scroll();
     });
 
-    // Narrow screens: floating button opens the panel as a bottom sheet.
-    const fab = document.getElementById("ig-fab");
-    if (fab) fab.addEventListener("click", () => {
-      const open = el.classList.toggle("open");
-      fab.setAttribute("aria-expanded", String(open));
-      fab.textContent = open ? "Close assistant" : "Ask the assistant";
-      if (open) $("ig-input").focus();
-    });
+    if (fab) fab.addEventListener("click", open);
+
+    return { open, close, send };
   }
 
-  window.IGAgent = { mount, inr, esc };
+  window.IGAgent = { mount, inr, esc, thumb };
 })();

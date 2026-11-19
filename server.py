@@ -82,11 +82,19 @@ def _agent_payload(r: AgentResponse) -> dict:
             "order": None if r.order is None else {"order_id": r.order.order_id, "total_inr": r.order.total_inr}}
 
 
+def _image(s: Session, pid: str):
+    try:
+        return s.catalog.get(pid).image_url
+    except Exception:
+        return None
+
+
 def state(s: Session) -> dict:
     cart = s.cart
     return {
         "cart": None if cart is None else {"cart_id": cart.cart_id, "product_id": cart.product_id, "title": cart.title,
-                                           "qty": cart.qty, "total_inr": cart.total_inr, "status": cart.status},
+                                           "qty": cart.qty, "total_inr": cart.total_inr, "status": cart.status,
+                                           "image_url": _image(s, cart.product_id)},
         "approval": None if s.approval is None else {"approval_id": s.approval.approval_id,
                                                      "status": s.approval.status,
                                                      "approved_total_inr": s.approval.approved_total_inr},

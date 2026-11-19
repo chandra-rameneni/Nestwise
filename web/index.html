@@ -3,54 +3,105 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>IntentGuard Home</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="/static/styles.css">
+<title>Nestwise</title>
+<meta name="description" content="Nestwise: a home and living demo store with a shopping assistant that checks every requirement and never orders without your approval.">
+<link rel="stylesheet" href="/static/styles.css?v=3">
 </head>
 <body>
 <header class="top">
-  <div class="top-inner">
-    <a class="logo" href="/">IntentGuard <span>Home</span><small>demo store</small></a>
+  <div class="wrap top-inner">
+    <a class="logo" href="/" aria-label="Nestwise home">Nest<span>wise</span><small>with IntentGuard</small></a>
     <form class="search" id="search" role="search">
-      <input id="q" type="search" placeholder="Search sofas, curtains, mugs, lamps…" aria-label="Search products">
-      <button class="btn primary" type="submit">Search</button>
+      <input id="q" type="search" placeholder="Search products" aria-label="Search products">
     </form>
-    <nav class="nav-links"><a href="/inspector">Agent inspector</a></nav>
+    <nav class="nav-links">
+      <a href="#shop" class="hide-sm">Shop</a>
+      <a href="#how" class="hide-sm">How it works</a>
+      <a href="/inspector" class="hide-sm">Inspector</a>
+    </nav>
   </div>
-  <div class="strip">Real products from the <b>Flipkart Products dataset</b> (CC BY-SA 4.0, PromptCloud) · prices are <b>historical (2015–16)</b> · stock and delivery are <b>simulated</b> · orders are <b>mock</b>, no payment</div>
 </header>
 
-<div class="page">
-  <main class="content">
-    <div class="listing">
-      <aside class="filters" aria-label="Filters">
-        <div>
-          <h3>Category</h3>
-          <div class="cat-list" id="cats"></div>
-        </div>
-        <div>
-          <h3>Price (₹)</h3>
-          <form class="price-row" id="price">
-            <input id="pmin" type="number" min="0" placeholder="Min" aria-label="Minimum price" inputmode="numeric">
-            <input id="pmax" type="number" min="0" placeholder="Max" aria-label="Maximum price" inputmode="numeric">
-            <button class="btn small" type="submit">Go</button>
-          </form>
-        </div>
-      </aside>
-      <section>
-        <div class="results-head"><h1 id="heading">All products</h1><span class="count" id="count"></span></div>
-        <div class="grid" id="grid"></div>
-        <div class="pager" id="pager"></div>
-      </section>
+<main>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">Meet IntentGuard, your shopping assistant</p>
+      <h1>Tell us about your room. We'll find what fits.</h1>
+      <p class="sub">Say what you need, your budget and your space. Every suggestion is checked against all of it.</p>
+      <form class="ask" id="hero-ask">
+        <label for="hero-input" class="sr-only">What are you looking for?</label>
+        <input id="hero-input" autocomplete="off" maxlength="1000" placeholder="A 3-seater sofa under ₹30,000 that fits 200 cm">
+        <button class="btn yellow" type="submit">Ask</button>
+      </form>
+      <div class="examples" id="examples"></div>
+      <p class="datanote">Demo store · real products from a 2016 Flipkart dataset · historical prices · simulated stock · no real payment</p>
     </div>
-  </main>
-  <aside class="dock" id="dock" aria-label="Shopping assistant"></aside>
-</div>
-<button class="btn primary dock-fab" id="ig-fab" type="button" aria-expanded="false" aria-controls="dock">Ask the assistant</button>
+  </section>
 
-<script src="/static/agent.js"></script>
+  <section class="band alt">
+    <div class="wrap">
+      <h2 class="reveal">Shop by room.</h2>
+      <p class="lede reveal">Over two thousand products for every corner of your home.</p>
+      <div class="tiles reveal" id="tiles"></div>
+    </div>
+  </section>
+
+  <section class="band" id="how">
+    <div class="wrap">
+      <h2 class="reveal">An assistant you can trust with your money.</h2>
+      <p class="lede reveal">It works like a careful shop assistant, not a salesperson.</p>
+      <div class="steps reveal">
+        <div class="step">
+          <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg></span>
+          <h3>Tell us what you need.</h3>
+          <p>Product, budget, size, material. In your own words, all at once or bit by bit.</p>
+        </div>
+        <div class="step">
+          <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg></span>
+          <h3>We check every requirement.</h3>
+          <p>Each suggestion shows what was checked. If the listing doesn't say, we tell you instead of guessing.</p>
+        </div>
+        <div class="step">
+          <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>
+          <h3>Nothing is ordered without you.</h3>
+          <p>You approve the exact total. If the price or stock changes, we stop and ask again.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band alt" id="shop">
+    <div class="wrap">
+      <div class="shop-head"><h2 id="heading">All products.</h2><span class="count" id="count"></span></div>
+      <div class="filterbar">
+        <div class="cats" id="cats" role="group" aria-label="Category"></div>
+        <form class="price-row" id="price">
+          <input id="pmin" type="number" min="0" placeholder="Min ₹" aria-label="Minimum price" inputmode="numeric">
+          <input id="pmax" type="number" min="0" placeholder="Max ₹" aria-label="Maximum price" inputmode="numeric">
+          <button class="btn small" type="submit">Apply</button>
+        </form>
+      </div>
+      <div class="grid" id="grid"></div>
+      <div class="pager" id="pager"></div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <p class="brandline">Nest<span>wise</span></p>
+    <p>Products from the Flipkart Products dataset (PromptCloud, CC BY-SA 4.0). Prices are historical (2015–16). Stock and delivery are simulated. Orders are demo orders: no payment is taken and nothing ships.</p>
+    <p>Nestwise is a demo store with the IntentGuard shopping assistant. Not affiliated with Flipkart or Razorpay. <a href="/inspector">See what the assistant did</a>.</p>
+  </div>
+</footer>
+
+<aside class="dock" id="dock" aria-label="Shopping assistant"></aside>
+<button class="btn primary dock-fab" id="ig-fab" type="button" aria-expanded="false" aria-controls="dock">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>
+  Ask the assistant
+</button>
+
+<script src="/static/agent.js?v=4"></script>
 <script>
 (function () {
   const { inr, esc } = window.IGAgent;
@@ -62,12 +113,56 @@
   document.getElementById("pmin").value = st.min;
   document.getElementById("pmax").value = st.max;
 
+  // ---- assistant
+  const opts = {
+    el: document.getElementById("dock"),
+    context: { page: "listing" },
+    title: "Shopping assistant",
+    intro: "Tell me what you need and your limits. I only suggest products that meet every requirement I can check, and I never order without your approval.",
+    suggestions: ["Find a 3-seater sofa under ₹30,000 that fits 200 cm", "Coffee mug under ₹300", "Bedsheets under ₹1,000"],
+  };
+  const ig = IGAgent.mount(opts);
+  document.getElementById("examples").innerHTML = opts.suggestions.map((s) => `<button class="pill" type="button">${esc(s)}</button>`).join("");
+  document.getElementById("examples").addEventListener("click", (e) => {
+    const b = e.target.closest("button"); if (b) ig.send(b.textContent);
+  });
+  document.getElementById("hero-ask").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const input = document.getElementById("hero-input");
+    if (!input.value.trim()) { ig.open(); return; }
+    ig.send(input.value); input.value = "";
+  });
+
+  // ---- category tiles (photo = a typical product from each category)
+  const TILE_QUERY = { furniture: "sofa", home_furnishing: "bedsheet", home_decor: "table lamp", kitchen_dining: "mug" };
+  const TILE_ORDER = ["furniture", "home_furnishing", "home_decor", "kitchen_dining"];
+  function renderTiles() {
+    const ordered = TILE_ORDER.map((s) => cats.find((c) => c.slug === s)).filter(Boolean);
+    document.getElementById("tiles").innerHTML = ordered.map((c) => `
+      <button class="tile" type="button" data-cat="${esc(c.slug)}">
+        <span class="photo" id="tile-${esc(c.slug)}"></span>
+        <span class="label"><strong>${esc(c.label)}</strong><span>${c.count.toLocaleString("en-IN")} products</span></span>
+      </button>`).join("");
+    ordered.forEach((c) => {
+      fetch(`/api/products?q=${encodeURIComponent(TILE_QUERY[c.slug] || "")}&category=${c.slug}&page_size=1`).then((r) => r.json()).then((r) => {
+        const x = r.items[0];
+        if (x && x.image_url) document.getElementById("tile-" + c.slug).innerHTML = `<img src="${esc(x.image_url)}" alt="" loading="lazy" referrerpolicy="no-referrer">`;
+      });
+    });
+  }
+  document.getElementById("tiles").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-cat]"); if (!b) return;
+    st.category = b.dataset.cat; st.q = ""; st.page = 1; document.getElementById("q").value = "";
+    load(); document.getElementById("shop").scrollIntoView();
+  });
+
+  // ---- product grid
   function sync() {
     const p = new URLSearchParams();
     if (st.q) p.set("q", st.q); if (st.category) p.set("category", st.category);
     if (st.min) p.set("min_price", st.min); if (st.max) p.set("max_price", st.max);
     if (st.page > 1) p.set("page", st.page);
-    history.replaceState(null, "", "/" + (p.toString() ? "?" + p : ""));
+    history.replaceState(null, "", "/" + (p.toString() ? "?" + p : "") + location.hash);
   }
 
   window.cardHtml = function (x) {
@@ -79,7 +174,7 @@
         <span class="brand">${esc(x.brand || "Brand not listed")}</span>
         <span class="title">${esc(x.title)}</span>
         <div class="price"><span class="now">${inr(x.price_inr)}</span>${off ? `<span class="was">${inr(x.mrp_inr)}</span><span class="off">${off}% off</span>` : ""}</div>
-        ${x.stock === 0 ? `<span class="oos">Out of stock (simulated)</span>` : ""}
+        ${x.stock === 0 ? `<span class="oos">Out of stock</span>` : ""}
       </div></a>`;
   };
 
@@ -90,10 +185,10 @@
     if (st.min) p.set("min_price", st.min); if (st.max) p.set("max_price", st.max);
     const r = await fetch("/api/products?" + p).then((r) => r.json());
     const cat = cats.find((c) => c.slug === st.category);
-    document.getElementById("heading").textContent = st.q ? `Results for “${st.q}”` : (cat ? cat.label : "All products");
+    document.getElementById("heading").textContent = st.q ? `Results for “${st.q}”.` : (cat ? cat.label + "." : "All products.");
     document.getElementById("count").textContent = `${r.total.toLocaleString("en-IN")} products`;
     document.getElementById("grid").innerHTML = r.items.length ? r.items.map(window.cardHtml).join("")
-      : `<div class="empty">No products match. The assistant on the right can tell you what the store does sell.</div>`;
+      : `<div class="empty">No products match. Ask the assistant: it can tell you what the store does sell.</div>`;
     const pages = Math.max(1, Math.ceil(r.total / r.page_size));
     document.getElementById("pager").innerHTML = pages > 1 ? `
       <button class="btn small" ${st.page <= 1 ? "disabled" : ""} data-page="${st.page - 1}" type="button">Previous</button>
@@ -104,8 +199,9 @@
   function renderCats() {
     const all = cats.reduce((a, c) => a + c.count, 0);
     document.getElementById("cats").innerHTML =
-      `<button type="button" data-cat="" aria-pressed="${!st.category}">All <span class="n">${all.toLocaleString("en-IN")}</span></button>` +
-      cats.map((c) => `<button type="button" data-cat="${esc(c.slug)}" aria-pressed="${st.category === c.slug}">${esc(c.label)} <span class="n">${c.count}</span></button>`).join("");
+      `<button class="pill" type="button" data-cat="" aria-pressed="${!st.category}">All<span class="n">${all.toLocaleString("en-IN")}</span></button>` +
+      TILE_ORDER.map((s) => cats.find((c) => c.slug === s)).filter(Boolean).map((c) =>
+        `<button class="pill" type="button" data-cat="${esc(c.slug)}" aria-pressed="${st.category === c.slug}">${esc(c.label)}<span class="n">${c.count}</span></button>`).join("");
   }
   document.getElementById("cats").addEventListener("click", (e) => {
     const b = e.target.closest("button"); if (!b) return;
@@ -113,24 +209,24 @@
   });
   document.getElementById("pager").addEventListener("click", (e) => {
     const b = e.target.closest("button[data-page]"); if (!b) return;
-    st.page = parseInt(b.dataset.page, 10); load(); window.scrollTo({ top: 0 });
+    st.page = parseInt(b.dataset.page, 10); load(); document.getElementById("shop").scrollIntoView();
   });
   document.getElementById("search").addEventListener("submit", (e) => {
     e.preventDefault(); st.q = document.getElementById("q").value.trim(); st.page = 1; load();
+    document.getElementById("shop").scrollIntoView();
   });
   document.getElementById("price").addEventListener("submit", (e) => {
     e.preventDefault(); st.min = document.getElementById("pmin").value; st.max = document.getElementById("pmax").value; st.page = 1; load();
   });
 
-  fetch("/api/meta").then((r) => r.json()).then((m) => { cats = m.categories; load(); });
+  fetch("/api/meta").then((r) => r.json()).then((m) => { cats = m.categories; renderTiles(); load(); });
+  if (st.q || st.category || st.min || st.max || st.page > 1) setTimeout(() => document.getElementById("shop").scrollIntoView(), 300);
 
-  IGAgent.mount({
-    el: document.getElementById("dock"),
-    context: { page: "listing" },
-    title: "Shopping assistant",
-    intro: "Tell me what you need and your limits. I only recommend products that meet every requirement I can check, and I never order without your approval.",
-    suggestions: ["Find a 3-seater sofa under ₹30,000 that fits 200 cm", "Coffee mug under ₹300", "Bedsheets under ₹1,000"],
-  });
+  // ---- gentle reveal on scroll
+  const io = "IntersectionObserver" in window ? new IntersectionObserver((entries) => {
+    entries.forEach((en) => { if (en.isIntersecting) { en.target.classList.add("in"); io.unobserve(en.target); } });
+  }, { threshold: 0.12 }) : null;
+  document.querySelectorAll(".reveal").forEach((el) => io ? io.observe(el) : el.classList.add("in"));
 })();
 </script>
 </body>

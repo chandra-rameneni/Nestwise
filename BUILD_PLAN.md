@@ -67,6 +67,12 @@ The free model (D11) now handles most *misreading*. Phase 2 fixes the *decisions
 - **Files:** `agent.py` (reply templates), `prompts/product_qa_v2.txt`.
 - This comes after Phases 1 and 2 because those change which replies exist.
 
+### UI rebuild and speed fixes — **signed off by the PM 2026-11-19**
+- New storefront to PRD §5A (hero ask box, photo category tiles, slide-over assistant, waiting steps, photo cards with checks, big Approve button). UI checks UI-01 to UI-08 pass.
+- Store named **Nestwise**, navy + blue + yellow accent (D12).
+- Fixed along the way: O-30 (parallel requests failed), O-31 (product questions 10–16 s → mostly about 2 s), O-32 ("do you sell X" on product pages), O-33 (Q&A prompt v2: no verdicts beyond the listing).
+- Evals after the change: original 39/39, Phase 1 36/36, Phase 2 40/40, Phase 3 14/14, held-out 26/35 and 22/25. Results: `evals/results/20261119T0509*`.
+
 ### Phase 4: Pages and shared stock
 - **Moving between pages (B30):** requirements apply only to the same product type; "it" on the listing page asks which product.
 - **Shared stock (R10, B11):** one stock count for all shoppers, timed holds when adding to cart, and stock reduced at order time.

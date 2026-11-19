@@ -9,6 +9,7 @@ import copy
 import json
 import re
 import sqlite3
+import threading
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -171,11 +172,22 @@ class SqliteCatalog:
     def __init__(self, path: Path = STORE_DB_PATH):
         if not Path(path).exists():
             raise FileNotFoundError(f"{path} not found. Run: .venv/bin/python build_catalog.py")
-        self._con = sqlite3.connect(f"file:{path}?mode=ro", uri=True, check_same_thread=False)
+        self._path = path
+        self._local = threading.local()
         self.meta = dict(self._con.execute("SELECT key, value FROM meta").fetchall())
         self._price_override: dict[str, int] = {}
         self._stock_override: dict[str, int] = {}
         self._versions: dict[str, int] = {}
+
+    @property
+    def _con(self) -> sqlite3.Connection:
+        """One read-only connection per thread. The web server answers several requests at once, and one shared
+        connection used from several threads at the same time fails ("bad parameter or other API misuse")."""
+        con = getattr(self._local, "con", None)
+        if con is None:
+            con = sqlite3.connect(f"file:{self._path}?mode=ro", uri=True, check_same_thread=False)
+            self._local.con = con
+        return con
 
     # --- storefront helpers -------------------------------------------------------
     def categories(self) -> list[dict]:

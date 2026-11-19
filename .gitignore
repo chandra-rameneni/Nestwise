@@ -5,3 +5,5 @@ traces/
 .env
 data/raw/
 data/catalog.sqlite
+.DS_Store
+notes/

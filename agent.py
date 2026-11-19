@@ -247,7 +247,8 @@ class Session:
             elif self._last_invite:
                 self.context["pending_question"] = list(self._last_invite)
             new_intent, changed, meta = intent_mod.extract(text, self.intent, self.context)
-        self.tracer.event("model" if new_intent.extractor.startswith("llm") else "rules", "intent.extracted",
+        self.tracer.event("model" if new_intent.extractor.startswith("llm") else
+                          "fast_path" if new_intent.extractor == intent_mod.FAST_PATH else "rules", "intent.extracted",
                           status="ok" if "error" not in meta else "warn", extractor=new_intent.extractor,
                           intent=new_intent.intent, constraints=new_intent.constraint_fields(),
                           question=new_intent.question, wants_similar=new_intent.wants_similar,
@@ -710,7 +711,7 @@ class Session:
     def _rec_dict(self, p: ProductView, e: Optional[policy.Eligibility] = None) -> dict:
         return {"product_id": p.product_id, "title": p.title, "brand": p.brand, "list_price_inr": p.list_price_inr,
                 "shipping_inr": p.shipping_inr, "total_inr": p.total_for(), "delivery_days": p.delivery_days,
-                "stock": p.stock, "specs": p.specs, "url": f"/product/{p.product_id}",
+                "stock": p.stock, "specs": p.specs, "url": f"/product/{p.product_id}", "image_url": p.image_url,
                 "checks": [c.to_dict() for c in e.checks] if e else []}
 
     def _explain(self, ranked: list[ProductView], rej: list[dict], n_eligible: int, it: Intent,
@@ -760,7 +761,8 @@ class Session:
         self._count_tool()
         with self.tracer.tool("answer_about_product", product_id=p.product_id, question=it.question) as t:
             result = qa.answer_about_product(p, it.question or "", it)
-            t["summary"] = {"method": result.method, "status": result.status, "cited_fields": result.cited_fields}
+            t["summary"] = {"method": result.method, "status": result.status, "cited_fields": result.cited_fields,
+                            **{k: result.meta[k] for k in ("model", "prompt_version", "tried_first") if k in result.meta}}
         if result.status == "rejected":
             self.tracer.event("guardrail", "qa.answer_rejected", status="warn", product_id=p.product_id,
                               reason=result.meta.get("rejected"))

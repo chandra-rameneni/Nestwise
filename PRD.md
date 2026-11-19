@@ -53,6 +53,52 @@ The shopper is on the listing page and opens the agent panel. The agent **only c
 4. **Change requirements:** "Actually ₹35,000." The agent updates the budget, keeps the other requirements, re-searches, and cancels any earlier approval.
 5. **Buy:** the shopper picks one and goes through the same cart, approval, recheck and order steps as Journey A.
 
+## 5A. Look and feel *(approved by the PM 2026-11-19; built and signed off by the PM 2026-11-19)*
+
+**Goal:** the site should feel like a calm, premium showroom, and the assistant should feel like the main feature, not a box in the corner. **Name and colours (D12, 2026-11-19):** the store is **Nestwise**, and its assistant is IntentGuard. Colours: navy and bright blue, with a yellow accent for small highlights; no Flipkart look-alike. **Reference:** the style of Apple's product pages (lots of space, big type, one idea per section, large photos, pill buttons). We borrow the *style* only. No Apple logos, names, images or copied layouts.
+
+**Problem today:** the home page is a filter column and a grid. The assistant sits in a narrow side panel with no visual pull. A reply takes 2–7 seconds with only "Checking…" to show, so it feels like nothing is happening.
+
+### Home (listing) page
+1. **Hero:** one big headline and one line under it, for example *"Tell us about your room. We'll find what fits."*, with a large ask box. Typing there opens the assistant with that message already sent.
+2. **Three example chips** under the ask box (the current suggestions), each leading to results.
+3. **Category tiles:** 4 large tiles (Furniture, Home furnishing, Home décor, Kitchen & dining), each with a real product photo and the product count. Clicking filters the grid.
+4. **"How it works" strip:** 3 short steps with icons: *Tell us what you need → We check every requirement → Nothing is ordered without your approval.* This is the trust message, said once and clearly.
+5. **Product grid:** cleaner cards (photo on white, name on 2 lines, price, discount). Filters move into a slim bar above the grid instead of a side column.
+6. **Data note** (historical prices, simulated stock, mock orders) moves to a small line under the hero and to the footer.
+
+### Assistant
+1. **A slide-over panel** from the right (full screen on phones), opened from the hero box, a floating "Ask" button, or a product page. The grid stays usable behind it on wide screens.
+2. **Working state:** while waiting, show what is happening step by step, for example *"Understanding your request… Searching 2,043 products… Checking budget and size…"*. These are the steps the agent really takes, shown in order while waiting. They aren't live progress from the server (that would need streaming, which isn't in scope).
+3. **Recommendation cards in the chat:** photo, name, price, and check chips (✓ 3 seats · ✓ 198 cm · ✓ ₹28,990). Tap opens the product page.
+4. **Cart card:** photo, item + delivery = total in large type, and one clear **Approve** button. Decline is a quieter text button.
+5. **Order placed:** a short confirmation card with a tick.
+
+### Product page
+1. Large photo on the left; name, price and delivery on the right, with lots of space.
+2. **"Ask about this product"** sits directly under the price, with 3 ready questions: *How wide is it? · When will it arrive? · Buy this*.
+3. Specs in a clean two-column table below.
+
+### Rules
+- Behaviour doesn't change: the assistant still only chats on the listing page (it doesn't filter the grid), and every safety step stays.
+- Plain HTML, CSS and JavaScript, no build step, no outside libraries. System font stack.
+- Works at phone width (375 px) with no sideways scrolling. Respects "reduce motion".
+- Accessible: buttons have labels, contrast passes, the panel can be closed with Esc.
+
+### UI checks (run before sign-off)
+| ID | Check |
+|---|---|
+| UI-01 | Home page shows the hero, ask box, 4 category tiles with photos, "How it works", and the grid |
+| UI-02 | Typing in the hero box and pressing Enter opens the assistant with the message sent and a reply shown |
+| UI-03 | While waiting, the working state shows at least one stage; it disappears when the reply arrives |
+| UI-04 | A sofa search shows cards with photos and check chips in the chat |
+| UI-05 | Cart card shows the exact total and an Approve button; approve → place order works end to end |
+| UI-06 | Product page shows the 3 ready questions; "How wide is it?" gets an answer |
+| UI-07 | At 375 px wide: no sideways scrolling; the assistant opens full screen and closes |
+| UI-08 | All existing tests and evals still pass |
+
+**Results (2026-11-19, Claude's browser check):** UI-01 to UI-08 all pass. UI-02: the hero box opened the panel and the sofa request returned 2 photo cards. UI-05: approve → place order gave one demo order. UI-06: "How wide is it?" answered "700 mm (about 70 cm)", citing Width. UI-07: at 375 px the page has no sideways scroll and the panel fills the screen. UI-08: 226 tests pass; evals 39/39, 36/36, 40/40, 14/14. Found and fixed along the way: O-30 (parallel requests failed). Still open: O-31 (product questions are slow in AI mode).
+
 ## 6. Conversation rules
 
 | ID | Rule |

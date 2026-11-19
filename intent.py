@@ -263,7 +263,7 @@ def product_phrase(text: str) -> Optional[str]:
     """The shopper's words for the product, or None if they didn't name one.
     'Find a 3-seater sofa under ₹30,000' -> '3-seater sofa'; 'mobile' -> 'mobile'; 'air fryer?' -> 'air fryer';
     'I need something affordable' -> None."""
-    t = text.lower().strip()
+    t = re.sub(r"\s+", " ", re.sub(r"\b(also|too|as well)\b", " ", text.lower())).strip()   # "do you also have bedsheets"
     m = re.search(_SHOP_VERB + r"\s+(?:me\s+)?(?:to buy\s+)?(?:(?:a|an|the|some|any)\s+)?(.+)", t)
     if m:
         rest = m.group(1)
@@ -295,7 +295,7 @@ def head_term(phrase: Optional[str]) -> Optional[str]:
 
 def extract_rules(text: str, context: Optional[dict] = None, prior: Optional[Intent] = None) -> IntentExtraction:
     page = (context or {}).get("page", "listing")
-    t = text.lower()
+    t = re.sub(r"\s+", " ", re.sub(r"\balso\b", " ", text.lower()))    # filler: "do you also have bedsheets" (O-32)
     if re.search(r"\b(refund|return|money back)\b", t) and not re.search(r"\bpolicy\b", t):
         return IntentExtraction(intent="REFUND_REQUEST")
     if re.search(r"(where is my order|track(ing)?\b|order status|my order\b)", t):
@@ -395,7 +395,11 @@ def extract_rules(text: str, context: Optional[dict] = None, prior: Optional[Int
         if _SIMILAR.search(t):
             return IntentExtraction(intent="PRODUCT_DISCOVERY", wants_similar=True,
                                     wants_cheaper=bool(re.search(r"cheaper|less expensive|lower price", t)), **common)
-        if phrase is None or "?" in text or re.match(r"\s*(what|how|is|does|do|can|will|which|are|has|have|"
+        # O-32: "do you sell mobiles?" is about the store, not this product: it goes to the normal search below.
+        store_q = re.match(r"\s*(do|does|can) (you|u|the store|this store|y'?all) (also )?(sell|have|carry|stock|get)\b", t)
+        if store_q and not re.search(r"\b(it|its|this|that|them|like this|more of)\b", t):
+            pass
+        elif phrase is None or "?" in text or re.match(r"\s*(what|how|is|does|do|can|will|which|are|has|have|"
                                                      r"tell me|any)\b", t):
             return IntentExtraction(intent="PRODUCT_QUESTION", question=text.strip(), **common)
 
@@ -514,10 +518,30 @@ def merge(prior: Optional[Intent], new: IntentExtraction, extractor: str) -> tup
     return Intent(**data), changed
 
 
+FAST_PATH = "fast_path:product_question"
+_ABOUT_THIS = re.compile(r"\b(it|its|it's|this|this one|they|them)\b", re.I)
+
+
+def is_plain_product_question(text: str, rules: IntentExtraction) -> bool:
+    """O-31: on a product page, a plain question about *this* product ("How wide is it?") needs no model to be
+    understood; the answer step reads the question itself. Anything else still goes to the model: a message
+    with requirements ("will it fit a 2 m wall?"), one that doesn't point at this product ("do you sell
+    mobiles?"), greetings, tricks, Hinglish and so on."""
+    return (rules.intent == "PRODUCT_QUESTION" and rules.message_kind is None and not rules.product_query
+            and not any(getattr(rules, f) for f in CONSTRAINT_FIELDS) and not rules.quantity
+            and not rules.remove_fields and bool(_ABOUT_THIS.search(text)))
+
+
 def extract(text: str, prior: Optional[Intent], context: Optional[dict] = None) -> tuple[Intent, list[str], dict]:
-    """Run Claude if configured, else the rules baseline. Returns (intent, changed_fields, trace metadata)."""
+    """Run the model if configured, else the rules baseline. Returns (intent, changed_fields, trace metadata)."""
     meta: dict = {}
     extraction, extractor = None, "rules_fallback"
+    if llm_available() and (context or {}).get("page") == "product":
+        quick = extract_rules(text, context, prior)
+        if is_plain_product_question(text, quick):
+            meta["fast_path"] = "plain question about this product: skipped the understanding model (O-31)"
+            intent, changed = merge(prior, quick, FAST_PATH)
+            return intent, changed, meta
     if llm_available():
         extraction, meta = extract_llm(text, prior, context)
         if extraction is not None:

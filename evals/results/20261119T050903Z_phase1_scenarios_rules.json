@@ -1,0 +1,674 @@
+{
+ "run_at": "20261119T050903Z",
+ "mode": "rules",
+ "model": null,
+ "scenarios_version": "phase1-3",
+ "total": 36,
+ "passed": 36,
+ "core": "36/36",
+ "probes": "0/0",
+ "results": [
+  {
+   "id": "P1-T01",
+   "group": "followup",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_63a5653f87de",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 6 sofas fit what you need. Here are the 3 best value:\n• Durian BID/32625/A/2 Leatherette 2 Seater Sofa: ₹12,220 total, arrives in 8 days, 2 seats, 110 cm wide.\n• Durian Leatherette 2 Seater Sofa: ₹24,050 total, arrives in 10 days, 2 seats, 147 cm wide.\n• Durian Berry Solid Wood 2 Seater S",
+     "cited": []
+    },
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 1 sofa fits what you need. Here it is:\n• Durian BID/32625/A/2 Leatherette 2 Seater Sofa: ₹12,220 total, arrives in 8 days, 2 seats, 110 cm wide.\nTell me which one you'd like, and I'll show you the exact total before anything is bought.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P1-T02",
+   "group": "followup",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_f90c3befd1e7",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 52 sofas to choose from. Here are the 3 best value:\n• Durian BID/32625/A/1 Leatherette 1 Seater Sofa: ₹9,209 total, arrives in 8 days, 1 seat, 56 cm wide.\n• Durian BID/32626/A/1 Leatherette 1 Seater Sofa: ₹11,375 total, arrives in 9 days, 1 seat, 80 cm wide.\n• Durian BID/32625/A/2 Leather",
+     "cited": []
+    },
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 13 sofas fit what you need. Here are the 3 best value:\n• Durian BID/32625/A/2 Leatherette 2 Seater Sofa: ₹12,220 total, arrives in 8 days, 2 seats, 110 cm wide.\n• ARRA Engineered Wood 2 Seater Sofa: ₹15,900 total, arrives in 5 days, 2 seats.\n• ARRA Solid Wood 2 Seater Sofa: ₹16,900 total,",
+     "cited": []
+    }
+   ],
+   "notes": "Updated 2026-11-18 for Phase 2 (B18, search first): sofas are shown straight away instead of asking seats and width first. Planned in the Phase 1 eval note."
+  },
+  {
+   "id": "P1-T03",
+   "group": "followup",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_7f9e00c3a1d5",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 52 sofas to choose from. Here are the 3 best value:\n• Durian BID/32625/A/1 Leatherette 1 Seater Sofa: ₹9,209 total, arrives in 8 days, 1 seat, 56 cm wide.\n• Durian BID/32626/A/1 Leatherette 1 Seater Sofa: ₹11,375 total, arrives in 9 days, 1 seat, 80 cm wide.\n• Durian BID/32625/A/2 Leather",
+     "cited": []
+    },
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 13 sofas fit what you need. Here are the 3 best value:\n• Durian BID/32625/A/2 Leatherette 2 Seater Sofa: ₹12,220 total, arrives in 8 days, 2 seats, 110 cm wide.\n• ARRA Engineered Wood 2 Seater Sofa: ₹15,900 total, arrives in 5 days, 2 seats.\n• ARRA Solid Wood 2 Seater Sofa: ₹16,900 total,",
+     "cited": []
+    }
+   ],
+   "notes": "Updated 2026-11-18 for Phase 2 (B18, search first): sofas are shown straight away instead of asking seats and width first. Planned in the Phase 1 eval note."
+  },
+  {
+   "id": "P1-T04",
+   "group": "followup",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_11484e89729d",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 52 sofas to choose from. Here are the 3 best value:\n• Durian BID/32625/A/1 Leatherette 1 Seater Sofa: ₹9,209 total, arrives in 8 days, 1 seat, 56 cm wide.\n• Durian BID/32626/A/1 Leatherette 1 Seater Sofa: ₹11,375 total, arrives in 9 days, 1 seat, 80 cm wide.\n• Durian BID/32625/A/2 Leather",
+     "cited": []
+    },
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 13 sofas fit what you need. Here are the 3 best value:\n• Durian BID/32625/A/2 Leatherette 2 Seater Sofa: ₹12,220 total, arrives in 8 days, 2 seats, 110 cm wide.\n• ARRA Engineered Wood 2 Seater Sofa: ₹15,900 total, arrives in 5 days, 2 seats.\n• ARRA Solid Wood 2 Seater Sofa: ₹16,900 total,",
+     "cited": []
+    }
+   ],
+   "notes": "Updated 2026-11-18 for Phase 2 (B18, search first): sofas are shown straight away instead of asking seats and width first. Planned in the Phase 1 eval note."
+  },
+  {
+   "id": "P1-T05",
+   "group": "followup",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_896f73f69e7e",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 9 sofas fit what you need. Here are the 3 best value:\n• Durian BID/32625/A/2 Leatherette 2 Seater Sofa: ₹12,220 total, arrives in 8 days, 2 seats, 110 cm wide.\n• Durian Leatherette 2 Seater Sofa: ₹24,050 total, arrives in 10 days, 2 seats, 147 cm wide.\n• Durian Berry Solid Wood 2 Seater S",
+     "cited": []
+    },
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 7 sofas fit what you need. Here are the 3 best value:\n• HomeTown CIAZ Fabric 3 Seater Sectional: ₹14,900 total, arrives in 9 days, 3 seats, 181.5 cm wide.\n• Durian BID/32625/A/3 Leatherette 3 Seater Sofa: ₹17,680 total, arrives in 5 days, 3 seats, 168 cm wide.\n• Durian Berry Solid Wood 3 ",
+     "cited": []
+    }
+   ],
+   "notes": "Changed 2026-11-18 from 160 cm to 200 cm: the catalog has no 3-seater that fits 160 cm, so the original eval could never show results. The behaviour tested is unchanged."
+  },
+  {
+   "id": "P1-T06",
+   "group": "followup",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_b16f7a4a707b",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 6 sofas fit what you need. Here are the 3 best value:\n• Durian BID/32625/A/2 Leatherette 2 Seater Sofa: ₹12,220 total, arrives in 8 days, 2 seats, 110 cm wide.\n• Durian Leatherette 2 Seater Sofa: ₹24,050 total, arrives in 10 days, 2 seats, 147 cm wide.\n• Durian Berry Solid Wood 2 Seater S",
+     "cited": []
+    },
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 13 sofas fit what you need. Here are the 3 best value:\n• Durian BID/32625/A/2 Leatherette 2 Seater Sofa: ₹12,220 total, arrives in 8 days, 2 seats, 110 cm wide.\n• ARRA Engineered Wood 2 Seater Sofa: ₹15,900 total, arrives in 5 days, 2 seats.\n• ARRA Solid Wood 2 Seater Sofa: ₹16,900 total,",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P1-T07",
+   "group": "followup",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_03457fc23042",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 2 sofas fit what you need. Here they are:\n• HomeTown CIAZ Fabric 3 Seater Sectional: ₹14,900 total, arrives in 9 days, 3 seats, 181.5 cm wide.\n• Durian BID/32625/A/3 Leatherette 3 Seater Sofa: ₹17,680 total, arrives in 5 days, 3 seats, 168 cm wide.\nTell me which one you'd like, and I'll s",
+     "cited": []
+    },
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 7 sofas fit what you need. Here are the 3 best value:\n• HomeTown CIAZ Fabric 3 Seater Sectional: ₹14,900 total, arrives in 9 days, 3 seats, 181.5 cm wide.\n• Durian BID/32625/A/3 Leatherette 3 Seater Sofa: ₹17,680 total, arrives in 5 days, 3 seats, 168 cm wide.\n• Durian Berry Solid Wood 3 ",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P1-R01",
+   "group": "new_product",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_26d39d0ccd19",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 2 sofas fit what you need. Here they are:\n• HomeTown CIAZ Fabric 3 Seater Sectional: ₹14,900 total, arrives in 9 days, 3 seats, 181.5 cm wide.\n• Durian BID/32625/A/3 Leatherette 3 Seater Sofa: ₹17,680 total, arrives in 5 days, 3 seats, 168 cm wide.\nTell me which one you'd like, and I'll s",
+     "cited": []
+    },
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 13 bedsheets to choose from. Here are the 3 best value:\n• JBC Collection Cotton Printed Single Bedsheet: ₹309 total, arrives in 6 days.\n• jaisayram Cotton Abstract Single Bedsheet: ₹329 total, arrives in 6 days.\n• Abhomedecor Cotton Abstract Double Bedsheet: ₹599 total, arrives in 5 days.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P1-R02",
+   "group": "new_product",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_22b8d6305532",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 2 sofas fit what you need. Here they are:\n• HomeTown CIAZ Fabric 3 Seater Sectional: ₹14,900 total, arrives in 9 days, 3 seats, 181.5 cm wide.\n• Durian BID/32625/A/3 Leatherette 3 Seater Sofa: ₹17,680 total, arrives in 5 days, 3 seats, 168 cm wide.\nTell me which one you'd like, and I'll s",
+     "cited": []
+    },
+    {
+     "kind": "UNSUPPORTED",
+     "message": "That's not something I can help with, sorry. But I'd love to help you find something for your home: home décor, kitchen & dining, home furnishing and furniture.",
+     "cited": []
+    }
+   ],
+   "notes": "The sofa thread stays untouched for later."
+  },
+  {
+   "id": "P1-O01",
+   "group": "off_topic",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_d81a5961bcfe",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "UNSUPPORTED",
+     "message": "That's not something I can help with, sorry. But I'd love to help you find something for your home: home décor, kitchen & dining, home furnishing and furniture.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P1-O02",
+   "group": "off_topic",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_66369172763d",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "UNSUPPORTED",
+     "message": "That's not something I can help with, sorry. But I'd love to help you find something for your home: home décor, kitchen & dining, home furnishing and furniture.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P1-O03",
+   "group": "off_topic",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_1e205ab82af9",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "UNSUPPORTED",
+     "message": "I'm this store's shopping assistant. I can help you find and buy home décor, kitchen & dining, home furnishing and furniture.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P1-O04",
+   "group": "off_topic",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_cc7a2b57e1cd",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "UNSUPPORTED",
+     "message": "That's not something I can help with, sorry. But I'd love to help you find something for your home: home décor, kitchen & dining, home furnishing and furniture.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P1-G01",
+   "group": "off_topic",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_273bd2663792",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "UNSUPPORTED",
+     "message": "Hi! I can help you find and compare products in this store (home décor, kitchen & dining, home furnishing and furniture), answer questions about a product, and place an order once you approve it.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P1-G02",
+   "group": "off_topic",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_d964eb483a28",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "UNSUPPORTED",
+     "message": "You're welcome! Happy shopping.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P1-O05",
+   "group": "lookalike",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_7e214240c569",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "NOT_AVAILABLE",
+     "message": "Sorry, we don't sell mobiles. We're a home and living store: home décor, kitchen & dining, home furnishing and furniture.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P1-O06",
+   "group": "lookalike",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_3c9fe8cd08f8",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "NOT_AVAILABLE",
+     "message": "Sorry, we don't sell mobiles. We're a home and living store: home décor, kitchen & dining, home furnishing and furniture.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P1-O07",
+   "group": "lookalike",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_9358d20ae120",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "NOT_AVAILABLE",
+     "message": "Sorry, we don't sell air fryers. We're a home and living store: home décor, kitchen & dining, home furnishing and furniture.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P1-Y01",
+   "group": "typo",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_27afc50e1093",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "NOT_AVAILABLE",
+     "message": "I couldn't find that item. Check the spelling and try again. Did you mean “sofa”?",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P1-Y02",
+   "group": "typo",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_7f717902b213",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "NOT_AVAILABLE",
+     "message": "I couldn't find that item. Check the spelling and try again. Did you mean “bedsheet”?",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P1-Y03",
+   "group": "typo",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_75a1d549f8e6",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "NOT_AVAILABLE",
+     "message": "I couldn't find that item. Check the spelling and try again. Did you mean “cushion cover”?",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P1-Y04",
+   "group": "lookalike",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_78ac439fb5ef",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 52 sofas to choose from. Here are the 3 best value:\n• Durian BID/32625/A/1 Leatherette 1 Seater Sofa: ₹9,209 total, arrives in 8 days, 1 seat, 56 cm wide.\n• Durian BID/32626/A/1 Leatherette 1 Seater Sofa: ₹11,375 total, arrives in 9 days, 1 seat, 80 cm wide.\n• Durian BID/32625/A/2 Leather",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P1-N01",
+   "group": "nonsense",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_bcc2794243ec",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "UNSUPPORTED",
+     "message": "Sorry, I didn't understand that. I can help you find, compare and buy home and living products.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P1-N02",
+   "group": "nonsense",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_b6e2cbb3266f",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "UNSUPPORTED",
+     "message": "Sorry, I didn't understand that. I can help you find, compare and buy home and living products.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P1-A01",
+   "group": "rude",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_c751eb2d01e5",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "UNSUPPORTED",
+     "message": "Apologies for the inconvenience. Hope you find what you're looking for.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P1-A02",
+   "group": "rude",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_1c64b1536099",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "UNSUPPORTED",
+     "message": "Apologies for the inconvenience. Hope you find what you're looking for.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P1-A03",
+   "group": "rude",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_562a84f86abb",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 6 sofas fit what you need. Here are the 3 best value:\n• Durian BID/32625/A/2 Leatherette 2 Seater Sofa: ₹12,220 total, arrives in 8 days, 2 seats, 110 cm wide.\n• Durian Leatherette 2 Seater Sofa: ₹24,050 total, arrives in 10 days, 2 seats, 147 cm wide.\n• Durian Berry Solid Wood 2 Seater S",
+     "cited": []
+    }
+   ],
+   "notes": "Help with the real request inside the rude message."
+  },
+  {
+   "id": "P1-K01",
+   "group": "trick",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_ca5714dc19bf",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "UNSUPPORTED",
+     "message": "I can't skip approval or change prices, but I'm happy to help you find the right one and order it with your OK.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P1-K02",
+   "group": "trick",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_932ff2862136",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "UNSUPPORTED",
+     "message": "I can't skip approval or change prices, but I'm happy to help you find the right one and order it with your OK.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P1-K03",
+   "group": "trick",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_5c3566732df1",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "UNSUPPORTED",
+     "message": "I can't skip approval or change prices, but I'm happy to help you find the right one and order it with your OK.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P1-C01",
+   "group": "compare",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_88db4e644bc3",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "DEFER",
+     "message": "Side-by-side comparison isn't something I can do just yet, sorry! I can tell you the width, seats and price of each one, though. Which one first?",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P1-C02",
+   "group": "compare",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_eabd999f5280",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "DEFER",
+     "message": "Side-by-side comparison isn't something I can do just yet, sorry! I can tell you the width, seats and price of each one, though. Which one first?",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P1-X01",
+   "group": "catch_all",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_33726b566a25",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "UNSUPPORTED",
+     "message": "Sorry, I didn't quite get that. I can help you find and buy things for your home.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P1-L01",
+   "group": "hinglish",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_53930c0cc82e",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "CLARIFY",
+     "message": "Are you searching for a sofa? Only English is supported.",
+     "cited": []
+    },
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 16 sofas are under ₹20,000. Here are the 3 best value:\n• Durian BID/32625/A/1 Leatherette 1 Seater Sofa: ₹9,209 total, arrives in 8 days, 1 seat, 56 cm wide.\n• Durian BID/32626/A/1 Leatherette 1 Seater Sofa: ₹11,375 total, arrives in 9 days, 1 seat, 80 cm wide.\n• Durian BID/32625/A/2 Leat",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P1-L02",
+   "group": "hinglish",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_711bd28d0bd8",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "CLARIFY",
+     "message": "Are you searching for a bedsheet? Only English is supported.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "P1-L03",
+   "group": "hinglish",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_ab16e350f3c8",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "UNSUPPORTED",
+     "message": "Sorry, I didn't quite get that. I can help you find and buy things for your home.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  }
+ ]
+}

@@ -24,7 +24,7 @@ import llm
 import policy
 from catalog import ProductView
 
-QA_PROMPT_VERSION = "product_qa_v1"
+QA_PROMPT_VERSION = "product_qa_v2"   # v2 (O-33): no verdicts beyond the listing
 QA_PROMPT_PATH = Path(__file__).parent / "prompts" / f"{QA_PROMPT_VERSION}.txt"
 
 

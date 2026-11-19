@@ -1,4 +1,4 @@
-# IntentGuard Home
+# Nestwise, with the IntentGuard shopping agent
 
 A home-and-living web store built on **real product data** (the Flipkart Products dataset), with an AI shopping assistant on every page:
 
@@ -38,7 +38,7 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 | Real catalog (2,043 products), unit parsing, implausible values flagged | `build_catalog.py` → `data/catalog.sqlite` | Code |
 | Search; "is this product" versus "only mentions it" (rule R1) | `catalog.py` (`find_products`) | Code |
 | Understanding the request (intent, product, limits, page context) | `intent.py`, `prompts/intent_v2.txt` | Claude `claude-opus-5-5` (structured output), or the rules fallback |
-| Answers about one product, with checked citations | `qa.py`, `prompts/product_qa_v1.txt` | Rule check, then Claude, then spec lookup |
+| Answers about one product, with checked citations | `qa.py`, `prompts/product_qa_v2.txt` | Rule check, then Claude, then spec lookup |
 | Eligibility, ranking, checkout gate | `policy.py` | Deterministic code |
 | Approval and idempotent mock order | `checkout.py` | Deterministic code |
 | Conversation flow and rules R1–R4 | `agent.py` | Code-driven workflow |
