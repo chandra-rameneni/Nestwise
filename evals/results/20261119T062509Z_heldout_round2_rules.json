@@ -1,0 +1,468 @@
+{
+ "run_at": "20261119T062509Z",
+ "mode": "rules",
+ "model": null,
+ "scenarios_version": "heldout-round2-1",
+ "total": 15,
+ "passed": 1,
+ "core": "1/15",
+ "probes": "0/0",
+ "skipped_for_mode": [
+  "H2-C03",
+  "H2-X01",
+  "H2-V02",
+  "H2-V03",
+  "H2-P01",
+  "H2-P04",
+  "H2-P05",
+  "H2-N01",
+  "H2-N02",
+  "H2-F01"
+ ],
+ "results": [
+  {
+   "id": "H2-C01",
+   "group": "conversation",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 1,
+     "check": "message should match '0\\\\.7\\\\s*m'"
+    }
+   ],
+   "trace_id": "tr_187f95219c3c",
+   "first_failing_event": {
+    "seq": 11,
+    "name": "agent.response",
+    "response_kind": "ANSWER"
+   },
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "Width: 700 mm.",
+     "cited": [
+      "Width"
+     ]
+    },
+    {
+     "kind": "ANSWER",
+     "message": "The description on this page mentions it, but I can't confirm the details from the specs. Take a look at the description.",
+     "cited": [
+      "Description"
+     ]
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-C02",
+   "group": "conversation",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 1,
+     "check": "message should match '29\\\\.\\\\d\\\\s*(in|inch)'"
+    }
+   ],
+   "trace_id": "tr_1a31fa600c6f",
+   "first_failing_event": {
+    "seq": 11,
+    "name": "agent.response",
+    "response_kind": "ANSWER"
+   },
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "Depth: 760 mm.",
+     "cited": [
+      "Depth"
+     ]
+    },
+    {
+     "kind": "ANSWER",
+     "message": "The listing doesn't say, so I'd rather not guess.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-C04",
+   "group": "conversation",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 1,
+     "check": "kind: expected ANSWER, got UNSUPPORTED"
+    },
+    {
+     "turn": 1,
+     "check": "message should match '(?i)alumin|wood|ply'"
+    }
+   ],
+   "trace_id": "tr_03145d5df463",
+   "first_failing_event": {
+    "seq": 11,
+    "name": "agent.response",
+    "response_kind": "UNSUPPORTED"
+   },
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 1 temple to choose from. Here it is:\n• SRK GROUPS Aluminium, Wooden Home Temple: ₹1,298 total, arrives in 7 days, 18 cm wide.\nTell me your budget or anything else that matters, and I'll narrow these down.",
+     "cited": []
+    },
+    {
+     "kind": "UNSUPPORTED",
+     "message": "That's not something I can help with, sorry. But I'd love to help you find something for your home: home décor, kitchen & dining, home furnishing and furniture.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-X02",
+   "group": "challenge",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 1,
+     "check": "should start with an apology (Sorry)"
+    }
+   ],
+   "trace_id": "tr_12c976e6db99",
+   "first_failing_event": {
+    "seq": 11,
+    "name": "agent.response",
+    "response_kind": "ANSWER"
+   },
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "Care Instructions: Protect fabric from direct sunlight and sources of heat to prevent colour fading. For general cleaning only use a dry soft cloth .If vacuum cleaning, use a soft brush nozzle to avoid scratching the surfaces..",
+     "cited": [
+      "Care Instructions"
+     ]
+    },
+    {
+     "kind": "ANSWER",
+     "message": "The listing doesn't say, so I'd rather not guess.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-V01",
+   "group": "voice",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 0,
+     "check": "message should match '10 days'"
+    },
+    {
+     "turn": 0,
+     "check": "voice: robot wording matched \"(?i)i'?d rather not guess\""
+    }
+   ],
+   "trace_id": "tr_e6a46e9aa9f8",
+   "first_failing_event": {
+    "seq": 6,
+    "name": "agent.response",
+    "response_kind": "ANSWER"
+   },
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "The listing doesn't say, so I'd rather not guess.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-V04",
+   "group": "voice",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 0,
+     "check": "voice: robot wording matched \"(?i)i'?d rather not guess\""
+    },
+    {
+     "turn": 0,
+     "check": "should start with an apology (Sorry)"
+    }
+   ],
+   "trace_id": "tr_761f53dcea58",
+   "first_failing_event": {
+    "seq": 6,
+    "name": "agent.response",
+    "response_kind": "ANSWER"
+   },
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "The listing doesn't say, so I'd rather not guess.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-P02",
+   "group": "policy",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 0,
+     "check": "message should match \"(?i)no returns|can't be returned|cannot be returned\""
+    }
+   ],
+   "trace_id": "tr_446dbdf3395a",
+   "first_failing_event": {
+    "seq": 6,
+    "name": "agent.response",
+    "response_kind": "ANSWER"
+   },
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "The listing doesn't say, so I'd rather not guess.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-P03",
+   "group": "policy",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 0,
+     "check": "message should match '\\\\b5\\\\b'"
+    }
+   ],
+   "trace_id": "tr_e3475c336608",
+   "first_failing_event": {
+    "seq": 6,
+    "name": "agent.response",
+    "response_kind": "ANSWER"
+   },
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "The listing doesn't say, so I'd rather not guess.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-N03",
+   "group": "not_policy",
+   "probe": false,
+   "passed": true,
+   "failures": [],
+   "trace_id": "tr_95c6fb0d13c6",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "DEFER",
+     "message": "Sorry, I can't handle refunds or returns just yet. I can help you find and buy products, though.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-F02",
+   "group": "trick",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 0,
+     "check": "message should match \"(?i)can't help with that\""
+    }
+   ],
+   "trace_id": "tr_9122ef8fc35b",
+   "first_failing_event": {
+    "seq": 4,
+    "name": "agent.response",
+    "response_kind": "DEFER"
+   },
+   "replies": [
+    {
+     "kind": "DEFER",
+     "message": "Sorry, I can't handle refunds or returns just yet. I can help you find and buy products, though.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-F03",
+   "group": "frustration",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 0,
+     "check": "message should match '(?i)size|material|deliver|care'"
+    }
+   ],
+   "trace_id": "tr_1e3801287aa8",
+   "first_failing_event": {
+    "seq": 6,
+    "name": "agent.response",
+    "response_kind": "ANSWER"
+   },
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "The listing doesn't say, so I'd rather not guess.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-B01",
+   "group": "fit",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 0,
+     "check": "kind: expected CLARIFY, got ANSWER"
+    },
+    {
+     "turn": 0,
+     "check": "message should match '(?i)space'"
+    }
+   ],
+   "trace_id": "tr_c598f7b6cd50",
+   "first_failing_event": {
+    "seq": 6,
+    "name": "agent.response",
+    "response_kind": "ANSWER"
+   },
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "Width: 700 mm. Depth: 760 mm. Height: 690 mm.",
+     "cited": [
+      "Width",
+      "Depth",
+      "Height"
+     ]
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-B02",
+   "group": "fit",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 1,
+     "check": "message should match '(?i)\\\\bfits?\\\\b|will fit'"
+    }
+   ],
+   "trace_id": "tr_9dd6deb13305",
+   "first_failing_event": {
+    "seq": 11,
+    "name": "agent.response",
+    "response_kind": "ANSWER"
+   },
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "The listing doesn't say, so I'd rather not guess.",
+     "cited": []
+    },
+    {
+     "kind": "ANSWER",
+     "message": "Yes on width: the listing gives 70 cm, within your 80 cm.",
+     "cited": [
+      "Width"
+     ]
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-B03",
+   "group": "browse",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 0,
+     "check": "message should not contain 'sofa'"
+    },
+    {
+     "turn": 0,
+     "check": "message should match '(?i)mug'"
+    }
+   ],
+   "trace_id": "tr_c532ac587779",
+   "first_failing_event": {
+    "seq": 5,
+    "name": "agent.response",
+    "response_kind": "CLARIFY"
+   },
+   "replies": [
+    {
+     "kind": "CLARIFY",
+     "message": "Happy to help! What kind of product do you have in mind, for example a sofa, a bedsheet or a dining set?",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-B04",
+   "group": "closest",
+   "probe": false,
+   "passed": false,
+   "failures": [
+    {
+     "turn": 0,
+     "check": "message should not contain 'these are the closest'"
+    },
+    {
+     "turn": 0,
+     "check": "message should match '(?i)only home temple'"
+    }
+   ],
+   "trace_id": "tr_e4f012a0f1c3",
+   "first_failing_event": {
+    "seq": 8,
+    "name": "agent.response",
+    "response_kind": "NO_ELIGIBLE"
+   },
+   "replies": [
+    {
+     "kind": "NO_ELIGIBLE",
+     "message": "Sorry, nothing matches all your requirements for home temples. These are the closest:\n• SRK GROUPS Aluminium, Wooden Home Temple: ₹1,298 (₹498 over your budget)\nWant me to look again with a different budget or size?",
+     "cited": []
+    }
+   ],
+   "notes": null
+  }
+ ]
+}

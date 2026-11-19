@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Product · Nestwise</title>
-<link rel="stylesheet" href="/static/styles.css?v=3">
+<link rel="stylesheet" href="/static/styles.css?v=4">
 </head>
 <body>
 <header class="top">
@@ -35,7 +35,7 @@
   Ask about this
 </button>
 
-<script src="/static/agent.js?v=4"></script>
+<script src="/static/agent.js?v=5"></script>
 <script>
 (function () {
   const { inr, esc } = window.IGAgent;
@@ -61,6 +61,7 @@
           <div class="chips">
             <span class="chip">Historical price (2015–16)${(p.source_flags.price || "").includes("simulation") ? " · changed by demo" : ""}</span>
             <span class="chip sim">${p.stock > 0 ? `${esc(p.stock)} in stock · ` : ""}stock and delivery simulated</span>
+            ${p.returnable === false ? `<span class="chip warn" title="Store policy P3: small no-return item. If it arrives broken, it's replaced after a review.">No returns</span>` : ""}
           </div>
           ${notes}
           <div class="askbox">

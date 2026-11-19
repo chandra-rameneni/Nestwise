@@ -72,3 +72,24 @@ def test_a_trickling_model_cannot_exceed_the_hard_deadline(two_providers, monkey
     start = real_time.monotonic()
     parsed, meta = llm.structured("sys", "sofa", IntentExtraction)
     assert parsed is None and real_time.monotonic() - start < 2.5
+
+
+def test_second_gemini_key_is_tried_after_the_first(monkeypatch):
+    monkeypatch.delenv("INTENTGUARD_LLM", raising=False)
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("ANTHROPIC_AUTH_TOKEN", raising=False)
+    monkeypatch.setenv("GEMINI_API_KEY", "k1")
+    monkeypatch.setenv("GEMINI_API_KEY_2", "k2")
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+    llm._cooling.clear()
+    keys = []
+
+    def fake_post(url, json, headers, timeout):
+        keys.append(headers["Authorization"])
+        return _Resp(429) if headers["Authorization"].endswith("k1") else _Resp(200)
+
+    monkeypatch.setattr(httpx, "post", fake_post)
+    parsed, meta = llm.structured("sys", "sofa", IntentExtraction)
+    assert parsed is not None and meta["provider"] == "gemini2"
+    assert keys[0].endswith("k1") and keys[-1].endswith("k2")
+    llm._cooling.clear()

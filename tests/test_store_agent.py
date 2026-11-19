@@ -116,7 +116,7 @@ def test_pq02_not_in_listing(store, store_db):
     p = SqliteCatalog(store_db).get(DURIAN_BID_3S)
     assert "water" not in (p.description + " ".join(p.raw_specs)).lower()
     r = store.handle_message("Is it waterproof?", page(DURIAN_BID_3S))
-    assert r.kind == "ANSWER" and r.message.startswith("The listing doesn't say") and "NOT_IN_LISTING" in r.reason_codes
+    assert r.kind == "ANSWER" and r.message.startswith("Sorry, I don't have that detail") and "NOT_IN_LISTING" in r.reason_codes
 
 
 def test_requirement_question_uses_the_policy_check(store):
@@ -136,7 +136,7 @@ def test_implausible_listed_width_is_not_relied_on(store):
 def test_pq04_llm_answer_citing_a_missing_field_is_rejected(store_db, monkeypatch):
     p = SqliteCatalog(store_db).get(DURIAN_BID_3S)
     fake = qa.ProductAnswer(answer="It is fully waterproof.", cited_fields=["Waterproof Rating"])
-    monkeypatch.setattr(qa, "_ask_llm", lambda prod, q: (fake, {"model": "test-double"}))
+    monkeypatch.setattr(qa, "_ask_llm", lambda prod, q, *rest: (fake, {"model": "test-double"}))
     res = qa.answer_about_product(p, "Is it waterproof?", IntentExtraction(intent="PRODUCT_QUESTION"), use_llm=True)
     assert res.status == "rejected" and "waterproof" not in res.answer.lower().replace("listing doesn't say", "")
     assert "Waterproof Rating" in res.meta["rejected"]
@@ -145,7 +145,7 @@ def test_pq04_llm_answer_citing_a_missing_field_is_rejected(store_db, monkeypatc
 def test_pq04b_grounded_llm_answer_is_accepted(store_db, monkeypatch):
     p = SqliteCatalog(store_db).get(DURIAN_BID_3S)
     fake = qa.ProductAnswer(answer="About 168 cm wide.", cited_fields=["Width"])
-    monkeypatch.setattr(qa, "_ask_llm", lambda prod, q: (fake, {}))
+    monkeypatch.setattr(qa, "_ask_llm", lambda prod, q, *rest: (fake, {}))
     res = qa.answer_about_product(p, "how wide", IntentExtraction(intent="PRODUCT_QUESTION"), use_llm=True)
     assert res.status == "ok" and res.method == "llm"
 

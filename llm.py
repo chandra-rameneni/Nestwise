@@ -4,7 +4,8 @@ Providers (decided 2026-11-18, no paid key):
 - Anthropic (Claude), if ANTHROPIC_API_KEY / ANTHROPIC_AUTH_TOKEN is set. Not used in this project by choice,
   but the code path is kept. When set, it's the only provider used.
 - Otherwise a chain of free providers, tried in order until one answers:
-  1. Google Gemini, if GEMINI_API_KEY is set (free tier; usually the most reliable free option).
+  1. Google Gemini, if GEMINI_API_KEY is set (free tier; usually the most reliable free option), then a second
+     Gemini key from another account, if GEMINI_API_KEY_2 is set.
   2. OpenRouter free models, if OPENROUTER_API_KEY is set (often "rate-limited upstream", so several are tried).
 - None configured: rules mode.
 
@@ -72,10 +73,13 @@ def _off() -> bool:
 def _chain() -> list[tuple[str, str, str, list[str]]]:
     """(provider, url, key, models) for each free provider that has a key, in order of preference."""
     out = []
-    if os.environ.get("GEMINI_API_KEY"):
-        out.append(("gemini", GEMINI_URL, os.environ["GEMINI_API_KEY"],
-                    [os.environ["INTENTGUARD_GEMINI_MODEL"]] if os.environ.get("INTENTGUARD_GEMINI_MODEL")
-                    else GEMINI_MODELS))
+    gem_models = ([os.environ["INTENTGUARD_GEMINI_MODEL"]] if os.environ.get("INTENTGUARD_GEMINI_MODEL")
+                  else GEMINI_MODELS)
+    # A second Gemini key (another account) has its own free quota: tried after the first, with its own
+    # cool-down ("gemini2/..."). Added 2026-11-19 when the first key's daily quota ran out during testing.
+    for name, var in (("gemini", "GEMINI_API_KEY"), ("gemini2", "GEMINI_API_KEY_2")):
+        if os.environ.get(var):
+            out.append((name, GEMINI_URL, os.environ[var], gem_models))
     if os.environ.get("OPENROUTER_API_KEY"):
         chosen = os.environ.get("INTENTGUARD_OPENROUTER_MODEL")
         out.append(("openrouter", OPENROUTER_URL, os.environ["OPENROUTER_API_KEY"],

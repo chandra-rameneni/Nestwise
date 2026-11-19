@@ -19,6 +19,7 @@ from typing import Optional
 import intent as intent_mod
 import policy
 import qa
+import store_policy
 from catalog import STORE_DB_PATH, Catalog, ProductView, SqliteCatalog, _head_noun
 from checkout import Approval, Cart, MockOrder, MockOrderService, new_approval, new_cart
 from intent import Intent
@@ -114,6 +115,14 @@ class Session:
         self._no_progress = 0                       # unhelpful replies in a row (B36)
         self._in_recovery = False
         self._last_invite: Optional[list] = None    # what the last "search first" reply invited (B18, B32)
+        # R11: hold a conversation. The product being talked about, the last product answer, the last unit asked.
+        self.current: Optional[ProductView] = None
+        self._last_answer: Optional[dict] = None
+        self._last_unit: Optional[str] = None
+        self._challenges = 0                        # challenges in a row (B39), so the second reply differs
+        self._pending_fit: Optional[str] = None     # B28 on a product page: asked for the shopper's space
+        self._pending_override: Optional[dict] = None   # B21 option A: "over your budget, add it anyway?"
+        self._closest_ids: list[str] = []           # closest options just shown (B21)
         self.tracer.event("session", "session.start", catalog_version=self.catalog.meta.get("version"),
                           llm_configured=intent_mod.llm_available())
 
@@ -141,6 +150,10 @@ class Session:
         if r.kind in ("RECOMMEND", "NO_ELIGIBLE") and self._turn_labels:
             r.reason_codes = list(dict.fromkeys(r.reason_codes + self._turn_labels))
         self._turn_labels = []
+        if r.recommendations:                          # R11: one product shown -> it's the one being talked about
+            self.current = (self._get(r.recommendations[0]["product_id"]) if len(r.recommendations) == 1 else None)
+        if r.kind != "ANSWER" or "CHALLENGE" not in r.reason_codes:
+            self._challenges = 0
         self.history.append(("assistant", r.message))
         self.tracer.event("agent", "agent.response", response_kind=r.kind, reason_codes=r.reason_codes,
                           recommended_ids=[x["product_id"] for x in r.recommendations],
@@ -219,6 +232,13 @@ class Session:
         self.history.append(("user", text))
         self.tracer.event("user", "user.message", text=text, page=self.context.get("page"),
                           product_id=self.context.get("product_id"))
+        override, self._pending_override = self._pending_override, None
+        if override is not None:                       # B21 option A: answer to "add it anyway?"
+            if _YES.match(text):
+                return self._add_anyway(override)
+            if _NO.match(text):
+                return self._respond(Response("ANSWER", "No problem, I haven't added it. Want me to keep looking with "
+                                              "a different budget?", reason_codes=["OVERRIDE_DECLINED"]))
 
         current: Optional[ProductView] = None
         if self.context.get("page") == "product" and self.context.get("product_id"):
@@ -227,12 +247,29 @@ class Session:
                 return self._respond(Response("BLOCKED", "I couldn't find this product in the store.",
                                               reason_codes=["PRODUCT_NOT_FOUND"]))
             self.context["product_title"] = current.title
+            if self.current is None or self.current.product_id != current.product_id:
+                self.current, self._last_answer = current, None
+            fit = self._fit(text, current)                 # B28 on a product page: "will this fit in my room?"
+            if fit is not None:
+                return fit
+            convo = self._conversation(text, current)      # R11: follow-ups and challenges (B38, B39)
+            if convo is not None:
+                return convo
         else:
             self.context["page"] = "listing"
+            convo = self._conversation(text, self.current)
+            if convo is not None:
+                return convo
             if self.shown:
                 ref = self._shown_reference(text)        # B34: "the fabric one", "the first one"
                 if ref is not None:
                     return ref
+            about = self._about_current(text)            # B40: a question about the product just shown
+            if about is not None:
+                return about
+            browse = self._browse(text)                   # B43: "what home decor items do you have?"
+            if browse is not None:
+                return browse
 
         pending, self._pending_confirm = self._pending_confirm, None
         if pending is not None and _NO.match(text):
@@ -255,6 +292,8 @@ class Session:
                           missing_info=new_intent.missing_info, changed_fields=changed,
                           intent_version=new_intent.version, **meta)
 
+        if new_intent.intent == "STORE_POLICY" and new_intent.policy_topic:
+            return self._policy(new_intent.policy_topic, text, current)
         if new_intent.intent == "REFUND_REQUEST":
             return self._respond(Response("DEFER", "Sorry, I can't handle refunds or returns just yet. I can help you "
                                           "find and buy products, though.", reason_codes=["WORKFLOW_NOT_AVAILABLE"]))
@@ -443,13 +482,23 @@ class Session:
         if kind == "UNCLEAR":
             return self._respond(Response("UNSUPPORTED", "Sorry, I didn't understand that. I can help you find, "
                                           "compare and buy home and living products.", reason_codes=["UNCLEAR"]))
+        page_product = self.current if self.context.get("page") == "product" else None
+        if kind == "CRITICISM":                      # B44: take it seriously; never the abusive reply or a goodbye
+            if page_product is not None:
+                noun = qa.product_noun(page_product)
+                msg = (f"Sorry, that's fair. I can only answer from this {noun}'s details, and they don't cover "
+                       f"everything. I can tell you about its size, materials, delivery and care, or help you order it.")
+            else:
+                msg = ("Sorry, that's fair. I can find products in this store, answer questions about them and help "
+                       "you order. Tell me what you're looking for and I'll do my best.")
+            return self._respond(Response("ANSWER", msg, reason_codes=["FRUSTRATED"]))
         if kind == "ABUSIVE":
             return self._respond(Response("UNSUPPORTED", "Apologies for the inconvenience. Hope you find what "
                                           "you're looking for.", reason_codes=["ABUSIVE"]))
         if kind == "TRICK":
             self.tracer.event("guardrail", "policy_refusal", status="warn", note="request to bypass rules")
-            return self._respond(Response("UNSUPPORTED", "I can't skip approval or change prices, but I'm happy "
-                                          "to help you find the right one and order it with your OK.",
+            return self._respond(Response("UNSUPPORTED", "Sorry, I can't help with that. I can only help you pick the "
+                                          "right product and buy it, with your approval.",
                                           reason_codes=["POLICY_REFUSAL"]))
         if kind == "COMPARE":
             return self._respond(Response("DEFER", "Side-by-side comparison isn't something I can do just yet, "
@@ -460,6 +509,11 @@ class Session:
                 return self._respond(Response("ANSWER", (
                     "Sorry about the trouble. I can find products, answer questions about them and order with your "
                     f"approval. Want to pick up with the {_plural(self.intent.product_query)}?"), reason_codes=["HELP"]))
+            if page_product is not None:            # B35 (round 2, O-44): help about the product on screen
+                noun = qa.product_noun(page_product)
+                return self._respond(Response("ANSWER", (
+                    f"For this {noun}, I can tell you its size, materials, delivery time and care, or help you order "
+                    "it. I can also find other products for your home."), reason_codes=["HELP"]))
             return self._respond(Response("ANSWER", self._help_text(), reason_codes=["HELP"]))
         if kind == "STORE_INFO":
             return self._respond(Response("ANSWER", self._store_info(text), reason_codes=["STORE_INFO"]))
@@ -625,7 +679,7 @@ class Session:
         recs = [self._rec_dict(p, e) for p, e in eligible if p in ranked]
         recs.sort(key=lambda r: self.eligible_ids.index(r["product_id"]))
         rej = [{"product_id": p.product_id, "title": p.title, "total_inr": e.total_inr,
-                "reason_codes": e.reason_codes} for p, e in rejected]
+                "reason_codes": e.reason_codes, "why": "; ".join(self._differences(e))} for p, e in rejected]
         self.tracer.event("agent", "recommendation", eligible_ids=self.eligible_ids, eligible_count=len(eligible),
                           rejected={r["product_id"]: r["reason_codes"] for r in rej})
 
@@ -668,31 +722,55 @@ class Session:
                 f"Sorry, nothing matches all your requirements for {_plural(query) or 'that'}, and nothing comes close "
                 "enough to suggest. You could raise the budget or drop a requirement."), rejected=rej,
                 reason_codes=blockers))
-        lines = []
-        for p, e in near:
-            diffs = []
-            for c in e.checks:
-                if c.status == policy.PASS:
-                    continue
-                if c.reason_code == "BUDGET_EXCEEDED":
-                    diffs.append(f"{_inr(c.observed - c.required)} over your budget")
-                elif c.reason_code and c.reason_code.endswith("_EXCEEDED"):
-                    diffs.append(f"{c.observed:g} cm, over your {c.required:g} cm")
-                elif c.reason_code == "SEATS_MISMATCH":
-                    diffs.append(f"{c.observed} seats, not {c.required}")
-                elif c.reason_code and c.reason_code.endswith("_UNVERIFIED"):
-                    diffs.append(f"{c.constraint.replace('max_', '').replace('_cm', '')} not listed")
-                elif c.reason_code == "DELIVERY_TOO_SLOW":
-                    diffs.append(f"arrives in {c.observed} days")
-                elif c.reason_code == "MATERIAL_MISMATCH":
-                    diffs.append(f"not {c.required}")
-            lines.append(f"\u2022 {p.title}: {_inr(e.total_inr)} ({'; '.join(diffs)})")
         self.shown = [p for p, _ in near]
+        self._closest_ids = [p.product_id for p, _ in near]
+        shown_ids = set(self._closest_ids)
+        rej = [r for r in rej if r["product_id"] not in shown_ids]          # O-50: never "left out" and shown
         recs = [self._rec_dict(p, e) for p, e in near]
-        return self._respond(Response("NO_ELIGIBLE", (
-            f"Sorry, nothing matches all your requirements for {_plural(query) or 'that'}. These are the closest:\n"
-            + "\n".join(lines) + "\nWant me to look again with a different budget or size?"),
-            recommendations=recs, rejected=rej, reason_codes=blockers + ["RELAXED_OPTIONS"]))
+        given = []
+        if it.max_total_inr:
+            given.append("budget")
+        if any(getattr(it, f) for f in ("max_width_cm", "max_depth_cm", "max_height_cm")):
+            given.append("size")
+        if it.seats:
+            given.append("seats")
+        if getattr(it, "material", None):
+            given.append("material")
+        adjust = " or ".join(given) if given else "requirements"
+        noun = intent_mod.head_term(query) if query else ""
+        own = query if query and len(query.split()) <= 3 else noun       # the shopper's words: "home temple"
+        if len(near) == 1:
+            p, e = near[0]
+            msg = (f"Sorry, the closest {noun or 'one'} I have is the {p.title} at {_inr(e.total_inr)}, which is "
+                   f"{', '.join(self._differences(e))}. Would you like it anyway?")
+            if len(rejected) == 1:                                          # O-49: the store has only this one
+                msg = (f"Sorry, our only {own or 'match'} is the {p.title} at {_inr(e.total_inr)}, which is "
+                       f"{', '.join(self._differences(e))}. Would you like it anyway?")
+        else:
+            lines = [f"\u2022 {p.title}: {_inr(e.total_inr)} ({'; '.join(self._differences(e))})" for p, e in near]
+            msg = (f"Sorry, none of our {_plural(noun) or 'products'} meet everything you asked for. These come "
+                   "closest:\n" + "\n".join(lines) + f"\nWant me to look again with a different {adjust}?")
+        return self._respond(Response("NO_ELIGIBLE", msg, recommendations=recs, rejected=rej,
+                                      reason_codes=blockers + ["RELAXED_OPTIONS"]))
+
+    def _differences(self, e) -> list[str]:
+        diffs = []
+        for c in e.checks:
+            if c.status == policy.PASS:
+                continue
+            if c.reason_code == "BUDGET_EXCEEDED":
+                diffs.append(f"{_inr(c.observed - c.required)} over your budget")
+            elif c.reason_code and c.reason_code.endswith("_EXCEEDED"):
+                diffs.append(f"{c.observed:g} cm, over your {c.required:g} cm")
+            elif c.reason_code == "SEATS_MISMATCH":
+                diffs.append(f"{c.observed} seats, not {c.required}")
+            elif c.reason_code and c.reason_code.endswith("_UNVERIFIED"):
+                diffs.append(f"{c.constraint.replace('max_', '').replace('_cm', '')} not listed")
+            elif c.reason_code == "DELIVERY_TOO_SLOW":
+                diffs.append(f"arrives in {c.observed} days")
+            elif c.reason_code == "MATERIAL_MISMATCH":
+                diffs.append(f"not {c.required}")
+        return diffs or ["not a full match"]
 
     def _similar(self, base: ProductView, cheaper: bool) -> Response:
         """'Anything cheaper like this?' on a product page: same kind of product, the shopper's stated
@@ -760,23 +838,257 @@ class Session:
     def _answer(self, p: ProductView, it: Intent) -> Response:
         self._count_tool()
         with self.tracer.tool("answer_about_product", product_id=p.product_id, question=it.question) as t:
-            result = qa.answer_about_product(p, it.question or "", it)
+            result = qa.answer_about_product(p, it.question or "", it, history=self._recent())
             t["summary"] = {"method": result.method, "status": result.status, "cited_fields": result.cited_fields,
                             **{k: result.meta[k] for k in ("model", "prompt_version", "tried_first") if k in result.meta}}
         if result.status == "rejected":
             self.tracer.event("guardrail", "qa.answer_rejected", status="warn", product_id=p.product_id,
                               reason=result.meta.get("rejected"))
+        if (result.status == "not_in_listing" and self._last_answer and self._last_answer["pid"] == p.product_id
+                and self._last_answer["status"] == "not_in_listing"):
+            # B36 on a product page (round 2, O-43): a second "don't know" in a row changes approach
+            result.answer = (f"Sorry, I don't have that one either. For this {qa.product_noun(p)}, I can tell you "
+                             "its size, materials, delivery time and care, or help you order it.")
+            self.tracer.event("agent", "stuck_recovery", status="warn", page="product")
+        self.current = p
+        self._last_answer = {"pid": p.product_id, "fields": list(result.cited_fields), "status": result.status,
+                             "question": it.question or ""}
         return self._respond(Response("ANSWER", result.answer, cited_fields=result.cited_fields,
                                       product_id=p.product_id,
                                       reason_codes=["NOT_IN_LISTING"] if result.status == "not_in_listing" else []))
 
+    # ------------------------------------------------------------------ B28 on a product page
+    _FIT_Q = re.compile(r"\b(fit|fits|big enough|too (big|large|small|wide|long)|enough (room|space))\b", re.I)
+    _MEASURE = re.compile(r"(\d+(?:\.\d+)?)\s*(mm|cm|centimet\w*|m\b|met(?:er|re)s?|ft|feet|foot|in\b|inch\w*)?", re.I)
+
+    def _space_cm(self, text: str) -> list[float]:
+        out = []
+        for num, unit in self._MEASURE.findall(text):
+            v = float(num)
+            u = (unit or "").lower()
+            if u.startswith(("mm",)) or u.startswith("milli"):
+                v /= 10
+            elif u in ("m",) or u.startswith("met"):
+                v *= 100
+            elif u in ("ft", "feet", "foot"):
+                v *= 30.48
+            elif u in ("in",) or u.startswith("inch"):
+                v *= 2.54
+            elif not u:
+                v = v * 100 if v <= 10 else v           # a bare "3" is metres, a bare "150" is cm
+            out.append(v)
+        return out
+
+    def _fit(self, text: str, p: ProductView) -> Optional[Response]:
+        dims = {f: qa.measurement_mm(p, f) for f in ("Width", "Depth")}
+        if self._pending_fit == p.product_id:
+            space = self._space_cm(text)
+            self._pending_fit = None
+            if space:
+                return self._fit_result(p, dims, space)
+        if not self._FIT_Q.search(text) or self._space_cm(text):
+            return None                                # "will it fit a 2 m wall?" is the normal requirement check
+        w, d = dims["Width"], dims["Depth"]
+        if w is None:
+            return self._respond(Response("ANSWER", f"Sorry, I don't have the size of this {qa.product_noun(p)}, "
+                                          "so I can't check the fit.", product_id=p.product_id,
+                                          reason_codes=["VAGUE_REQUIREMENT"]))
+        size = f"{w / 10:.0f} cm wide" + (f" and {d / 10:.0f} cm long" if d else "")
+        self._pending_fit = p.product_id
+        return self._respond(Response("CLARIFY", f"It's {size}. How much space do you have for it? Tell me and "
+                                      "I'll check.", cited_fields=[f for f in ("Width", "Depth") if dims[f]],
+                                      product_id=p.product_id, reason_codes=["VAGUE_REQUIREMENT"]))
+
+    def _fit_result(self, p: ProductView, dims: dict, space: list[float]) -> Response:
+        w = dims["Width"] / 10
+        d = dims["Depth"] / 10 if dims["Depth"] else None
+        cited = [f for f in ("Width", "Depth") if dims[f]]
+        self.tracer.event("tool", "fit_check", product_id=p.product_id, product_cm=[w, d], space_cm=space)
+        if len(space) >= 2 and d:
+            a, b = space[0], space[1]
+            if (w <= a and d <= b) or (w <= b and d <= a):
+                msg = (f"Good news, it fits! It's {w:.0f} × {d:.0f} cm, and your space is {a:.0f} × {b:.0f} cm.")
+            else:
+                msg = (f"Sorry, it won't fit: it's {w:.0f} × {d:.0f} cm, and your space is {a:.0f} × {b:.0f} cm.")
+        else:
+            a = space[0]
+            if w <= a:
+                msg = f"Good news, it fits! It's {w:.0f} cm wide, within your {a:.0f} cm."
+            else:
+                msg = f"Sorry, it won't fit: it's {w:.0f} cm wide, {w - a:.0f} cm more than your {a:.0f} cm."
+        return self._respond(Response("ANSWER", msg, cited_fields=cited, product_id=p.product_id,
+                                      reason_codes=["FIT_CHECK"]))
+
+    # ------------------------------------------------------------------ B43: browsing a category
+    _CATEGORY_WORDS = [("home_decor", r"home d[eé]cor|\bd[eé]cor\b"), ("kitchen_dining", r"\bkitchen\b|\bdining\b"),
+                       ("home_furnishing", r"furnishing|\blinen\b|\bbedding\b"), ("furniture", r"\bfurniture\b")]
+
+    def _browse(self, text: str) -> Optional[Response]:
+        low = text.lower()
+        if not re.search(r"\b(what|which|show|list|browse)\b", low) or not re.search(
+                r"\b(items?|stuff|things|products?|kinds?|types?|do you (have|sell)|you sell|have you got)\b", low):
+            return None
+        slug = next((sl for sl, pat in self._CATEGORY_WORDS if re.search(pat, low)), None)
+        if slug is None or not hasattr(self.catalog, "category_kinds"):
+            return None
+        kinds = self.catalog.category_kinds(slug)
+        if not kinds:
+            return None
+        label = next(c["label"] for c in self.catalog.categories() if c["slug"] == slug)
+        total = next(c["count"] for c in self.catalog.categories() if c["slug"] == slug)
+        listed = ", ".join(f"{k.lower()} ({n})" for k, n in kinds[:-1]) + f" and {kinds[-1][0].lower()} ({kinds[-1][1]})"
+        self.tracer.event("tool", "category_kinds", category=slug, kinds=kinds)
+        return self._respond(Response("ANSWER", f"Plenty! We have {total:,} {label.lower()} products, including "
+                                      f"{listed}. Which would you like to see?", reason_codes=["CATEGORY_BROWSE"]))
+
+    # ------------------------------------------------------------------ B21 option A: add a closest option anyway
+    def _add_anyway(self, override: dict) -> Response:
+        p = self._get(override["pid"])
+        if p is None:
+            return self._respond(Response("BLOCKED", "Sorry, I couldn't find that product anymore.",
+                                          reason_codes=["PRODUCT_NOT_FOUND"]))
+        self.tracer.event("policy", "override_accepted", product_id=p.product_id, waived=override["waived"])
+        e = policy.evaluate(Intent(intent="BUY_THIS"), p, 1)   # stock and a known price still must pass
+        if not e.eligible:
+            return self._respond(Response("BLOCKED", f"Sorry, that one doesn't work anymore: {_reasons(e.reason_codes)}.",
+                                          reason_codes=e.reason_codes))
+        return self.select_product(p.product_id, from_product_page=True, waived=override["waived"])
+
+    # ------------------------------------------------------------------ B41: store policy questions
+    def _policy(self, topic: str, text: str, product: Optional[ProductView]) -> Response:
+        self._count_tool()
+        with self.tracer.tool("answer_store_policy", topic=topic,
+                              product_id=product.product_id if product else None) as t:
+            a = store_policy.answer(topic, text, product=product, use_llm=intent_mod.llm_available())
+            t["summary"] = {"method": a.method, "cited": a.cited,
+                            **{k: a.meta[k] for k in ("model", "prompt_version", "fallback") if k in a.meta}}
+        return self._respond(Response("ANSWER", a.answer, cited_fields=a.cited,
+                                      product_id=product.product_id if product else None,
+                                      reason_codes=["STORE_POLICY"]))
+
+    # ------------------------------------------------------------------ R11: holding a conversation
+    _CHALLENGE = re.compile(
+        r"\b(can'?t|cant|cannot|couldn'?t) you\b|\bwhy (not|can'?t you|won'?t you|didn'?t you)\b|\bare you sure\b|"
+        r"^\s*really\b|\bdoesn'?t (seem|look)\b|\bdoes ?n'?t look\b|\bthat'?s (not|wrong)\b|\bwhen did\b.*\bbecome\b|"
+        r"\bis (that|it) (really|actually)\b|\byou said\b|\bnot (real|actually)\b", re.I)
+    _DOUBT = re.compile(r"\b(doesn'?t (seem|look)|are you sure|really|actually|real)\b", re.I)
+    _WHICH_PRODUCT = re.compile(r"\b(which|what) (product|one|item)\b.*\b(talking|mean|asking)\b", re.I)
+
+    def _recent(self, n: int = 6) -> list[str]:
+        """The last few turns, for the steps that write replies (R11). The current message is the last one."""
+        return [f"{'Shopper' if role == 'user' else 'Assistant'}: {m[:300]}" for role, m in self.history[-n - 1:-1]]
+
+    def _last_reply(self) -> Optional[str]:
+        return next((m for role, m in reversed(self.history[:-1]) if role == "assistant"), None)
+
+    def _conversation(self, text: str, target: Optional[ProductView]) -> Optional[Response]:
+        """B38 (follow-ups to the last answer) and B39 (challenges to the last reply). None: handle as usual."""
+        if self._last_reply() is None:
+            return None
+        challenge = bool(self._CHALLENGE.search(text))
+        unit = qa.unit_asked(text)
+        if unit is None and challenge and re.search(r"\bconvert", text, re.I):
+            unit = self._last_unit
+        la = self._last_answer
+        if unit and target is not None and la and la["pid"] == target.product_id:
+            r = self._convert(target, unit, la, sorry=challenge)
+            if r is not None:
+                return r
+        if not challenge or len(re.findall(r"[a-z']+", text.lower())) > 14:
+            return None
+        self._challenges += 1
+        self.tracer.event("agent", "challenge", text=text, product_id=target.product_id if target else None,
+                          last_status=la["status"] if la else None)
+        if target is not None and self._DOUBT.search(text) and not (la and la["status"] == "not_in_listing"):
+            # "doesn't seem to be wooden", "are you sure that's real wood?": check the listing and answer the doubt
+            r = self._answer(target, Intent(intent="PRODUCT_QUESTION", question=text))
+            r.reason_codes = list(dict.fromkeys(r.reason_codes + ["CHALLENGE"]))
+            return r
+        if target is not None:
+            if self._challenges == 1:
+                msg = ("Sorry, I can only answer from what's in this product's details, like its size, materials, "
+                       "delivery and care. I'm a shopping assistant: I can help you find things and answer questions "
+                       "about this product.")
+            else:
+                msg = ("Sorry, that detail just isn't in this product's information, so I can't tell you more. "
+                       "Want to know its size, materials, delivery time or care instead?")
+            return self._respond(Response("ANSWER", msg, product_id=target.product_id, reason_codes=["CHALLENGE"]))
+        prev = next((m for role, m in reversed(self.history[:-1]) if role == "user"), None)
+        msg = ("Fair point, sorry about that! " if self._challenges == 1 else "Sorry again! ") + \
+              "I'm a shopping assistant: I can find products, answer questions about them and help you order."
+        if prev:
+            msg += " Tell me what you're looking for and I'll take another look."
+        return self._respond(Response("ANSWER", msg, reason_codes=["CHALLENGE"]))
+
+    def _convert(self, p: ProductView, unit: str, la: dict, sorry: bool) -> Optional[Response]:
+        fields = [f for f in la["fields"] if f in qa.MEASURE_FIELDS] or \
+                 [f for f in ("Width", "Depth", "Height") if f in (la.get("question") or "")]
+        q = (la.get("question") or "").lower()
+        parts = []
+        for f in fields:
+            mm = qa.measurement_mm(p, f)
+            if mm is None:
+                continue
+            word = {"Width": "wide", "Depth": "long" if re.search(r"\blong|length", q) else "deep",
+                    "Height": "high", "Length": "long"}[f]
+            parts.append(f"{qa.format_length(mm, unit)} {word}")
+        if not parts:
+            return None
+        self._last_unit = unit
+        self.tracer.event("tool", "unit_conversion", product_id=p.product_id, fields=fields, unit=unit)
+        lead = "Sorry about that! " if sorry else ""
+        body = parts[0] if len(parts) == 1 else ", ".join(parts[:-1]) + " and " + parts[-1]
+        r = self._respond(Response("ANSWER", f"{lead}That's {body}.", cited_fields=fields, product_id=p.product_id,
+                                   reason_codes=["FOLLOW_UP"] + (["CHALLENGE"] if sorry else [])))
+        return r
+
+    def _about_current(self, text: str) -> Optional[Response]:
+        """B40: on the listing page, a question about the product just shown or discussed."""
+        low = text.lower()
+        if self._WHICH_PRODUCT.search(low):
+            if self.current is not None:
+                return self._respond(Response("ANSWER", f"Yes, the {self.current.title} I just showed you. What would "
+                                              "you like to know about it?", product_id=self.current.product_id,
+                                              reason_codes=["FROM_SHOWN_RESULTS"]))
+            if self.shown:
+                names = "; ".join(f"{i}. {p.title}" for i, p in enumerate(self.shown, 1))
+                return self._respond(Response("CLARIFY", f"Which one do you mean? I showed: {names}.",
+                                              reason_codes=["FROM_SHOWN_RESULTS"]))
+            return None
+        if not self.shown and self.current is None:
+            return None
+        as_product = intent_mod.extract_rules(text, {"page": "product"}, None)
+        refers = re.search(r"\b(it|its|it's|this|that|this one|that one|that product|this product)\b", low)
+        question = "?" in text or re.match(r"\s*(is|are|does|do|did|can|could|will|would|what|how|which|when|where|"
+                                           r"who|has|have|tell me)\b", low)
+        if as_product.intent != "PRODUCT_QUESTION" or not refers or not question or as_product.message_kind:
+            return None
+        if self.current is not None:
+            r = self._answer(self.current, Intent(intent="PRODUCT_QUESTION", question=text))
+            r.reason_codes = list(dict.fromkeys(r.reason_codes + ["FROM_SHOWN_RESULTS"]))
+            return r
+        names = "; ".join(f"{i}. {p.title}" for i, p in enumerate(self.shown, 1))
+        return self._respond(Response("CLARIFY", f"Which one do you mean? I showed: {names}.",
+                                      reason_codes=["FROM_SHOWN_RESULTS"]))
+
     # ------------------------------------------------------------------ cart / approval / checkout
-    def select_product(self, product_id: str, qty: int = 1, from_product_page: bool = False) -> Response:
+    def select_product(self, product_id: str, qty: int = 1, from_product_page: bool = False,
+                       waived: Optional[list] = None) -> Response:
         """Propose a cart. From a recommendation list, only products just checked are allowed; from a product
         page ("buy this") the product itself is checked against the shopper's stated requirements."""
         if not from_product_page:
             self._tool_calls = 0
         self.tracer.event("user", "user.select", product_id=product_id, qty=qty, from_product_page=from_product_page)
+        if not from_product_page and product_id in self._closest_ids and product_id not in self.eligible_ids:
+            # B21 option A (PM 2026-11-19): a closest option can go in the cart after one honest question
+            p = self._get(product_id)
+            e = policy.evaluate(self.intent, p) if p is not None and self.intent is not None else None
+            if p is not None and e is not None:
+                diffs = self._differences(e)
+                self._pending_override = {"pid": product_id, "waived": e.reason_codes}
+                self.tracer.event("policy", "override_offered", product_id=product_id, reasons=e.reason_codes)
+                return self._respond(Response("CLARIFY", f"Just so you know, the {p.title} is {', '.join(diffs)}. "
+                                              "Add it anyway?", product_id=product_id, reason_codes=["OVERRIDE_OFFERED"]))
         if not from_product_page and (self.intent is None or product_id not in self.eligible_ids):
             self.tracer.event("policy", "cart.denied", status="block", product_id=product_id,
                               reason="NOT_IN_ELIGIBLE_RECOMMENDATIONS")
@@ -787,7 +1099,7 @@ class Session:
         p = self._get(product_id)
         if p is None:
             return self._respond(Response("BLOCKED", "I couldn't find that product.", reason_codes=["PRODUCT_NOT_FOUND"]))
-        e = policy.evaluate(self.intent, p, qty)
+        e = policy.evaluate(self.intent if not waived else Intent(intent="BUY_THIS"), p, qty)
         if not e.eligible:
             self.tracer.event("policy", "cart.denied", status="block", product_id=product_id, reasons=e.reason_codes)
             if from_product_page:

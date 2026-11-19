@@ -6,10 +6,8 @@
   const inr = (n) => (n == null ? "price not listed" : "₹" + Number(n).toLocaleString("en-IN"));
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   // Short status labels, shown only where the state matters to the shopper.
-  const KIND_LABEL = {
-    NOT_AVAILABLE: "Not sold here", NO_ELIGIBLE: "Nothing matches everything", CART_PROPOSED: "Cart ready",
-    APPROVED: "Approved", ORDER_PLACED: "Order placed", BLOCKED: "Stopped",
-  };
+  // Only positive milestones get a label; the red "no match" and "blocked" labels read as errors (O-50).
+  const KIND_LABEL = { CART_PROPOSED: "Cart ready", APPROVED: "Approved", ORDER_PLACED: "Order placed" };
 
   function format(text) {
     // Light formatting: **bold**, line breaks, and [PRODUCTID] -> link to its page.
@@ -134,7 +132,7 @@
       }
       if (r.rejected && r.rejected.length) {
         html += `<details class="ruled"><summary>Why others were left out (${r.rejected_count})</summary><ul>` +
-          r.rejected.map((x) => `<li><a href="/product/${esc(x.product_id)}">${esc(x.title)}</a>: ${esc(x.reason_codes.join(", "))}</li>`).join("") +
+          r.rejected.map((x) => `<li><a href="/product/${esc(x.product_id)}">${esc(x.title)}</a>: ${esc(x.why || "doesn't meet a requirement")}</li>`).join("") +
           (r.rejected_count > r.rejected.length ? `<li>…and ${r.rejected_count - r.rejected.length} more</li>` : "") + `</ul></details>`;
       }
       msgs.insertAdjacentHTML("beforeend", html + "</div>");
@@ -159,6 +157,7 @@
           <div class="item">${thumb(c.image_url, c.title)}
             <div class="line">${esc(c.qty)} × <a href="/product/${esc(c.product_id)}">${esc(c.title)}</a></div></div>
           <div class="total">${inr(c.total_inr)}<small>incl. delivery</small></div>
+          ${c.returnable === false ? `<div class="noreturn">No returns on this item. If it arrives broken, we'll replace it after a quick review.</div>` : ""}
           <div class="status">${approved ? "Approved. I'll check the price and stock again before ordering." : "Nothing is ordered until you approve this exact total."}</div>
           <div class="actions">
             ${approved ? `<button class="btn primary" data-act="checkout" type="button">Place order</button>`

@@ -86,6 +86,32 @@ Each fix has a regression test (`test_eval_*` in `tests/test_store_agent.py`).
 - **Six tests updated** for the new wording only (e.g. "no longer applies" → "haven't ordered").
 - **Not done in Phase 3:** product names still include the dataset's model codes ("Durian BID/32625/A/1 …"). They're part of the real product name, so they stay.
 
+### Round 2 baseline (2026-11-19): before any fixes
+
+Evals approved by the PM: `evals/ROUND2_EVALS_DRAFT.md` → `evals/round2_scenarios.json` (48 scenarios; the 4 UI checks and 2 regression checks run separately). Held-out set written before any fix, with different phrasings and products: `evals/heldout_round2.json` (25). Each scenario is tagged R (rules only), M (model only) or RM.
+
+| Run | Round 2 set | Held-out set | Result files |
+|---|---|---|---|
+| Rules mode | **6/30** (18 model-only skipped) | **1/15** (10 skipped) | `20261119T062508Z_round2_scenarios_rules`, `20261119T062509Z_heldout_round2_rules` |
+| Model mode | 11/43 | 4/24 | `20261119T062522Z_round2_scenarios_gemini`, `20261119T062545Z_heldout_round2_gemini` |
+
+- **The model-mode numbers are not a valid baseline.** Every free model was in its cool-down (today's quotas used up by testing): only 8 of 93 message readings and 6 of 52 answers came from a model; the rest were the rules. The "before" code is commit `420ee71`, so a proper model baseline can be run on it once quotas reset, before comparing.
+- **Found by the baseline:** "what's the minimum and maximum order?" on a product page proposed a **cart** (the word "order" read as "buy this"). Nothing is ordered without approval, but it's wrong (O-56).
+- **Weak checks found** (approved evals, changes need the PM's OK): R2-X04 passes on any different reply, even a nonsense one; R2-B08 passes trivially when the cart step fails earlier.
+
+### Round 2 after the fixes (2026-11-19)
+
+| Run | Round 2 set | Held-out set | Result files |
+|---|---|---|---|
+| Rules mode, before | 6/30 | 1/15 | `20261119T062508Z_round2_scenarios_rules`, `20261119T062509Z_heldout_round2_rules` |
+| **Rules mode, after** | **30/30** | **14/15** | `20261119T065812Z_round2_scenarios_rules`, `20261119T065813Z_heldout_round2_rules` |
+| Model mode, after (partial) | 39/43 | 20/24 | `20261119T064248Z_round2_scenarios_gemini`, `20261119T065225Z_heldout_round2_gemini` |
+
+- **All earlier sets unchanged:** original 39/39, Phase 1 36/36, Phase 2 40/40, Phase 3 14/14, held-out 26/35 and 22/25. 255 tests pass.
+- **Eval changes, made to match PRD changes the PM approved:** P2-H06 (cash on delivery is now answered from policy P7, not "I don't have information"), PQ-02 (B5 wording "Sorry, I don't have that detail" instead of "doesn't say").
+- **The model-mode numbers are still not valid.** Even with pacing between messages (new `INTENTGUARD_EVAL_PACE_S`), every free model hit its daily limit: in the round 2 run only 9 of 34 message readings and 5 of 29 answers came from a model; the held-out run got none. All four round 2 failures were rules-fallback answers, and the three that were fallback gaps were fixed afterwards (yes/no fields like "With Mattress: No" → "Sorry, the mattress isn't included"; "kid friendly" → Suitable For; policy sentences matched by meaning). **To do when quotas reset:** run the model-mode evals on the old commit (`420ee71`, before) and the new one (after) with pacing.
+- **Held-out miss (not tuned to):** H2-V01 "when will it get here?" in rules mode (phrasing the rules don't know; the model should handle it).
+
 ## Observed failures, all sources
 
 | ID | Source | First failure upstream | Customer impact | Status and regression test |

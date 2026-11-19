@@ -422,12 +422,16 @@
    "expect": [
     {
      "turn": 0,
-     "reason": "STORE_INFO",
+     "reason": "STORE_POLICY",
      "contains": [
-      "don't have"
+      "not offered"
+     ],
+     "cited_regex": [
+      "^P7\\b"
      ]
     }
-   ]
+   ],
+   "notes": "Changed 2026-11-19: answered from the approved store policy (P7, PRD B41) instead of 'I don't have information'."
   },
   {
    "id": "P2-H07",

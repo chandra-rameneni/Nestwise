@@ -378,10 +378,11 @@
      "turn": 0,
      "kind": "ANSWER",
      "contains": [
-      "doesn't say"
+      "don't have that detail"
      ]
     }
-   ]
+   ],
+   "notes": " Changed 2026-11-19: B5 wording is now 'Sorry, I don't have that detail' (round 2)."
   },
   {
    "id": "PQ-03",

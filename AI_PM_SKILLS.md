@@ -22,3 +22,7 @@ Every AI product management skill this project uses, where it lives, and whether
 | 15 | AI UX for trust (showing the agent's work, waiting states, approval) | PRD §5A, `web/` | Yes (2026-11-19) |
 | 16 | Regression testing after a change (old tests + a failing-first test per new bug) | `tests/test_concurrency.py`, PRD §5A UI-08 | Yes (2026-11-19) |
 | 17 | Latency and cost: use the model only where it adds value (measure first, then cut calls) | `intent.py` fast path (O-31), traces | Yes (2026-11-19) |
+| 18 | Grounding in a knowledge base (RAG): approved store policy, cited sections | `STORE_POLICY.md`, `store_policy.py` (B41) | Yes (2026-11-19) |
+| 19 | Conversation memory (context management): current product, last answer, recent turns | `agent.py` (R11, B38–B40), `qa.py` history | Yes (2026-11-19) |
+| 20 | Routing: deciding which source or tool answers (listing, policy, code, refusal) | `store_policy.topic_of`, `intent.extract` (B41 routing) | Yes (2026-11-19) |
+| 21 | Rate limits and fair eval runs (pacing, cool-downs, checking what actually ran) | `llm.py`, `evals/run_evals.py` (INTENTGUARD_EVAL_PACE_S) | Yes (2026-11-19) |

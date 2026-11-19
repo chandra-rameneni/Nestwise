@@ -24,7 +24,7 @@ import llm
 import policy
 from catalog import ProductView
 
-QA_PROMPT_VERSION = "product_qa_v2"   # v2 (O-33): no verdicts beyond the listing
+QA_PROMPT_VERSION = "product_qa_v3"   # v3 (round 2): human voice, related facts, conversation context; v2: no verdicts
 QA_PROMPT_PATH = Path(__file__).parent / "prompts" / f"{QA_PROMPT_VERSION}.txt"
 
 
@@ -46,9 +46,12 @@ class QAResult:
 def listing_fields(p: ProductView) -> dict:
     """Everything the agent may cite, keyed by the name a shopper would see on the product page."""
     out = {"Name": p.title, "Brand": p.brand, "Category": p.category_path or p.category,
-           "Price": None if p.list_price_inr is None else f"₹{p.list_price_inr:,} (historical price)",
-           "Delivery charge": f"₹{p.shipping_inr:,} (simulated)", "Delivery time": f"{p.delivery_days} days (simulated)",
-           "Stock": f"{p.stock} (simulated)", "Description": p.description}
+           # The page labels prices as historical and stock/delivery as simulated; the values here are plain so
+           # answers don't repeat "(simulated)" in every sentence (round 2, O-40).
+           "Price": None if p.list_price_inr is None else f"₹{p.list_price_inr:,}",
+           "Delivery charge": "free" if not p.shipping_inr else f"₹{p.shipping_inr:,}",
+           "Delivery time": f"{p.delivery_days} days", "Stock": f"{p.stock} in stock", "Description": p.description,
+           "Photos": "1" if p.image_url else None}
     out.update(p.raw_specs or {k: v for k, v in p.specs.items()})
     return {k: v for k, v in out.items() if v not in (None, "", "NA")}
 
@@ -56,8 +59,8 @@ def listing_fields(p: ProductView) -> dict:
 # keyword -> listing fields that answer it
 _TOPICS = [
     (r"\bwide|width|breadth\b", ["Width"]), (r"\bdeep|depth\b", ["Depth"]), (r"\btall|height|high\b", ["Height"]),
-    (r"\blong|length\b", ["Length"]), (r"\bdimension|size|big|measure", ["Width", "Depth", "Height", "Length", "Size"]),
-    (r"\bweigh|heavy|weight\b", ["Weight"]), (r"\bmade of|material|fabric|wood|leather", ["Primary Material", "Material",
+    (r"\blong|length\b", ["Length", "Depth"]), (r"\bdimension|size|big|measure", ["Width", "Depth", "Height", "Length", "Size"]),
+    (r"\bweigh|heavy|weight\b", ["Weight"]), (r"\bmade of|material|fabric|wood|leather", ["Primary Material", "Primary Material Subtype", "Material",
      "Upholstery Type", "Outer Material", "Secondary Material"]), (r"\bcolou?r\b", ["Primary Color", "Color",
      "Upholstery Color", "Finish Color"]), (r"\bseat|people|persons?\b", ["Seating Capacity"]),
     (r"\bprice|cost|how much\b", ["Price"]), (r"\bbrand|who makes|manufacturer\b", ["Brand"]),
@@ -65,6 +68,7 @@ _TOPICS = [
     (r"\bcapacity|litre|liter\b", ["Capacity"]), (r"\bdeliver|arrive|shipping\b", ["Delivery time", "Delivery charge"]),
     (r"\bstock|available|availability\b", ["Stock"]), (r"\bassembl|install", ["Delivery Condition", "Installation & Demo Details"]),
     (r"\bclean|wash|care\b", ["Care Instructions", "Machine Washable", "Hand Washable"]),
+    (r"\bkids?\b|\bchild|\bsuitable|\bideal for|\bwhich room", ["Suitable For", "Ideal For"]),
 ]
 # Words shared by many field names; on their own they don't say which field is meant
 # ("safe" is in both "Microwave Safe" and "Freezer Safe": eval PQ-07).
@@ -106,6 +110,57 @@ def _requirement_check(p: ProductView, extracted: intent_mod.IntentExtraction) -
     return QAResult(" ".join(parts), cited, "policy_check")
 
 
+def product_noun(p: ProductView) -> str:
+    """'Ethnic Handicrafts Solid Wood Queen Bed' -> 'bed'; used in warm replies ("this bed")."""
+    words = re.findall(r"[A-Za-z]+", p.title or "")
+    last = words[-1].lower() if words else ""
+    return last if last and len(last) > 2 and last not in {"set", "pack", "combo", "piece"} else "product"
+
+
+def not_in_listing_reply(p: ProductView) -> str:
+    """B5, round 2: warm, honest, and offers what it can answer (never "I'd rather not guess")."""
+    return (f"Sorry, I don't have that detail for this {product_noun(p)}. "
+            "I can tell you about its size, materials, delivery or care.")
+
+
+def _say(p: ProductView, field_name: str, value: str) -> str:
+    """One listing fact in plain words (rules mode). Falls back to 'Field: value.' for uncommon fields."""
+    v = str(value).strip().rstrip(".")
+    mm = measurement_mm(p, field_name) if field_name in MEASURE_FIELDS else None
+    if mm is not None:
+        word = {"Width": "wide", "Depth": "deep", "Height": "high", "Length": "long"}[field_name]
+        return f"It's {format_length(mm, 'cm')} {word} ({format_length(mm, 'mm')})."
+    if field_name == "Delivery time":
+        return f"It'll arrive in about {v}."
+    if field_name == "Delivery charge":
+        return "Delivery is free." if v == "free" else f"Delivery costs {v}."
+    if field_name == "Price":
+        return f"It costs {v}."
+    if field_name == "Stock":
+        return f"There are {v}."
+    if field_name == "Weight":
+        return f"It weighs {v}."
+    if field_name in ("Primary Material", "Material"):
+        return f"It's made of {v.lower()}."
+    if field_name == "Primary Material Subtype":
+        return f"Specifically, {v}."
+    if field_name == "Care Instructions":
+        return f"Care: {v}."
+    if field_name == "Photos":
+        return "There's one photo of it."
+    if field_name in ("Suitable For", "Ideal For"):
+        return f"It's made for {v.lower()}."
+    yes_no = v.lower() in ("yes", "no")
+    m = re.match(r"(?i)with (.+)", field_name) or re.match(r"(?i)(.+?) included$", field_name)
+    if yes_no and m:                    # "With Mattress: No" -> "Sorry, the mattress isn't included." (O-35)
+        thing = m.group(1).strip().lower()
+        return (f"Yes, the {thing} is included." if v.lower() == "yes"
+                else f"Sorry, the {thing} isn't included.")
+    if yes_no:
+        return f"{'Yes' if v.lower() == 'yes' else 'No'}, {field_name.lower()}: {v.lower()}."
+    return f"{field_name}: {v}."
+
+
 def _spec_lookup(p: ProductView, question: str) -> QAResult:
     fields = listing_fields(p)
     q = question.lower()
@@ -127,21 +182,31 @@ def _spec_lookup(p: ProductView, question: str) -> QAResult:
             attr = {"Width": "width_cm", "Depth": "depth_cm", "Height": "height_cm"}.get(k)
             if attr and attr in p.data_notes:
                 note = " That value doesn't look right for this product, so I wouldn't rely on it."
-            rows.append(f"{k}: {v}.{note}")
+            rows.append(f"{_say(p, k, v)}{note}")
         return QAResult(" ".join(rows), wanted, "spec_lookup")
-    topical = [w for w in words if w not in {"listing", "product", "sofa", "item"}]
+    # The description mentions a word from the question (O-45: only real topic words, never units or filler,
+    # and the reply names the word so the shopper can check it).
+    units = {w for pat in UNIT_WORDS.values() for w in re.findall(r"[a-z]+", pat)} | {"meters", "metres", "inches"}
+    topical = [w for w in words if len(w) >= 5 and w not in units and w not in _GENERIC_KEY_WORDS
+               and w not in {"listing", "product", "sofa", "item", "about", "there", "would", "could", "should",
+                             "which", "where", "convert", "answer", "question"}]
     desc = (p.description or "").lower()
-    if topical and any(w in desc for w in topical):
-        return QAResult("The description on this page mentions it, but I can't confirm the details from the "
-                        "specs. Take a look at the description.",
-                        ["Description"], "spec_lookup")
-    return QAResult("The listing doesn't say, so I'd rather not guess.", [], "not_in_listing", status="not_in_listing")
+    hit = next((w for w in topical if re.search(rf"\b{re.escape(w)}", desc)), None)
+    if hit:
+        return QAResult(f"Sorry, the specs don't cover that, though the description on this page mentions "
+                        f"\u201c{hit}\u201d. Have a look there.", ["Description"], "spec_lookup")
+    return QAResult(not_in_listing_reply(p), [], "not_in_listing", status="not_in_listing")
 
 
-def _ask_llm(p: ProductView, question: str) -> tuple[Optional[ProductAnswer], dict]:
+def _ask_llm(p: ProductView, question: str, history: Optional[list[str]] = None
+             ) -> tuple[Optional[ProductAnswer], dict]:
     listing = json.dumps(listing_fields(p), ensure_ascii=False, indent=1)
+    recent = ""
+    if history:                      # R11: the last few turns, so "that", "it" and follow-ups make sense
+        recent = ("Recent conversation (context only; answer the latest question about this product):\n"
+                  + "\n".join(history) + "\n\n")
     ans, meta = llm.structured(QA_PROMPT_PATH.read_text(),
-                               f"<product_listing>\n{listing}\n</product_listing>\n\nShopper's question: {question}",
+                               f"<product_listing>\n{listing}\n</product_listing>\n\n{recent}Shopper's question: {question}",
                                ProductAnswer, max_tokens=1000)
     meta["prompt_version"] = QA_PROMPT_VERSION
     return ans, meta
@@ -160,15 +225,61 @@ def validate(answer: ProductAnswer, p: ProductView) -> Optional[str]:
     return None
 
 
+# ---- measurements and unit conversion (PRD B38): done in code, so it works even when no model answers
+MEASURE_FIELDS = ("Width", "Depth", "Height", "Length")
+_TO_MM = {"mm": 1, "cm": 10, "m": 1000, "in": 25.4, "inch": 25.4, "inches": 25.4}
+
+
+def measurement_mm(p: ProductView, field_name: str) -> Optional[float]:
+    """A listed measurement in millimetres, or None if missing or flagged as implausible (data_notes)."""
+    attr = {"Width": "width_cm", "Depth": "depth_cm", "Height": "height_cm"}.get(field_name)
+    if attr and attr in p.data_notes:
+        return None
+    raw = str(listing_fields(p).get(field_name) or "")
+    m = re.match(r"\s*([\d.]+)\s*(mm|cm|m|inches|inch|in)\b", raw.lower())
+    return float(m.group(1)) * _TO_MM[m.group(2)] if m else None
+
+
+UNIT_WORDS = {"m": r"met(?:er|re)s?|m", "cm": r"cm|centimet(?:er|re)s?", "mm": r"mm|millimet(?:er|re)s?",
+              "ft": r"feet|foot|ft", "in": r"inch(?:es)?|in"}
+
+
+def unit_asked(text: str) -> Optional[str]:
+    t = text.lower()
+    for unit, pat in UNIT_WORDS.items():
+        if re.search(rf"(?:\bin|\binto|\bto|\bas)\s+(?:{pat})\b|^\s*(?:{pat})\s*\??\s*$", t):
+            return unit
+    return None
+
+
+def format_length(mm: float, unit: str) -> str:
+    if unit == "m":
+        return f"{mm / 1000:.2f}".rstrip("0").rstrip(".") + " m"
+    if unit == "cm":
+        return f"{mm / 10:.0f} cm"
+    if unit == "mm":
+        return f"{mm:.0f} mm"
+    if unit == "ft":
+        return f"{mm / 304.8:.1f} ft"
+    return f"{mm / 25.4:.1f} in"
+
+
+_PHOTO_Q = re.compile(r"\b(images?|photos?|pictures?|pics?)\b", re.I)
+
+
 def answer_about_product(p: ProductView, question: str, extracted: intent_mod.IntentExtraction,
-                         use_llm: Optional[bool] = None) -> QAResult:
+                         use_llm: Optional[bool] = None, history: Optional[list[str]] = None) -> QAResult:
     checked = _requirement_check(p, extracted)
     if checked:
         return checked
+    if _PHOTO_Q.search(question or "") and re.search(r"\bhow many|number of|more\b", question.lower()):
+        n = 1 if p.image_url else 0
+        return QAResult(("There's one photo of it. Tap the card to see it larger on its page." if n
+                         else "Sorry, there's no photo of this one."), ["Photos"] if n else [], "photo_count")
     if use_llm is None:
         use_llm = intent_mod.llm_available()
     if use_llm:
-        ans, meta = _ask_llm(p, question)
+        ans, meta = _ask_llm(p, question, history)
         if ans is not None:
             problem = validate(ans, p)
             if problem:
@@ -177,7 +288,8 @@ def answer_about_product(p: ProductView, question: str, extracted: intent_mod.In
                 fallback.meta = dict(meta, rejected=problem, rejected_answer=ans.answer)
                 return fallback
             if ans.not_in_listing:
-                return QAResult("The listing doesn't say, so I'd rather not guess.", [], "llm", status="not_in_listing", meta=meta)
+                # Uncited model text is where guesses slip in, so the "don't know" reply is always ours (R5).
+                return QAResult(not_in_listing_reply(p), [], "llm", status="not_in_listing", meta=meta)
             return QAResult(ans.answer, ans.cited_fields, "llm", meta=meta)
         result = _spec_lookup(p, question)
         result.meta = dict(meta, fallback="spec lookup after LLM failure")

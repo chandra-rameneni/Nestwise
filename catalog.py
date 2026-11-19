@@ -52,6 +52,19 @@ class ProductView:
     source_flags: dict = field(default_factory=dict)
     data_notes: dict = field(default_factory=dict)   # attribute -> why its listed value isn't usable
 
+    @property
+    def returnable(self) -> bool:
+        """Store rule (STORE_POLICY.md P3, decided by the PM 2026-11-19): items under ₹500 that are bird houses
+        (any category), or home décor showpieces, candles and fragrances, festive décor and wall stickers/decals,
+        can't be returned."""
+        if self.list_price_inr is None or self.list_price_inr >= 500:
+            return True
+        text = f"{self.title} {self.category_path}".lower()
+        if re.search(r"bird ?house", text):           # bird houses are filed under Furniture > Pet Furniture
+            return False
+        return not (self.category == "home_decor"
+                    and re.search(r"showpiece|candle|fragrance|aroma|festive|decal|sticker", text))
+
     def total_for(self, qty: int = 1) -> int | None:
         """Final payable total. None when the listing has no price (treated as unknown, never as free)."""
         if self.list_price_inr is None:
@@ -194,6 +207,19 @@ class SqliteCatalog:
         rows = self._con.execute("SELECT category, category_label, COUNT(*) FROM products GROUP BY 1, 2 "
                                  "ORDER BY 3 DESC").fetchall()
         return [{"slug": s, "label": l, "count": n} for s, l, n in rows]
+
+    def category_kinds(self, slug: str, n: int = 6) -> list[tuple[str, int]]:
+        """B43: the main kinds of product in a category with counts, from the second level of the category path
+        ("Home Decor > Showpieces > ..." -> "Showpieces"). Near-duplicates are merged."""
+        counts: dict[str, int] = {}
+        for (path,) in self._con.execute("SELECT category_path FROM products WHERE category = ?", (slug,)):
+            parts = [x.strip() for x in (path or "").split(">")]
+            if len(parts) < 2:
+                continue
+            kind = {"Showpiece": "Showpieces", "Living Room Furniture": "Living Room",
+                    "Living Room Furnishing": "Living"}.get(parts[1], parts[1])
+            counts[kind] = counts.get(kind, 0) + 1
+        return sorted(counts.items(), key=lambda kv: -kv[1])[:n]
 
     def category_labels(self) -> list[str]:
         return [c["label"] for c in self.categories()]

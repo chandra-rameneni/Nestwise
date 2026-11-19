@@ -60,7 +60,8 @@ def card(p: ProductView) -> dict:
     return {"product_id": p.product_id, "title": p.title, "brand": p.brand, "category": p.category,
             "category_label": p.category_label, "price_inr": p.list_price_inr, "mrp_inr": p.mrp_inr,
             "shipping_inr": p.shipping_inr, "total_inr": p.total_for(), "stock": p.stock,
-            "delivery_days": p.delivery_days, "image_url": p.image_url, "url": f"/product/{p.product_id}"}
+            "delivery_days": p.delivery_days, "image_url": p.image_url, "url": f"/product/{p.product_id}",
+            "returnable": p.returnable}
 
 
 def detail(p: ProductView) -> dict:
@@ -89,12 +90,20 @@ def _image(s: Session, pid: str):
         return None
 
 
+def _returnable(s: Session, pid: str) -> bool:
+    try:
+        return s.catalog.get(pid).returnable
+    except Exception:
+        return True
+
+
 def state(s: Session) -> dict:
     cart = s.cart
     return {
         "cart": None if cart is None else {"cart_id": cart.cart_id, "product_id": cart.product_id, "title": cart.title,
                                            "qty": cart.qty, "total_inr": cart.total_inr, "status": cart.status,
-                                           "image_url": _image(s, cart.product_id)},
+                                           "image_url": _image(s, cart.product_id),
+                                           "returnable": _returnable(s, cart.product_id)},
         "approval": None if s.approval is None else {"approval_id": s.approval.approval_id,
                                                      "status": s.approval.status,
                                                      "approved_total_inr": s.approval.approved_total_inr},

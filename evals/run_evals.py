@@ -26,10 +26,21 @@ from catalog import STORE_DB_PATH, SqliteCatalog  # noqa: E402
 from tracing import Tracer  # noqa: E402
 
 SCENARIOS = Path(__file__).parent / "scenarios.json"
+
+# Round 2 (PRD §6A.1, voice for model answers): words that make an answer sound like a robot.
+ROBOT_WORDS = [r"(?i)\b(the )?listing (says|states|mentions|shows)\b", r"(?i)\(simulated\)", r"(?i)\(historical\)",
+               r"\b[A-Z]{3,}_[A-Z_]{3,}\b", r"(?i)with mattress:", r"(?i)i'?d rather not guess"]
 RESULTS = Path(__file__).parent / "results"
 
 
+# Free models allow only a few requests a minute. In model mode, INTENTGUARD_EVAL_PACE_S pauses between turns so
+# an eval run measures the models, not their rate limits (found 2026-11-19: back-to-back runs fell back to rules).
+PACE_S = float(__import__("os").environ.get("INTENTGUARD_EVAL_PACE_S", "0"))
+
+
 def run_turn(s: Session, turn: dict, default_page: str | None):
+    if PACE_S and "say" in turn:
+        __import__("time").sleep(PACE_S)
     page = turn.get("page", default_page)
     ctx = {"page": "product", "product_id": page} if page else {"page": "listing"}
     if "say" in turn:
@@ -123,6 +134,22 @@ def check(exp: dict, r, responses: list, state: dict | None = None) -> list[str]
         fails.append(f"should cite one of {exp['cited_any']}, got {r.cited_fields}")
     if "reason" in exp and exp["reason"] not in r.reason_codes:
         fails.append(f"reason codes should include {exp['reason']}, got {r.reason_codes}")
+    if exp.get("voice"):
+        for pat in ROBOT_WORDS:
+            if re.search(pat, r.message):
+                fails.append(f"voice: robot wording matched {pat!r}")
+    if exp.get("starts_sorry") and not re.match(r"\s*(Sorry|Unfortunately|Fair point, sorry)", r.message):
+        fails.append("should start with an apology (Sorry)")
+    for pat in exp.get("cited_regex", []):
+        if not any(re.search(pat, c) for c in r.cited_fields):
+            fails.append(f"should cite a source matching {pat!r}, got {r.cited_fields}")
+    for pat in exp.get("not_cited_regex", []):
+        if any(re.search(pat, c) for c in r.cited_fields):
+            fails.append(f"should not cite a source matching {pat!r}, got {r.cited_fields}")
+    if exp.get("rejected_excludes_shown"):
+        shown = {x["product_id"] for x in r.recommendations}
+        if shown & {x["product_id"] for x in r.rejected}:
+            fails.append("'left out' list repeats a product that was shown")
     if "same_message_as_turn" in exp and r.message != responses[exp["same_message_as_turn"]].message:
         fails.append("message should repeat the earlier answer exactly")
     return fails
@@ -138,7 +165,12 @@ def main() -> int:
     mode = llm.provider() or "rules"
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     results = []
+    skipped = []
     for sc in spec["scenarios"]:
+        run_in = sc.get("mode", "RM")             # R: rules only, M: with a model only, RM: both
+        if (mode == "rules" and "R" not in run_in) or (mode != "rules" and "M" not in run_in):
+            skipped.append(sc["id"])
+            continue
         s = Session(catalog=SqliteCatalog(), tracer=Tracer())
         responses, states, error = [], [], None
         try:
@@ -181,11 +213,13 @@ def main() -> int:
     summary = {"run_at": stamp, "mode": mode, "model": llm.model_name(),
                "scenarios_version": spec["version"], "total": n, "passed": passed,
                "core": f"{sum(r['passed'] for r in core)}/{len(core)}",
-               "probes": f"{sum(r['passed'] for r in probes)}/{len(probes)}", "results": results}
+               "probes": f"{sum(r['passed'] for r in probes)}/{len(probes)}", "skipped_for_mode": skipped,
+               "results": results}
     out = RESULTS / f"{stamp}_{mode}" if path == SCENARIOS else RESULTS / f"{stamp}_{path.stem}_{mode}"
     out.with_suffix(".json").write_text(json.dumps(summary, indent=1, ensure_ascii=False))
     lines = [f"# Eval run {stamp} ({mode} mode)", "",
-             f"**{passed}/{n} scenarios passed.** Core: {summary['core']} · Probes (phrasings the rules weren't written for): {summary['probes']}.", "",
+             f"**{passed}/{n} scenarios passed.** Core: {summary['core']} · Probes (phrasings the rules weren't written for): {summary['probes']}."
+             + (f" Skipped in {mode} mode: {len(skipped)}." if skipped else ""), "",
              "| Scenario | Group | Probe | Result | What failed | Trace (first failing event) |", "|---|---|---|---|---|---|"]
     for r in results:
         what = "; ".join(f"turn {f['turn']}: {f['check']}" for f in r["failures"]) or ""
