@@ -1,4 +1,4 @@
-# IntentGuard: project brief
+# Nestwise: project brief
 
 **What:** a home-and-living web store built on real product data (the Flipkart Products dataset). It has an AI shopping agent on the listing page, which helps the shopper choose, and on every product page, where it answers questions and handles "buy this".
 

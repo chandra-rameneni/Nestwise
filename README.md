@@ -1,4 +1,4 @@
-# Nestwise, with the IntentGuard shopping agent
+# Nestwise: an AI shopping assistant
 
 A home-and-living web store built on **real product data** (the Flipkart Products dataset), with an AI shopping assistant on every page:
 

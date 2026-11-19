@@ -1,4 +1,4 @@
-# IntentGuard: test results, evals and observed failures
+# Nestwise: test results, evals and observed failures
 
 **Last run:** 2026-11-18, Python 3.13.1, macOS.
 

@@ -1,5 +1,5 @@
 {
- "_about": "IntentGuard eval scenarios. Each one is a short shopper conversation on the real catalog, with the outcome the PRD says is correct, not what the code happens to do. 'probe' scenarios use phrasings the rules extractor was not written for, to find weaknesses. Run with: .venv/bin/python evals/run_evals.py",
+ "_about": "Nestwise eval scenarios. Each one is a short shopper conversation on the real catalog, with the outcome the PRD says is correct, not what the code happens to do. 'probe' scenarios use phrasings the rules extractor was not written for, to find weaknesses. Run with: .venv/bin/python evals/run_evals.py",
  "version": "scenarios-v1 (2026-11-18)",
  "scenarios": [
   {

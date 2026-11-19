@@ -1,4 +1,4 @@
-"""IntentGuard storefront: FastAPI backend + static pages in web/.
+"""Nestwise storefront: FastAPI backend + static pages in web/.
 
 Run:  .venv/bin/uvicorn server:app --port 8000      (needs data/catalog.sqlite: python build_catalog.py)
 
@@ -29,7 +29,7 @@ WEB = Path(__file__).parent / "web"
 COOKIE = "ig_session"
 MAX_SESSIONS = 500
 
-app = FastAPI(title="IntentGuard storefront")
+app = FastAPI(title="Nestwise storefront")
 app.mount("/static", StaticFiles(directory=WEB), name="static")
 _sessions: dict[str, Session] = {}
 _browse = SqliteCatalog(STORE_DB_PATH) if STORE_DB_PATH.exists() else None
@@ -264,7 +264,7 @@ def agent_action(action: str, response: HTTPResponse, ig_session: Optional[str] 
     return agent_json(s, handler())
 
 
-print(f"[IntentGuard] payments mode at start: {payments.mode()}"
+print(f"[Nestwise] payments mode at start: {payments.mode()}"
       + (" (a live Razorpay key was found and refused: payments stay off)" if payments.mode() == "refused_live" else ""))
 
 

@@ -1,9 +1,9 @@
-# AI PM skills used in IntentGuard
+# AI PM skills used in Nestwise
 
 Every AI product management skill this project uses, where it lives, and whether it has been taught.
 **Rule:** a skill is added here the moment a step builds or uses it, and taught in the same reply.
 
-| # | Skill | Where it is in IntentGuard | Taught? |
+| # | Skill | Where it is in Nestwise | Taught? |
 |---|---|---|---|
 | 1 | Business case and PRD first | `BUSINESS_CASE.md`, `PRD.md` | Yes |
 | 2 | Writing evals before code | `evals/PHASE*_EVALS_DRAFT.md` | Yes |

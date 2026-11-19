@@ -1,4 +1,4 @@
-"""IntentGuard session: page-aware routing, bounded tool use, grounded recommendations and answers,
+"""Nestwise session: page-aware routing, bounded tool use, grounded recommendations and answers,
 approval and checkout.
 
 The flow is code-driven (a workflow, not a free-running model loop). The model is used only to

@@ -1,4 +1,4 @@
-# IntentGuard build plan: from PRD to code
+# Nestwise build plan: from PRD to code
 
 **Status:** draft for review · **Date:** 2026-11-18
 **Based on:** [`PRD.md`](PRD.md) (what the agent should do) and [`EVALS.md`](EVALS.md) (known failures)

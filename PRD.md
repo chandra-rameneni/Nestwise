@@ -1,4 +1,4 @@
-# IntentGuard PRD (v2: storefront with an embedded agent)
+# Nestwise PRD (v2: storefront with an embedded agent)
 
 **Status:** draft for sign-off · **Date:** 2026-11-17, updated 2026-11-18 (response guide §6A; behaviour decisions B18–B30; warmer tone; B31–B37 from store testing), 2026-11-19 (**approved by the PM and built 2026-11-19:** R11–R12, voice rules for model answers, B38–B44 and changes to B5, B15, B21, B28, B35, B36, from store testing round 2, O-34 to O-54) · **Replaces:** the chat-only P0 direction
 **Based on:** [`BUSINESS_CASE.md`](BUSINESS_CASE.md) (why, for whom, competitor research)
@@ -11,7 +11,7 @@ On a shopping site, a shopper either knows which product they want and has quest
 - loop without ever reaching an answer, or
 - act on a price that has since changed.
 
-IntentGuard is a shopping agent embedded in a store. It answers only from the listing data, keeps track of the shopper's requirements, tells the shopper plainly when something isn't available, and never buys without exact, current approval.
+Nestwise is a shopping agent embedded in a store. It answers only from the listing data, keeps track of the shopper's requirements, tells the shopper plainly when something isn't available, and never buys without exact, current approval.
 
 This is a hypothesis to demonstrate, not validated demand. It's a portfolio product for the Razorpay AI Builders application and an AI PM case study.
 
@@ -55,7 +55,7 @@ The shopper is on the listing page and opens the agent panel. The agent **only c
 
 ## 5A. Look and feel *(approved by the PM 2026-11-19; built and signed off by the PM 2026-11-19)*
 
-**Goal:** the site should feel like a calm, premium showroom, and the assistant should feel like the main feature, not a box in the corner. **Name and colours (D12, 2026-11-19):** the store is **Nestwise**, and its assistant is IntentGuard. Colours: navy and bright blue, with a yellow accent for small highlights; no Flipkart look-alike. **Reference:** the style of Apple's product pages (lots of space, big type, one idea per section, large photos, pill buttons). We borrow the *style* only. No Apple logos, names, images or copied layouts.
+**Goal:** the site should feel like a calm, premium showroom, and the assistant should feel like the main feature, not a box in the corner. **Name and colours (D12, 2026-11-19):** the store and its assistant are both called **Nestwise** (D13; the project was first called Nestwise). Colours: navy and bright blue, with a yellow accent for small highlights; no Flipkart look-alike. **Reference:** the style of Apple's product pages (lots of space, big type, one idea per section, large photos, pill buttons). We borrow the *style* only. No Apple logos, names, images or copied layouts.
 
 **Problem today:** the home page is a filter column and a grid. The assistant sits in a narrow side panel with no visual pull. A reply takes 2–7 seconds with only "Checking…" to show, so it feels like nothing is happening.
 

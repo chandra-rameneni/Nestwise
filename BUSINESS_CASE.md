@@ -1,9 +1,9 @@
-# IntentGuard: business case and competitor research
+# Nestwise: business case and competitor research
 
 **Status:** v1 · **Date:** 2026-11-18 · **Owner:** project author · **Feeds into:** [`PRD.md`](PRD.md) → code
 **Evidence standard:** desk research from public sources (linked at the end). No shopper interviews; none are needed for the Razorpay submission. Figures from vendor-run surveys are marked as such and are directional, not proof.
 
-This is the starting point of the project. It answers **why** we're building IntentGuard, **for whom**, and **what other shopping assistants already do**. The PRD turns it into requirements, and the code implements the PRD. The tracker in §6 links them, so we can see what's done.
+This is the starting point of the project. It answers **why** we're building Nestwise, **for whom**, and **what other shopping assistants already do**. The PRD turns it into requirements, and the code implements the PRD. The tracker in §6 links them, so we can see what's done.
 
 ---
 
@@ -11,7 +11,7 @@ This is the starting point of the project. It answers **why** we're building Int
 
 - **The problem:** AI shopping assistants are now everywhere (Amazon, Flipkart, Walmart, ChatGPT, Google, Perplexity), but shoppers can't trust what they say. One vendor study found the same shopping question gave **conflicting** facts (price, specs, availability) in 86% of cases. Shoppers blame the store when an AI gets it wrong.
 - **The opportunity:** assistants are starting to **buy**, not just recommend (Amazon auto-buy, Google agentic checkout, Razorpay + NPCI UPI payments in ChatGPT and Claude). Once an agent spends money, a wrong fact turns into a wrong order.
-- **What IntentGuard is:** a shopping assistant embedded in a store. It says only what the product listing supports, checks every requirement in the open, says plainly when the store doesn't sell something, and never orders without approval of the exact cart at the current price.
+- **What Nestwise is:** a shopping assistant embedded in a store. It says only what the product listing supports, checks every requirement in the open, says plainly when the store doesn't sell something, and never orders without approval of the exact cart at the current price.
 - **What this project is:** a working sample, built to showcase product thinking and AI engineering for the Razorpay AI Builders application and an AI PM portfolio. It isn't built for Razorpay as a customer, and it isn't a commercial product.
 
 ## 2. Business case
@@ -30,7 +30,7 @@ AI assistants promise to help with both. In practice, they fail in five ways tha
 | P2 | **Forgotten requirements**: the budget or size the shopper stated gets dropped a few turns later | We reproduced it ourselves (F-010 in `EVALS.md`). See §2.1.1 for why it happens. |
 | P3 | **Dead-end loops**: the assistant asks the same thing again instead of saying "we don't sell that" | Found in our own P0 build ("mobile" twice gave the same generic reply; F-003) |
 | P4 | **Acting on stale data**: the price or stock changes between recommendation and checkout | Prices change constantly; the agent-checkout products (Amazon auto-buy, Google, Perplexity) all have to deal with it |
-| P5 | **Unclear authority**: did the shopper really approve *this* item at *this* total? | Razorpay's UPI agent payments are built around user-set limits and instant revocation, which shows the industry treats this as a core risk. See §2.1.2 for how approval works in IntentGuard. |
+| P5 | **Unclear authority**: did the shopper really approve *this* item at *this* total? | Razorpay's UPI agent payments are built around user-set limits and instant revocation, which shows the industry treats this as a core risk. See §2.1.2 for how approval works in Nestwise. |
 | P6 | **Two shoppers, one item**: shopper A adds the last unit to their cart while shopper B, elsewhere, is about to buy it too | Standard e-commerce problem, made worse when an agent acts quickly for many shoppers at once. See §2.1.3. |
 
 #### 2.1.1 Why assistants forget requirements in long chats (P2)
@@ -40,11 +40,11 @@ An LLM has no memory between messages. Each turn, the app resends the conversati
 - **Ambiguous updates:** "actually, make it bigger". Bigger than what? Does the budget still apply? The model guesses.
 - **Leaking across topics:** a limit from one question gets applied to a different product (our F-010: a wall width from one sofa question applied to the next question).
 
-**IntentGuard's fix:** the requirements live in a structured record in code (budget, seats, width…), not just in the chat text. Each message updates that record explicitly, every change is logged, and changing a requirement cancels any earlier approval.
+**Nestwise's fix:** the requirements live in a structured record in code (budget, seats, width…), not just in the chat text. Each message updates that record explicitly, every change is logged, and changing a requirement cancels any earlier approval.
 
 #### 2.1.2 Where the shopper approves (P5)
 
-In IntentGuard's chat panel:
+In Nestwise's chat panel:
 1. The agent recommends products. Each card has an **Add to cart** button (or the shopper says "buy this" on a product page).
 2. The agent shows the cart: one product, quantity, price, shipping and **exact total**.
 3. The shopper clicks **Approve this exact cart**. The approval is tied to that cart, that total and that version of the product data.
@@ -89,7 +89,7 @@ In this demo, we play the store: the agent is embedded in our sample store.
 ### 2.4 Why an AI agent, and not just better filters
 
 - Filters can't take "fits a 2 m wall with a bit of room" or "something to sit on for my balcony". Language understanding is the job the AI does well.
-- **But the AI must not decide what's true or what's allowed.** Prices, sizes, stock, budget checks and approval are deterministic code. That split (AI for understanding and wording, code for facts and permissions) is IntentGuard's core design choice, and directly addresses P1, P4 and P5.
+- **But the AI must not decide what's true or what's allowed.** Prices, sizes, stock, budget checks and approval are deterministic code. That split (AI for understanding and wording, code for facts and permissions) is Nestwise's core design choice, and directly addresses P1, P4 and P5.
 
 ### 2.5 How we'd know it works (targets, not results)
 
@@ -135,11 +135,11 @@ Status as reported in public sources up to Nov 2026. Where a source was unclear,
 | **Perplexity: Shopping + Instant Buy** | Product research and comparison across merchants | **Instant Buy** with PayPal (US, Nov 2025): confirm with PayPal login or passkey; the retailer stays merchant of record | Explicit user confirmation at purchase |
 | **Google: AI Mode / Gemini** | Shopping in search and chat, Universal Cart | **Agentic checkout** on merchant sites with Google Pay; built on **UCP** (whole purchase flow) and **AP2** (agent payment permission) | Co-developed with Shopify, Etsy, Wayfair, Target, Walmart |
 
-### 3.3 Payment rails (not competitors, but where IntentGuard would plug in)
+### 3.3 Payment rails (not competitors, but where Nestwise would plug in)
 
 | Rail | What it does | Relevance |
 |---|---|---|
-| **Razorpay + NPCI agentic payments** (India) | UPI payments from inside ChatGPT (Oct 2025 private beta: bigbasket, Vi) and Claude (Feb 2026 pilot, select users: Zomato, Swiggy, Zepto). User-set limits, real-time tracking, instant revoke (UPI Reserve Pay, UPI Circle). | Industry context: in a real build, a payment would sit right after IntentGuard's approval step. Today it's a mock order. |
+| **Razorpay + NPCI agentic payments** (India) | UPI payments from inside ChatGPT (Oct 2025 private beta: bigbasket, Vi) and Claude (Feb 2026 pilot, select users: Zomato, Swiggy, Zepto). User-set limits, real-time tracking, instant revoke (UPI Reserve Pay, UPI Circle). | Industry context: in a real build, a payment would sit right after Nestwise's approval step. Today it's a mock order. |
 | **OpenAI ACP, Google UCP / AP2** | Standards for agent ↔ merchant checkout and payment permission | We don't implement these; we'd follow one in a real build |
 
 ### 3.4 What we learned
@@ -165,7 +165,7 @@ Status as reported in public sources up to Nov 2026. Where a source was unclear,
 
 Store-owned assistants may already do some of these internally. We haven't tested them hands-on, so these are **focus areas, not proven gaps**.
 
-## 4. What this means for IntentGuard
+## 4. What this means for Nestwise
 
 | Idea from research | Seen in | Decision | Status |
 |---|---|---|---|
@@ -188,7 +188,7 @@ Store-owned assistants may already do some of these internally. We haven't teste
 
 ## 5. Positioning in one line
 
-> Other assistants compete on **how much they can do**. IntentGuard competes on **whether you can trust what it says and buys**: every fact traced to the listing, every requirement checked in the open, and no order without your approval of the exact cart at the current price.
+> Other assistants compete on **how much they can do**. Nestwise competes on **whether you can trust what it says and buys**: every fact traced to the listing, every requirement checked in the open, and no order without your approval of the exact cart at the current price.
 
 ## 6. Tracker: pain point → requirement → code → proof
 
@@ -215,7 +215,7 @@ Update this table when anything changes. It's the reference point for "where are
 ### Parked thoughts (not decided yet)
 
 - **Response scenarios:** write down how the agent should respond in specific situations (example conversations with the expected reply). Still to decide whether they belong here, in the PRD, or in their own document.
-- **Agent-first app (Flipkart SLAP):** an app where the chat *is* the shop, instead of an assistant added to a normal store. Worth considering as a future direction for IntentGuard.
+- **Agent-first app (Flipkart SLAP):** an app where the chat *is* the shop, instead of an assistant added to a normal store. Worth considering as a future direction for Nestwise.
 
 ## Sources
 

@@ -1,4 +1,4 @@
-// IntentGuard assistant panel, shared by the listing and product pages (PRD §5A).
+// Nestwise assistant panel, shared by the listing and product pages (PRD §5A).
 // const ig = IGAgent.mount({ el, context, title, intro, suggestions, onState }) renders the chat, the cart and the
 // demo controls into `el`, a slide-over panel. ig.open(), ig.close() and ig.send(text) let the page drive it.
 // All decisions happen on the server; this file only displays them.
@@ -116,7 +116,8 @@
       const label = KIND_LABEL[r.kind];
       let html = `<div class="msg bot">${label ? `<span class="kind ${esc(r.kind)}">${esc(label)}</span><br>` : ""}${format(r.message)}`;
       if (r.cited_fields && r.cited_fields.length) {
-        html += `<div class="cite">From the listing: ${r.cited_fields.map((f) => `<span>${esc(f)}</span>`).join("")}</div>`;
+        const fromPolicy = r.cited_fields.every((f) => /^P\d+\b/.test(f));   // O-67: store policy isn't the listing
+        html += `<div class="cite">${fromPolicy ? "From our store policy" : "From the listing"}: ${r.cited_fields.map((f) => `<span>${esc(f)}</span>`).join("")}</div>`;
       }
       if (r.recommendations && r.recommendations.length) {
         html += `<div class="recs">` + r.recommendations.map((x) => `

@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "dataset": "IntentGuard synthetic demo catalog",
+    "dataset": "Nestwise synthetic demo catalog",
     "version": "synthetic-v1",
     "created": "2026-11-17",
     "source": "SYNTHETIC. Hand-written for the P0 demo. Brand names are used only to exercise brand-preference logic; model names, prices, stock, delivery times and specs are invented and are NOT real listings.",

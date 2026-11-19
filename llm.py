@@ -159,7 +159,7 @@ def _free_chain(system: str, user: str, schema: Type[T], max_tokens: int, meta: 
     for prov, url, key, models in _chain():
         headers = {"Authorization": f"Bearer {key}"}
         if prov == "openrouter":
-            headers["X-Title"] = "IntentGuard demo"
+            headers["X-Title"] = "Nestwise demo"
         for m in models:
             name = f"{prov}/{m}"
             if _is_cooling(name):

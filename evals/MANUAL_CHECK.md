@@ -25,3 +25,5 @@
 **Score (PM, 2026-11-19):** 10 / 14 tested = **71%**. Row 13 not tested. The AI ran out of quota from row 10 (O-65).
 
 If a reply is "Sorry, I didn't understand" everywhere, the AI may be out of quota again. Tell me and I'll check.
+
+**Recheck after fixes (PM, 2026-11-19, AI busy so rules answered):** rows 7, 8, 12 and 15 now pass. Score **14 / 14 tested (100%)**; row 13 not tested.
