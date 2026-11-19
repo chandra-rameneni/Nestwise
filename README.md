@@ -31,15 +31,44 @@ The AI understands and words things; code decides what's true and what's allowed
 
 **Models (all free tiers):** Gemini (two keys), then OpenRouter free models, then the rules. Each reply has a time budget, and a busy model gets a short cool-down. The chat panel shows whether the AI or the rules answered.
 
-## Evals
+## Facts and numbers
 
-Every feature started as evals the PM approved before any code was written. Results and every failure found are in [EVALS.md](EVALS.md).
+**The store**
 
-- **267 scripted conversations in `evals/`**, including 85 **held out** (not looked at while fixing) to measure new wording, plus **338 code tests**.
-- **Before/after on each change.** For example, round 2 in rules mode went from 6/30 to 30/30 on the main set and 1/15 to 14/15 held out.
+| | |
+|---|---|
+| Products | **2,043** real products: home décor 761, kitchen & dining 639, home furnishing 479, furniture 164 |
+| No-return items (store policy P3) | 246 small items under ₹500 |
+| Payment | Razorpay test mode, cards only. A ₹24,999 test payment was completed and signature-verified end to end on 2026-11-19 |
+| Models | Gemini (2 keys) → OpenRouter free models → rules; 8-second budget per reply |
+
+**Tests and evals**
+
+| | |
+|---|---|
+| Code tests | **338 pass**, 2 skipped (they need a paid Claude key, which this project doesn't use) |
+| Scripted conversations | **267** in `evals/`, of which **85 are held out** (not looked at while fixing) |
+| Observations from testing | **67** (O-1 to O-67), each fixed or tracked in [evals/OBSERVATIONS.md](evals/OBSERVATIONS.md) |
+
+**Before and after each round** (evals written and approved before the code; rules mode)
+
+| Round | Before the code | After | Held-out, first run |
+|---|---|---|---|
+| Phase 1: real catalog, not sold here, product Q&A | 5/36 | **36/36** | 21/35 (60%) |
+| Phase 2: requirements, memory, recovery | 4/40 | **40/40** | 22/25 (88%) |
+| Phase 3: wording | 2/14 | **14/14** | — |
+| Round 2: conversation, policy, voice | 6/30 | **30/30** | 1/15 → 14/15 |
+| PM's manual check in the store (one long chat) | 10/14 (71%) | **14/14 (100%)** | — |
+
+**What these numbers don't show yet:** a valid before/after with the AI switched on. Every attempt so far hit the free models' daily limits, so the rules answered most messages. The eval runner marks such runs **not valid** instead of reporting them as AI results.
+
+**How the evals stay honest**
+- **Held-out sets** measure wording the code wasn't tuned on.
 - **Sabotage checks:** each fix is switched off on purpose to prove its tests fail.
-- **Evals that don't lie:** an AI-mode run where the AI answered less than 80% of messages is stamped **not valid**, because the rules quietly answered instead.
-- **Real failures become evals:** observations from manual testing (O-1 to O-67 in [evals/OBSERVATIONS.md](evals/OBSERVATIONS.md)) and dashboard "Add to eval candidates" feed the next round.
+- **The 80% rule:** an AI-mode run counts only if the AI answered at least 80% of messages.
+- **Real failures become evals:** manual testing and the dashboard's "Add to eval candidates" feed the next round.
+
+Full results, with result files: [EVALS.md](EVALS.md).
 
 ## Run it
 
@@ -58,7 +87,6 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 
 ## Read more
 
-- [DEMO_SCRIPT.md](DEMO_SCRIPT.md): the 4-minute demo, scene by scene.
 - [BUSINESS_CASE.md](BUSINESS_CASE.md): why, for whom, and competitor research. **Start here.**
 - [PRD.md](PRD.md): journeys, rules and acceptance tests.
 - [DECISIONS.md](DECISIONS.md): decisions and known gaps.
