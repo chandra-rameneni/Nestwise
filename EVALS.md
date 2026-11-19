@@ -112,6 +112,17 @@ Evals approved by the PM: `evals/ROUND2_EVALS_DRAFT.md` → `evals/round2_scenar
 - **The model-mode numbers are still not valid.** Even with pacing between messages (new `INTENTGUARD_EVAL_PACE_S`), every free model hit its daily limit: in the round 2 run only 9 of 34 message readings and 5 of 29 answers came from a model; the held-out run got none. All four round 2 failures were rules-fallback answers, and the three that were fallback gaps were fixed afterwards (yes/no fields like "With Mattress: No" → "Sorry, the mattress isn't included"; "kid friendly" → Suitable For; policy sentences matched by meaning). **To do when quotas reset:** run the model-mode evals on the old commit (`420ee71`, before) and the new one (after) with pacing.
 - **Held-out miss (not tuned to):** H2-V01 "when will it get here?" in rules mode (phrasing the rules don't know; the model should handle it).
 
+### Razorpay test-mode checkout (2026-11-19)
+
+- **Automated, fake Razorpay (no network):** `tests/test_razorpay.py`, 28 tests covering RZ-01 to RZ-23 plus "Place order can't skip payment". All pass. Checked that the tests can fail: with the signature check sabotaged to always say "valid", RZ-05 failed as it should.
+- **Live, real Razorpay test API, in the built-in browser:**
+  - RZ-01 confirmed: a real test order was created for 2,499,900 paise (₹24,999), tagged with the approval ID; Razorpay's window showed ₹24,999, **cards only**, the demo phone pre-filled, and its "Test Mode" ribbon.
+  - RZ-17 (failure path) confirmed: the card payment failed inside Razorpay; nothing was ordered, the cart and approval were kept. Found two bugs and fixed them: the failure message showed twice (Razorpay reports a failure more than once) and carried an "Approved" label.
+  - RZ-18 (closed window) confirmed after the fix: one message, Pay re-enabled, no order.
+  - Pay button disabled from the click until the outcome (PM request), confirmed.
+  - **RZ-16 (a successful payment) not yet confirmed live:** Razorpay's test bank page opens as a pop-up, which the built-in browser blocks. To be done by the PM in Chrome.
+- 283 tests pass in total.
+
 ## Observed failures, all sources
 
 | ID | Source | First failure upstream | Customer impact | Status and regression test |

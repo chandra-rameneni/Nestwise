@@ -34,7 +34,7 @@ You can cancel free of charge any time **before the order is shipped**. After it
 Minimum order: 1. Maximum per product: what's in stock, up to **⚙ 5** of the same product per order. For larger quantities, contact us (P10).
 
 ### P7. Payment
-This is a demo store: no real payment is taken. *(When Razorpay test-mode checkout is added, this section will list the test payment methods: cards, UPI, net banking and wallets.)* Cash on delivery: **⚙ not offered.**
+Payments run through **Razorpay in test mode**, by card only for now, using Razorpay's test card details. No real money moves. You pay with your own click on the Pay button; the assistant can't make payments for you. Cash on delivery: **⚙ not offered.**
 
 ### P8. Warranty
 Warranty is given by the brand, not by the store, and the product page shows it where the listing has it. The warranty is void if the product wasn't installed by the brand's service partner (P2). To claim, contact the brand's service centre with your order details; we'll help if the brand doesn't respond within **⚙ 7 days**. If a listing shows conflicting warranty details, the assistant says it's unclear rather than picking one.

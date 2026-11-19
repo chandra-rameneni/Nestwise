@@ -18,6 +18,7 @@ from typing import Optional
 
 import intent as intent_mod
 import policy
+import payments
 import qa
 import store_policy
 from catalog import STORE_DB_PATH, Catalog, ProductView, SqliteCatalog, _head_noun
@@ -123,6 +124,7 @@ class Session:
         self._pending_fit: Optional[str] = None     # B28 on a product page: asked for the shopper's space
         self._pending_override: Optional[dict] = None   # B21 option A: "over your budget, add it anyway?"
         self._closest_ids: list[str] = []           # closest options just shown (B21)
+        self._rzp_order: Optional[dict] = None      # PRD §13: Razorpay test order for the current approval
         self.tracer.event("session", "session.start", catalog_version=self.catalog.meta.get("version"),
                           llm_configured=intent_mod.llm_available())
 
@@ -232,6 +234,13 @@ class Session:
         self.history.append(("user", text))
         self.tracer.event("user", "user.message", text=text, page=self.context.get("page"),
                           product_id=self.context.get("product_id"))
+        if self._PAY_REQUEST.search(text):          # RZ1: the agent never pays; it can't, by design
+            self.tracer.event("guardrail", "payment_request_refused", status="warn", text=text)
+            has_cart = self.cart is not None and self.cart.status == "PROPOSED"
+            msg = ("I wish I could make this easier, but paying is something only you can do. "
+                   + ("When you're ready, just tap the Pay button and Razorpay will take it from there."
+                      if has_cart else "Once something's in your cart and approved, you'll see a Pay button to tap."))
+            return self._respond(Response("ANSWER", msg, reason_codes=["PAYMENT_IS_MANUAL"]))
         override, self._pending_override = self._pending_override, None
         if override is not None:                       # B21 option A: answer to "add it anyway?"
             if _YES.match(text):
@@ -966,6 +975,110 @@ class Session:
                                       product_id=product.product_id if product else None,
                                       reason_codes=["STORE_POLICY"]))
 
+    # ------------------------------------------------------------------ PRD §13: payments (Razorpay test mode)
+    _PAY_REQUEST = re.compile(
+        r"\b(pay (for (me|it|this|that)|now|it)|make (the |my )?payment|initiate (the |my )?payment|"
+        r"process (the |my )?payment|charge (my|the) (card|account)|go ahead and (pay|charge)|"
+        r"complete (the |my )?(purchase|payment|checkout|order)|place (the |my )?order( for me)?|"
+        r"(do|finish) (the )?(checkout|payment) for me|just (pay|charge))\b", re.I)
+
+    def _payment_unavailable(self, why: str) -> Response:
+        self.tracer.event("payment", "payment.unavailable", status="warn", reason=why, paused=payments.paused())
+        return self._respond(Response("BLOCKED", "Sorry, payments aren't working right now. Nothing was charged or "
+                                      "ordered, and your cart is saved. Try again in a few minutes.",
+                                      cart=self.cart, reason_codes=["PAYMENT_UNAVAILABLE"]))
+
+    def start_payment(self):
+        """The Pay button (never the agent). Returns ('checkout', options) to open Razorpay, or ('reply', Response)."""
+        self._tool_calls = 0
+        self.tracer.event("user", "user.pay_clicked", cart_id=self.cart.cart_id if self.cart else None)
+        if not payments.enabled():
+            return "reply", self.checkout()
+        if self.cart is None or self.approval is None or self.approval.status != "APPROVED":
+            if self.cart is not None and self.cart.status == "ORDERED":
+                return "reply", self.checkout()
+            return "reply", self._respond(Response("BLOCKED", "Please approve the exact cart first, then tap Pay.",
+                                                   reason_codes=["NOT_APPROVED"]))
+        rz = self._rzp_order if self._rzp_order and self._rzp_order["approval_id"] == self.approval.approval_id else None
+        if rz is not None:                                   # RZ10: maybe it was already paid
+            try:
+                pid = payments.paid_payment(rz["order"]["id"])
+            except payments.PaymentUnavailable as exc:
+                return "reply", self._payment_unavailable(str(exc))
+            if pid:
+                self.tracer.event("payment", "payment.found_already_paid", order_ref=rz["order"]["id"])
+                return "reply", self._place_paid(pid)
+        current = self._get(self.cart.product_id)
+        reasons = policy.checkout_gate(intent=self.intent, cart=self.cart, approval=self.approval, current=current)
+        self.tracer.event("policy", "checkout.gate", status="block" if reasons else "pass", cart_id=self.cart.cart_id,
+                          approval_id=self.approval.approval_id, approved_total_inr=self.approval.approved_total_inr,
+                          current_total_inr=current.total_for(self.cart.qty) if current else None, reason_codes=reasons,
+                          before="payment")
+        if reasons:
+            return "reply", self._recover(reasons, current)
+        if rz is None:
+            try:
+                order = payments.create_order(self.approval.approved_total_inr, self.approval.approval_id,
+                                              {"cart": self.cart.cart_id, "product": self.cart.product_id})
+            except payments.PaymentUnavailable as exc:
+                return "reply", self._payment_unavailable(str(exc))
+            rz = self._rzp_order = {"approval_id": self.approval.approval_id, "order": order}
+            self.tracer.event("payment", "payment.order_created", order_ref=order["id"], amount_paise=order["amount"],
+                              approval_id=self.approval.approval_id)
+        self.tracer.event("payment", "payment.window_opened", order_ref=rz["order"]["id"])
+        return "checkout", payments.checkout_options(rz["order"], self.cart.title)
+
+    def confirm_payment(self, order_id: str, payment_id: str, signature: str) -> Response:
+        """Razorpay's success message, sent on by the browser. Verified here before anything is ordered (RZ3)."""
+        rz = self._rzp_order
+        if self.cart is not None and self.cart.status == "ORDERED":
+            return self.checkout()                           # RZ4: the success arrived twice; still one order
+        ours = rz["order"]["id"] if rz and self.approval and rz["approval_id"] == self.approval.approval_id else None
+        if not ours or order_id != ours or not payments.verify_signature(ours, payment_id, signature):
+            self.tracer.event("guardrail", "payment.verification_failed", status="block",
+                              matches_our_order=bool(ours and order_id == ours))
+            return self._respond(Response("BLOCKED", "Sorry, I couldn't confirm that payment, so nothing was ordered. "
+                                          "If money left your account, it's test mode, so nothing real was charged.",
+                                          reason_codes=["PAYMENT_NOT_VERIFIED"]))
+        self.tracer.event("payment", "payment.verified", order_ref=ours)
+        return self._place_paid(payment_id)
+
+    def _place_paid(self, payment_id: str) -> Response:
+        order, created = self.orders.place(self.cart, self.approval, payment_id=payment_id)
+        self.cart.status = "ORDERED"
+        self.approval.status = "USED"
+        self.tracer.event("checkout", "order.created" if created else "order.duplicate_suppressed",
+                          order_id=order.order_id, idempotency_key=order.idempotency_key, total_inr=order.total_inr,
+                          paid=True, test_mode=True)
+        return self._respond(Response("ORDER_PLACED", (
+            f"Done! You paid {_inr(order.total_inr)} (test mode) and your order for the {self.cart.title} is placed. "
+            "Nothing will ship: this is a demo."), cart=self.cart, order=order))
+
+    def payment_not_completed(self, failed: bool, reason: str = "") -> Response:
+        self.tracer.event("payment", "payment.failed" if failed else "payment.dismissed",
+                          status="warn" if failed else "ok", reason=reason[:120])
+        msg = ("Sorry, that payment didn't go through, so nothing was charged or ordered. You can try again with Pay."
+               if failed else "No problem, nothing was charged or ordered. Tap Pay whenever you're ready.")
+        # Kind ANSWER, not APPROVED: the approval is still valid (state shows it), but no "Approved" label on a failure
+        return self._respond(Response("ANSWER", msg, cart=self.cart,
+                                      reason_codes=["PAYMENT_FAILED" if failed else "PAYMENT_DISMISSED"]))
+
+    # ------------------------------------------------------------------ RZ8: confirm a quantity above 1
+    def confirm_quantity(self) -> Response:
+        if self.cart is None or self.cart.status != "PROPOSED":
+            return self._respond(Response("BLOCKED", "There's no cart to confirm.", reason_codes=["NO_ACTIVE_CART"]))
+        self.cart.qty_confirmed = True
+        self.tracer.event("cart", "cart.qty_confirmed", cart_id=self.cart.cart_id, qty=self.cart.qty)
+        return self._respond(Response("CART_PROPOSED", f"Great, {self.cart.qty} it is: {_inr(self.cart.total_inr)} in "
+                                      "total. Tap **Approve this exact cart** when you're ready.", cart=self.cart))
+
+    def set_quantity_one(self) -> Response:
+        if self.cart is None or self.cart.status != "PROPOSED":
+            return self._respond(Response("BLOCKED", "There's no cart to change.", reason_codes=["NO_ACTIVE_CART"]))
+        pid = self.cart.product_id
+        self.tracer.event("cart", "cart.qty_changed", cart_id=self.cart.cart_id, qty_from=self.cart.qty, qty_to=1)
+        return self.select_product(pid, qty=1, from_product_page=True)
+
     # ------------------------------------------------------------------ R11: holding a conversation
     _CHALLENGE = re.compile(
         r"\b(can'?t|cant|cannot|couldn'?t) you\b|\bwhy (not|can'?t you|won'?t you|didn'?t you)\b|\bare you sure\b|"
@@ -1121,8 +1234,9 @@ class Session:
         return self._respond(Response("CART_PROPOSED", (
             f"Great choice! {item}: {_inr(p.list_price_inr * qty)}{ship} = **{_inr(self.cart.total_inr)}**. "
             f"Arrives in {p.delivery_days} days.\n"
-            + (f"You're paying for {qty} of these.\n" if qty > 1 else "") +
-            "Tap **Approve this exact cart** when you're ready. Nothing is ordered without your approval."),
+            + (f"Just checking: you're buying **{qty}** of these, {_inr(self.cart.total_inr)} in total. Is {qty} right?"
+               if qty > 1 else
+               "Tap **Approve this exact cart** when you're ready. Nothing is ordered without your approval.")),
             cart=self.cart, product_id=p.product_id))
 
     def _blocked_with_alternatives(self, p: ProductView, reasons: list[str], lead: str) -> Response:
@@ -1139,12 +1253,19 @@ class Session:
         if self.cart is None or self.cart.status != "PROPOSED":
             return self._respond(Response("BLOCKED", "There's no cart waiting for approval.",
                                           reason_codes=["NO_ACTIVE_CART"]))
+        if self.cart.qty > 1 and not self.cart.qty_confirmed:     # RZ8
+            return self._respond(Response("CLARIFY", f"Just checking: you're buying **{self.cart.qty}** of these, "
+                                          f"{_inr(self.cart.total_inr)} in total. Is {self.cart.qty} right?",
+                                          cart=self.cart, reason_codes=["CONFIRM_QUANTITY"]))
         self.approval = new_approval(self.cart, self.intent.version)
         self.tracer.event("approval", "approval.granted", approval_id=self.approval.approval_id,
                           cart_id=self.cart.cart_id, approved_total_inr=self.approval.approved_total_inr,
                           data_version=self.approval.data_version, intent_version=self.approval.intent_version)
-        return self._respond(Response("APPROVED", f"Approved for {_inr(self.approval.approved_total_inr)}. I'll "
-                                      "double-check the price and stock before placing the order.", cart=self.cart))
+        tail = (" Tap **Pay** when you're ready: I'll double-check the price and stock first, then Razorpay (test mode) "
+                "takes the payment." if payments.enabled() else
+                " I'll double-check the price and stock before placing the order.")
+        return self._respond(Response("APPROVED", f"Approved for {_inr(self.approval.approved_total_inr)}.{tail}",
+                                      cart=self.cart))
 
     def decline(self) -> Response:
         self.tracer.event("user", "user.decline", cart_id=self.cart.cart_id if self.cart else None)
@@ -1166,6 +1287,9 @@ class Session:
             return self._respond(Response("ORDER_PLACED", "This order was already placed, so I didn't create a second "
                                           "one.", cart=self.cart, order=order))
 
+        if payments.enabled():                       # with Razorpay on, an order is only placed after payment
+            return self._respond(Response("BLOCKED", "Tap **Pay** to complete your order. Nothing is ordered until "
+                                          "the payment goes through.", cart=self.cart, reason_codes=["PAYMENT_REQUIRED"]))
         current = self._get(self.cart.product_id)
         reasons = policy.checkout_gate(intent=self.intent, cart=self.cart, approval=self.approval, current=current)
         self.tracer.event("policy", "checkout.gate", status="block" if reasons else "pass",

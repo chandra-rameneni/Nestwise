@@ -1,4 +1,5 @@
-"""Exact-cart approval and idempotent MOCK checkout. No real payment or merchant call happens here."""
+"""Exact-cart approval and idempotent checkout. Orders are mock, or paid through Razorpay in TEST mode
+(payments.py, PRD §13). No real money moves."""
 from __future__ import annotations
 
 import hashlib
@@ -20,6 +21,7 @@ class Cart:
     total_inr: int
     data_version: int
     status: str = "PROPOSED"   # PROPOSED | DECLINED | ORDERED | SUPERSEDED
+    qty_confirmed: bool = False   # RZ8: a quantity above 1 must be confirmed before approval
 
 
 @dataclass
@@ -44,6 +46,8 @@ class MockOrder:
     total_inr: int
     created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds"))
     simulated: bool = True
+    payment_id: str | None = None      # Razorpay test-mode payment ID when paid (PRD §13)
+    paid: bool = False
 
 
 def new_cart(p: ProductView, qty: int = 1) -> Cart:
@@ -68,13 +72,13 @@ class MockOrderService:
     def __init__(self):
         self.orders: dict[str, MockOrder] = {}
 
-    def place(self, cart: Cart, approval: Approval) -> tuple[MockOrder, bool]:
+    def place(self, cart: Cart, approval: Approval, payment_id: str | None = None) -> tuple[MockOrder, bool]:
         """Returns (order, created). created=False means an identical earlier request was replayed."""
         key = idempotency_key(cart, approval)
         if key in self.orders:
             return self.orders[key], False
         order = MockOrder(order_id=f"MOCK-{uuid.uuid4().hex[:8].upper()}", idempotency_key=key,
                           cart_id=cart.cart_id, approval_id=approval.approval_id, product_id=cart.product_id,
-                          qty=cart.qty, total_inr=cart.total_inr)
+                          qty=cart.qty, total_inr=cart.total_inr, payment_id=payment_id, paid=payment_id is not None)
         self.orders[key] = order
         return order, True

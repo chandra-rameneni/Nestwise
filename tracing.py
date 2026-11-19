@@ -16,7 +16,7 @@ from typing import Any
 
 TRACE_DIR = Path(__file__).parent / "traces"
 
-_SECRET_KEYS = re.compile(r"(api[_-]?key|token|secret|password|card|cvv|auth)", re.I)
+_SECRET_KEYS = re.compile(r"(api[_-]?key|token|secret|password|card|cvv|auth|signature)", re.I)
 
 
 def redact(value: Any) -> Any:

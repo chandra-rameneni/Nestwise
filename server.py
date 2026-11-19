@@ -19,6 +19,7 @@ from pydantic import BaseModel
 
 import intent as intent_mod
 import llm
+import payments
 from agent import Response as AgentResponse
 from agent import Session
 from catalog import STORE_DB_PATH, ProductView, SqliteCatalog
@@ -102,16 +103,18 @@ def state(s: Session) -> dict:
     return {
         "cart": None if cart is None else {"cart_id": cart.cart_id, "product_id": cart.product_id, "title": cart.title,
                                            "qty": cart.qty, "total_inr": cart.total_inr, "status": cart.status,
+                                           "qty_confirmed": cart.qty_confirmed,
                                            "image_url": _image(s, cart.product_id),
                                            "returnable": _returnable(s, cart.product_id)},
         "approval": None if s.approval is None else {"approval_id": s.approval.approval_id,
                                                      "status": s.approval.status,
                                                      "approved_total_inr": s.approval.approved_total_inr},
         "orders": [{"order_id": o.order_id, "title": cart.title if cart and cart.cart_id == o.cart_id else o.product_id,
-                    "total_inr": o.total_inr} for o in s.orders.orders.values()],
+                    "total_inr": o.total_inr, "paid": o.paid} for o in s.orders.orders.values()],
         "constraints": s.intent.constraint_fields() if s.intent else None,
         "trace_id": s.tracer.trace_id,
         "mode": llm.provider() or "rules", "model": llm.model_name(),
+        "payments": payments.mode(), "payments_paused": payments.paused(),
         "last_extractor": next((e["attrs"].get("extractor") for e in reversed(s.tracer.events)
                                 if e["name"] == "intent.extracted"), None),
     }
@@ -205,10 +208,54 @@ def agent_select(body: Pick, response: HTTPResponse, ig_session: Optional[str] =
 @app.post("/api/agent/{action}")
 def agent_action(action: str, response: HTTPResponse, ig_session: Optional[str] = Cookie(None)):
     s = _session(ig_session, response)
-    handler = {"approve": s.approve, "decline": s.decline, "checkout": s.checkout}.get(action)
+    handler = {"approve": s.approve, "decline": s.decline, "checkout": s.checkout,
+               "confirm_qty": s.confirm_quantity, "qty_one": s.set_quantity_one}.get(action)
     if handler is None:
         raise HTTPException(404, "Unknown action")
     return agent_json(s, handler())
+
+
+print(f"[IntentGuard] payments mode at start: {payments.mode()}"
+      + (" (a live Razorpay key was found and refused: payments stay off)" if payments.mode() == "refused_live" else ""))
+
+
+# ----------------------------------------------------------------------------- payments (PRD §13)
+# Only these routes touch Razorpay, and only from the shopper's Pay click (RZ1). The secret never leaves the server.
+class PayConfirm(BaseModel):
+    razorpay_order_id: str
+    razorpay_payment_id: str
+    razorpay_signature: str
+
+
+class PayStop(BaseModel):
+    reason: str = ""
+
+
+@app.post("/api/pay/start")
+def pay_start(response: HTTPResponse, ig_session: Optional[str] = Cookie(None)):
+    s = _session(ig_session, response)
+    kind, out = s.start_payment()
+    if kind == "checkout":
+        return {"checkout": out, "state": state(s)}
+    return agent_json(s, out)
+
+
+@app.post("/api/pay/confirm")
+def pay_confirm(body: PayConfirm, response: HTTPResponse, ig_session: Optional[str] = Cookie(None)):
+    s = _session(ig_session, response)
+    return agent_json(s, s.confirm_payment(body.razorpay_order_id, body.razorpay_payment_id, body.razorpay_signature))
+
+
+@app.post("/api/pay/failed")
+def pay_failed(body: PayStop, response: HTTPResponse, ig_session: Optional[str] = Cookie(None)):
+    s = _session(ig_session, response)
+    return agent_json(s, s.payment_not_completed(failed=True, reason=body.reason))
+
+
+@app.post("/api/pay/dismissed")
+def pay_dismissed(response: HTTPResponse, ig_session: Optional[str] = Cookie(None)):
+    s = _session(ig_session, response)
+    return agent_json(s, s.payment_not_completed(failed=False))
 
 
 @app.post("/api/session/reset")

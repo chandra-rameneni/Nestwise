@@ -640,3 +640,92 @@ The existing 46 tests (intent, policy, checkout, traces) carry over. New tests:
 - Category slice: confirm Furniture, Home Furnishing, Home Décor and Kitchen & Dining, or swap one out.
 - ~~"Cheaper like this": stated requirements only, or also inferred ones?~~ Resolved 2026-11-18: stated requirements and the same product type (B24).
 - ~~What "partial matches" means~~ Resolved 2026-11-18: exact matches only; near misses appear only when there are no exact matches (B20, B21).
+
+## 12. Running it yourself: guardrails for a public repo *(drafted 2026-11-19; **parked by the PM**: the repo stays private and the demo is shared as a recorded video. Revisit before any public release.)*
+
+**Goal:** anyone can clone the repo and run the demo in a few minutes with **their own** free keys, or with no keys at all. Nobody can leak a key into the repo by accident, and a public demo can't use up the owner's free quota.
+
+**Who it's for:** a reviewer (Razorpay) who wants to try it, and a developer who wants to reuse it.
+
+| ID | Requirement |
+|---|---|
+| **G1. Keys stay out of the repo** | Keys are read only from the environment, or from a local `.env` file that git ignores. A committed `.env.example` lists every setting with **no values**. The app loads `.env` if it exists (a few lines of code, no new library); a value already set in the shell wins. |
+| **G2. Any keys, or none** | No keys: rules mode, clearly labelled (as today). Any one key works on its own (one Gemini key, two, or only OpenRouter). A wrong key (HTTP 401/403) is skipped, not retried, and shown in the setup check. |
+| **G3. Setup check** | `python check_setup.py` (and one line in the server log at start) says which providers are configured **by name only**, flags placeholder values like `YOUR_KEY`, and checks the catalog was built. It never prints a key, even partly. |
+| **G4. Secret guard** | A test scans every tracked file for key patterns (Google `AIza…`, OpenRouter `sk-or-…`, Anthropic `sk-ant-…`, any `*_API_KEY=` with a value) and fails if it finds one. An optional git pre-commit hook runs the same scan. Traces already redact anything key-like. |
+| **G5. Usage limits** | Protects the owner's free quota on a public demo. **Per chat:** at most ⚙ 40 messages, then a friendly *"You've reached this demo's message limit. Refresh the page to start a new chat."* **Whole server:** at most ⚙ 8 model calls a minute and ⚙ 200 a day; past that, messages are still answered, in **rules mode** (the badge says so), never an error. All three numbers are settings in `.env`. |
+| **G6. Input limits** | Messages over 1,000 characters are refused politely (built); at most 500 chats are kept in memory (built). Documented in the README. |
+| **G7. Privacy** | Traces (which contain what shoppers typed) stay on the machine and out of git (built). New setting `INTENTGUARD_TRACES=off` for public hosting. The README and the chat footer say: don't type personal details; this is a demo. |
+| **G8. README for strangers** | Rewritten: what it is (one paragraph and a screenshot), what's real vs simulated, **setup in 5 steps**, where to get free Gemini and OpenRouter keys and how to swap in your own, how to run tests and evals, a current demo script, a map of the docs, and credits/licences. |
+| **G9. Licence** | Code under a licence the PM chooses (⚙ MIT proposed). Data credit stays: Flipkart Products dataset, PromptCloud, CC BY-SA 4.0; the built catalog isn't committed (each user builds it from the dataset). |
+
+**Not in scope:** user accounts, hosting it on a public server (the guardrails make that safe to do later), paid keys.
+
+**Questions for the PM:**
+1. The three limits: 40 messages a chat, 8 model calls a minute, 200 a day. Keep, or change?
+2. Code licence: MIT (simple, allows reuse with credit), or something else?
+3. A screenshot in the README: yes (from the current store), or leave it for the video?
+
+## 13. Razorpay test-mode checkout *(approved by the PM 2026-11-19; built 2026-11-19: `payments.py`, Pay routes in `server.py`, `web/agent.js`)*
+
+**Goal:** replace the mock order with a **real Razorpay payment in test mode**, without weakening any safety rule. A Razorpay reviewer should see an AI shopping agent that hands the money step to Razorpay, at the exact total the shopper approved, only after the price and stock are checked again, and only on the shopper's own click.
+
+**Test mode only:** Razorpay test keys (`rzp_test_…`), test card and UPI details, no real money. Live keys are refused.
+
+### The flow
+
+| Step | Who does it | What happens |
+|---|---|---|
+| 1. Cart | Agent + code | As today: the exact product, quantity and total. |
+| 2. Approve | **Shopper** | As today: approves the exact total. |
+| 3. Re-check | Code | As today: price, stock and requirements are checked again. If anything changed, stop and ask again (B8). |
+| 4. Create a payment order | **Server only** | The server asks Razorpay to create an order for the **approved total** (in paise, INR), tagged with the approval ID. The amount always comes from the server's cart, never from the browser. One Razorpay order per approval; a retry reuses it. |
+| 5. Pay | **Shopper** | The button reads **"Pay ₹14,900 (test mode)"**. Razorpay's own checkout window opens; the shopper pays with a test card or test UPI. |
+| 6. Verify | **Server only** | Razorpay returns a payment ID and a signature. The server checks the signature with the secret key (HMAC-SHA256 of order ID + payment ID) and that the payment belongs to this approval's order. Only then is the order placed, marked **Paid (test)**. |
+| 7. Confirm | Agent | *"Done! You paid ₹14,900 (test mode) and your order for the HomeTown sofa is placed. Nothing will ship: this is a demo."* |
+
+**Quantity check (RZ8):** before step 2, a cart with more than one of a product asks the shopper to confirm the number.
+
+**If the shopper closes the payment window or the payment fails:** nothing is ordered, the approval stays valid, and *"No problem, nothing was charged or ordered. Tap Pay whenever you're ready."* Paying again reuses the same Razorpay order.
+
+### Rules
+
+| ID | Rule |
+|---|---|
+| **RZ1** | **The agent never pays** *(strengthened by the PM 2026-11-19)*. The agent has **no way** to start a payment: the payment endpoints are called only by the Pay button, and the agent has no tool for them, so no message or model reply can trigger one. Any request in chat ("pay for me", "initiate the payment", "go ahead and charge my card", "complete the purchase") gets a warm, human reply: *"I wish I could make this easier, but paying is something only you can do. When you're ready, just tap the Pay button and Razorpay will take it from there."* (extends R7). |
+| **RZ2** | **The amount is the approved amount.** The server creates the Razorpay order from the approved cart total; the browser can't change it. If the price changed, no Razorpay order is created (B8). |
+| **RZ3** | **Paid means verified.** An order is placed only after the signature check passes and the payment matches this approval's Razorpay order. A failed check places nothing, is logged as a guardrail event, and says *"Sorry, I couldn't confirm that payment, so nothing was ordered."* |
+| **RZ4** | **At most one order per approval**, even if the success message arrives twice (idempotency, as today). |
+| **RZ5** | **The secret stays on the server.** Only the Key ID reaches the browser. The secret, signatures and payment details never appear in replies, and are redacted in traces. |
+| **RZ6** | **Test keys only.** A key ID that doesn't start with `rzp_test_` is refused at start-up, and payments stay off. |
+| **RZ7** | **Works without Razorpay.** No keys: the current mock order flow, unchanged and labelled. |
+| **RZ8** | **More than one of a product is confirmed first** *(PM 2026-11-19)*. If the cart has a quantity above 1, Approve stays disabled until the shopper confirms the number: *"Just checking: you're buying **2** of these, ₹29,800 in total. Is 2 right?"* with **Yes, 2 is right** and **Change to 1** buttons. A quantity typed by mistake ("buy 22") is caught here; the store limit (P6, up to 5) still applies. |
+| **RZ9** | **When Razorpay is down or limited** *(PM 2026-11-19)*. Razorpay can be slow, down, or refuse requests (rate limits). Then: (a) creating the payment order is tried once more after a short wait; (b) if it still fails, the shopper sees *"Sorry, payments aren't working right now. Nothing was charged or ordered, and your cart is saved. Try again in a few minutes."*, and the Pay button pauses for a few minutes after repeated failures; (c) there is **no silent fallback**: the store never places an unpaid order or marks anything as paid without Razorpay's confirmation. |
+| **RZ10** | **Never "charged but no order".** If the shopper paid but the confirmation didn't reach us (network drop, browser closed), the next time they tap Pay or open the cart, the server first **asks Razorpay** whether this order was already paid. If it was, the order is placed and no second payment is taken. |
+
+### What's traced (observability)
+`payment.order_created` (Razorpay order ID, amount, approval ID) → `payment.window_opened` → `payment.succeeded` or `payment.failed` / `payment.dismissed` → `payment.verified` or `payment.verification_failed` (guardrail) → `order.created` (paid, test). The inspector shows the full chain; the Razorpay test dashboard shows the same payment.
+
+### Customer data *(PM question 2026-11-19)*
+
+**What we keep today:** nothing about the shopper. No accounts, no names, addresses, phone numbers or emails. Chats live in memory and in local traces only.
+
+**In the payment step:** Razorpay's own window asks for a phone number and email (mandatory) and the card details. **Card details go only to Razorpay, never to our server**; that's the point of using a payment gateway. We keep only Razorpay's order ID, payment ID and status. For the demo, phone and email are **pre-filled with obviously fake demo values** from settings (for example "Demo Shopper", `demo.shopper@example.com`, a Razorpay test phone number), and the shopper can edit them.
+
+**Is that okay?** For a demo, yes, and it's deliberate: collecting no personal data means nothing to leak or protect (data minimisation). A real store would need it, so it's listed as next phase below.
+
+### Out of scope (next phase)
+- **Customer accounts and sign-in**, with saved addresses and contact details (needed for real delivery and for B45).
+- **Delivery address and shipping**, order history, order tracking.
+- **Refunds** (with B45, phase two), webhooks (they need a public web address), saved cards.
+- **UPI, net banking and wallets** (cards only for now, PM 2026-11-19), live mode.
+
+### Store policy
+P7 (Payment) is updated once built: *"Payments run through Razorpay in test mode: cards, UPI, net banking and wallets, using Razorpay's test details. No real money moves. Cash on delivery isn't offered."*
+
+### Decisions (PM, 2026-11-19)
+1. After Approve, one button: **"Pay ₹X (test mode)"**.
+2. **Cards only** for now (UPI, net banking and wallets are next phase).
+3. Phone and email are **mandatory, pre-filled** with fake demo values the shopper can edit.
+
+**Note on test-mode limits:** Razorpay doesn't promise 100% uptime, and its API has rate limits; I couldn't confirm exact test-mode numbers without checking their docs, so RZ9 treats any refusal, error or timeout the same way.

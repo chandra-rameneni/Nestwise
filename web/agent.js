@@ -151,6 +151,7 @@
         "No model API key is set, so a rule-based parser understands requests and product answers are read straight from the listing.";
       const c = s.cart, a = s.approval;
       const cartEl = $("ig-cart");
+      const rzp = s.payments === "razorpay_test";
       if (c && c.status === "PROPOSED") {
         const approved = a && a.status === "APPROVED";
         cartEl.innerHTML = `<div class="cart">
@@ -158,12 +159,20 @@
             <div class="line">${esc(c.qty)} × <a href="/product/${esc(c.product_id)}">${esc(c.title)}</a></div></div>
           <div class="total">${inr(c.total_inr)}<small>incl. delivery</small></div>
           ${c.returnable === false ? `<div class="noreturn">No returns on this item. If it arrives broken, we'll replace it after a quick review.</div>` : ""}
-          <div class="status">${approved ? "Approved. I'll check the price and stock again before ordering." : "Nothing is ordered until you approve this exact total."}</div>
+          ${c.qty > 1 && !c.qty_confirmed && !approved ? `<div class="qtycheck">Just checking: you're buying <strong>${esc(c.qty)}</strong> of these. Is ${esc(c.qty)} right?
+            <div class="actions"><button class="btn small" data-act="confirm_qty" type="button">Yes, ${esc(c.qty)} is right</button>
+            <button class="btn small" data-act="qty_one" type="button">Change to 1</button></div></div>` : ""}
+          <div class="status">${approved
+            ? (rzp ? "Approved. When you tap Pay, I'll check the price and stock again, then Razorpay (test mode) takes the payment." : "Approved. I'll check the price and stock again before ordering.")
+            : "Nothing is ordered until you approve this exact total."}</div>
           <div class="actions">
-            ${approved ? `<button class="btn primary" data-act="checkout" type="button">Place order</button>`
-                       : `<button class="btn primary" data-act="approve" type="button">Approve this exact cart</button>`}
+            ${approved ? (rzp ? `<button class="btn primary" data-act="pay" type="button"${s.payments_paused ? " disabled" : ""}>Pay ${inr(c.total_inr)} (test mode)</button>`
+                              : `<button class="btn primary" data-act="checkout" type="button">Place order</button>`)
+                       : `<button class="btn primary" data-act="approve" type="button"${c.qty > 1 && !c.qty_confirmed ? " disabled" : ""}>Approve this exact cart</button>`}
             <button class="btn link" data-act="decline" type="button">Decline</button>
-          </div></div>`;
+          </div>
+          ${approved && rzp ? `<div class="testcard">Test mode: use card 4100 2800 0000 1007, any future expiry, any CVV, OTP 1234. No real money moves.</div>` : ""}
+          </div>`;
         $("ig-demo").hidden = false;
         if (!$("ig-price").value) $("ig-price").value = (c.total_inr || 0) + 500;
       } else if (c && c.status === "ORDERED") {
@@ -171,8 +180,8 @@
         cartEl.innerHTML = `<div class="cart done"><span class="tick" aria-hidden="true">✓</span>
           <div class="total">${inr(o ? o.total_inr : c.total_inr)}</div>
           <div class="line">Order placed for ${esc(c.title)}.</div>
-          <div class="status">Demo order ${esc(o ? o.order_id : "")}: no payment taken, nothing ships.</div>
-          <button class="btn link" data-act="checkout" type="button">Try placing it again (no second order is made)</button></div>`;
+          <div class="status">${o && o.paid ? "Paid with Razorpay (test mode). Nothing ships: this is a demo." : `Demo order ${esc(o ? o.order_id : "")}: no payment taken, nothing ships.`}</div>
+          ${o && o.paid ? "" : `<button class="btn link" data-act="checkout" type="button">Try placing it again (no second order is made)</button>`}</div>`;
         $("ig-demo").hidden = true;
       } else {
         cartEl.innerHTML = "";
@@ -214,6 +223,53 @@
       run(api("/api/agent/message", { text, context }), text, stagesFor("message", context));
     }
 
+    // PRD §13: the Pay button is the only way a payment starts (RZ1). The server creates the Razorpay order from the
+    // approved total; this page only opens Razorpay's own window and passes its answer back for verification.
+    function loadRazorpay() {
+      if (window.Razorpay) return Promise.resolve();
+      return new Promise((ok, fail) => {
+        const sc = document.createElement("script");
+        sc.src = "https://checkout.razorpay.com/v1/checkout.js";
+        sc.onload = ok; sc.onerror = () => fail(new Error("Couldn't load Razorpay"));
+        document.head.appendChild(sc);
+      });
+    }
+    let paying = false;
+    function setPayBusy(busy) {                // the Pay button is disabled from the click until the outcome
+      paying = busy;
+      el.querySelectorAll('[data-act="pay"]').forEach((b) => { b.disabled = busy; if (busy) b.textContent = "Opening Razorpay…"; });
+    }
+    async function pay() {
+      if (paying) return;
+      setPayBusy(true);
+      addUser("Pay");
+      let res;
+      try {
+        res = await api("/api/pay/start", {});
+      } catch (e) {
+        msgs.insertAdjacentHTML("beforeend", `<div class="msg bot">${esc(e.message)}</div>`); scroll(); return;
+      }
+      if (!res.checkout) { setPayBusy(false); addBot(res); renderState(res.state); scroll(); return; }
+      try { await loadRazorpay(); } catch (e) {
+        run(api("/api/pay/failed", { reason: "checkout script didn't load" }), null, ["Cancelling the payment"]); return;
+      }
+      // Razorpay can report one failure more than once, and keeps its window open for a retry; the shopper may
+      // then succeed. So: report a failure once, and only if the window closes without a success.
+      let succeeded = false, failure = null;
+      const done = (promise, stages) => { paying = false; run(promise, null, stages); };
+      const opts = Object.assign({}, res.checkout, {
+        handler: (r) => { succeeded = true; done(api("/api/pay/confirm", r), ["Verifying the payment", "Placing your order"]); },
+        modal: { ondismiss: () => {
+          if (succeeded) return;
+          if (failure) done(api("/api/pay/failed", { reason: failure }), ["Checking what happened"]);
+          else done(api("/api/pay/dismissed", {}), ["Closing the payment"]);
+        } },
+      });
+      const rzp = new window.Razorpay(opts);
+      rzp.on("payment.failed", (r) => { failure = (r && r.error && (r.error.reason || r.error.code)) || "failed"; });
+      rzp.open();
+    }
+
     $("ig-form").addEventListener("submit", (e) => {
       e.preventDefault();
       const input = $("ig-input"), text = input.value.trim();
@@ -229,7 +285,8 @@
       if (!t) return;
       if (t.dataset.say) send(t.dataset.say);
       else if (t.dataset.select) run(api("/api/agent/select", { product_id: t.dataset.select }), "Add to cart: " + t.dataset.title, stagesFor("select", context));
-      else if (t.dataset.act) run(api("/api/agent/" + t.dataset.act), { approve: "Approve", checkout: "Place order", decline: "Decline" }[t.dataset.act], stagesFor(t.dataset.act, context));
+      else if (t.dataset.act === "pay") pay();
+      else if (t.dataset.act) run(api("/api/agent/" + t.dataset.act), { approve: "Approve", checkout: "Place order", decline: "Decline", confirm_qty: "Yes, that's right", qty_one: "Change to 1" }[t.dataset.act], stagesFor(t.dataset.act, context));
     });
     $("ig-setprice").addEventListener("click", async () => {
       if (!state || !state.cart) return;
