@@ -1092,7 +1092,7 @@ class Session:
             ln.qty_confirmed = True
         self.tracer.event("cart", "cart.qty_confirmed", cart_id=self.cart.cart_id,
                           quantities={ln.product_id: ln.qty for ln in self.cart.lines})
-        what = (f"{self.cart.qty} it is" if len(self.cart.lines) == 1 else "Quantities confirmed")
+        what = (f"{self.cart.qty} it is" if len(self.cart.lines) == 1 else "quantities confirmed")
         return self._respond(Response("CART_PROPOSED", f"Great, {what}: {_inr(self.cart.total_inr)} in total. Tap "
                                       "**Approve this exact cart** when you're ready.", cart=self.cart))
 
@@ -1345,6 +1345,17 @@ class Session:
     _THE_NOUN = re.compile(r"\b(?:the|that|this|my)\s+([a-z][a-z-]{2,})\b")
     _ASKING = re.compile(r"\?|^\s*(tell me|describe|what|how|is|are|does|do|can|will|which)\b|\bmore about\b")
 
+    @staticmethod
+    def _same_kind(it: Optional[Intent], p: ProductView) -> bool:
+        """O-69: is this product the kind the shopper's requirements were stated for? No stated kind counts as yes."""
+        if it is None or not (it.product_query or it.category):
+            return True
+        where = f"{p.title} {p.category_path or ''} {p.category or ''}".lower()
+        head = intent_mod.head_term(it.product_query)
+        if head and head in where:
+            return True
+        return bool(it.category) and str(it.category).replace("_", " ") in where
+
     def _named_product(self, low: str):
         """O-68: "tell me about the sofa" names one product the shopper already has in front of them. The cart wins
         (that's the one they chose), then the product being discussed, then the results just shown. If several match,
@@ -1420,7 +1431,12 @@ class Session:
         p = self._get(product_id)
         if p is None:
             return self._respond(Response("BLOCKED", "I couldn't find that product.", reason_codes=["PRODUCT_NOT_FOUND"]))
-        e = policy.evaluate(self.intent if not waived else Intent(intent="BUY_THIS"), p, qty)
+        rules_for = self.intent
+        if waived or (from_product_page and not self._same_kind(self.intent, p)):
+            # O-69: a sofa search's "3 seats, 200 cm" must not block buying a bed. Requirements belong to the kind of
+            # product they were stated for (R9); a different kind is checked for stock and a known price only.
+            rules_for = Intent(intent="BUY_THIS")
+        e = policy.evaluate(rules_for, p, qty)
         if not e.eligible:
             self.tracer.event("policy", "cart.denied", status="block", product_id=product_id, reasons=e.reason_codes)
             if from_product_page:
@@ -1429,7 +1445,7 @@ class Session:
                 return self._blocked_with_alternatives(p, e.reason_codes, lead)
             return self._respond(Response("BLOCKED", f"Sorry, that one doesn't work anymore: {_reasons(e.reason_codes)}.",
                                           reason_codes=e.reason_codes))
-        checked_with = None if (waived or from_product_page and not self._has_requirements(self.intent)) \
+        checked_with = None if (rules_for is not self.intent or from_product_page and not self._has_requirements(self.intent)) \
             else self.intent.model_copy(deep=True)
         if self.cart is not None and self.cart.status == "PROPOSED":
             line = self.cart.line(p.product_id)

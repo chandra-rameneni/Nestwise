@@ -82,3 +82,20 @@ def test_o68_a_new_search_is_still_a_search():
     s.handle_message(SOFA_ASK, {"page": "listing"})
     r = s.handle_message("show me beds", {"page": "listing"})
     assert r.kind == "RECOMMEND"
+
+
+# ---------------------------------------------------------------- O-69 (video prep dry run, 2026-11-20)
+def test_o69_sofa_requirements_dont_block_buying_a_bed():
+    s = Session()
+    ids = [x["product_id"] for x in s.handle_message(SOFA_ASK, {"page": "listing"}).recommendations]
+    s.select_product(ids[0])
+    r = s.handle_message("buy this", BED)
+    assert r.kind == "CART_PROPOSED" and len(s.cart.lines) == 2 and "seats" not in r.message
+
+
+def test_o69_requirements_still_apply_to_the_same_kind():
+    s = Session()
+    r = s.handle_message(SOFA_ASK, {"page": "listing"})
+    ruled_out = r.rejected[0]["product_id"]                   # a sofa that failed the shopper's checks
+    r = s.handle_message("buy this", {"page": "product", "product_id": ruled_out})
+    assert r.kind == "BLOCKED"

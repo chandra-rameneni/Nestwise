@@ -71,6 +71,7 @@
       <div class="dock-head">
         <div class="row"><h2>${esc(title)}</h2>
           <div class="right"><span class="mode" id="ig-mode">…</span>
+            <button class="newchat" id="ig-new" type="button" title="Start a new conversation (clears the chat and cart)">New chat</button>
             <button class="close" id="ig-close" type="button" aria-label="Close the assistant">×</button></div></div>
         <p>${esc(intro)}</p>
       </div>
@@ -293,6 +294,10 @@
     });
     $("ig-suggest").innerHTML = suggestions.map((s) => `<button type="button" data-say="${esc(s)}">${esc(s)}</button>`).join("");
     $("ig-close").addEventListener("click", close);
+    $("ig-new").addEventListener("click", async () => {      // a reload keeps the chat (cookie); this starts over
+      await fetch("/api/session/reset", { method: "POST" });
+      location.reload();
+    });
     document.addEventListener("keydown", (e) => { if (e.key === "Escape" && el.classList.contains("open")) close(); });
     el.addEventListener("click", (e) => {
       const t = e.target.closest("button");

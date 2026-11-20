@@ -15,7 +15,8 @@ The reviewer should finish thinking: *this person ships AI the way a great PM sh
 - **Record early in the day** while the free AI quota is fresh. The chat badge must say **AI mode**.
 - **Chrome**, not the built-in browser, so Razorpay's bank pop-up opens.
 - **Have these open in tabs:** the store, `/dashboard`, `STORE_POLICY.md`, `EVALS.md`, `evals/OBSERVATIONS.md`, `AI_PM_SKILLS.md`.
-- **Prepare the payment:** set the Razorpay test keys and have the test card ready. Reload the store before each scene.
+- **Prepare the payment:** set the Razorpay test keys and have the test card ready.
+- **Start each scene with a clean chat:** click **New chat** at the top of the chat panel. Reloading the page does *not* clear the chat.
 - **Energy:** speak like you're showing a friend something you're proud of. Short sentences. Smile on the numbers.
 
 ## Scenes
@@ -54,7 +55,7 @@ The reviewer should finish thinking: *this person ships AI the way a great PM sh
 
 ### 6. An approval flow that protects you (2:25–3:05)
 - **Product moment:**
-  1. Add a sofa, then **buy this** on a second product, and press **+** on one item.
+  1. From the sofa search, click **Add to cart** on the HomeTown sofa. Then open the bed page and say **buy this**. Press **+** on the sofa.
   2. Approve. Open **Demo: simulate a change** and click **Change price**.
   3. Press **Pay**.
 - **Say:** "Two products, quantities, one cart. I approve the exact total. Now the price changes behind my back. And checkout stops cold: it names what changed, charges nothing, and asks me to approve again. That's the trust contract, enforced in code."
