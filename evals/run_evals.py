@@ -12,6 +12,7 @@ agent.response event of the turn whose outcome didn't match.
 from __future__ import annotations
 
 import json
+import os
 import re
 import sys
 from datetime import datetime, timezone
@@ -161,6 +162,11 @@ def main() -> int:
         return 2
     path = Path(sys.argv[1]) if len(sys.argv) > 1 else SCENARIOS
     spec = json.loads(path.read_text())
+    # Audit finding A (2026-11-20): the scenarios measure the agent, with mock checkout. Real Razorpay keys in the
+    # shell changed 4 results, so they are switched off for every run, and the results file says so.
+    keys_in_shell = bool(os.environ.get("RAZORPAY_KEY_ID") or os.environ.get("RAZORPAY_KEY_SECRET"))
+    os.environ.pop("RAZORPAY_KEY_ID", None)
+    os.environ.pop("RAZORPAY_KEY_SECRET", None)
     import llm
     mode = llm.provider() or "rules"
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
@@ -195,6 +201,13 @@ def main() -> int:
         extractors = [e["attrs"].get("extractor", "") for e in s.tracer.events if e["name"] == "intent.extracted"]
         answers = [(e["attrs"].get("result") or {}).get("method") for e in s.tracer.events
                    if e["name"] in ("answer_about_product", "answer_store_policy")]
+        # Which AI models answered in this scenario (2026-11-20: free quotas run out mid-run and the chain switches
+        # models, so each scenario records its own models instead of one model per run).
+        # extractor is "llm:<model>:<prompt>", and a model name can itself contain ":" (e.g. "...:free")
+        models = sorted({x[4:].rsplit(":", 1)[0] for x in extractors if x.startswith("llm:") and x.count(":") >= 2}
+                        | {(e["attrs"].get("result") or {}).get("model") for e in s.tracer.events
+                           if e["name"] in ("answer_about_product", "answer_store_policy")
+                           and (e["attrs"].get("result") or {}).get("method") == "llm"} - {None})
         first_bad = None
         if failures:
             t = next((f["turn"] for f in failures if f["turn"] is not None), None)
@@ -209,6 +222,9 @@ def main() -> int:
                         "ai_readings": sum(x.startswith("llm") for x in extractors),
                         "rules_fallbacks": sum(x == "rules_fallback" for x in extractors),
                         "ai_answers": sum(a == "llm" for a in answers), "answers": len(answers),
+                        "models": models,
+                        "answered_by": ("rules only" if not models else models[0] if len(models) == 1
+                                        else "mixed: " + " + ".join(models)),
                         "failures": failures, "trace_id": s.tracer.trace_id, "first_failing_event": first_bad,
                         "replies": [None if r is None else {"kind": r.kind, "message": r.message[:300],
                                                             "cited": r.cited_fields} for r in responses],
@@ -220,6 +236,7 @@ def main() -> int:
     core = [r for r in results if not r["probe"]]
     probes = [r for r in results if r["probe"]]
     summary = {"run_at": stamp, "mode": mode, "model": llm.model_name(),
+               "payment_keys": "off for this run" + (" (set in the shell, ignored)" if keys_in_shell else ""),
                "scenarios_version": spec["version"], "total": n, "passed": passed,
                "core": f"{sum(r['passed'] for r in core)}/{len(core)}",
                "probes": f"{sum(r['passed'] for r in probes)}/{len(probes)}", "skipped_for_mode": skipped,
@@ -232,9 +249,15 @@ def main() -> int:
     readings = summary["ai_readings"] + summary["rules_fallbacks"]
     summary["ai_share"] = round(summary["ai_readings"] / readings, 2) if readings else None
     summary["valid_ai_run"] = None if mode == "rules" else bool(readings and summary["ai_share"] >= 0.8)
-    out = RESULTS / f"{stamp}_{mode}" if path == SCENARIOS else RESULTS / f"{stamp}_{path.stem}_{mode}"
+    by_model: dict[str, dict] = {}
+    for r in results:
+        b = by_model.setdefault(r["answered_by"], {"scenarios": [], "passed": 0})
+        b["scenarios"].append(r["id"])
+        b["passed"] += r["passed"]
+    summary["by_model"] = by_model
+    out =RESULTS / f"{stamp}_{mode}" if path == SCENARIOS else RESULTS / f"{stamp}_{path.stem}_{mode}"
     out.with_suffix(".json").write_text(json.dumps(summary, indent=1, ensure_ascii=False))
-    lines = [f"# Eval run {stamp} ({mode} mode)", "",
+    lines = [f"# Eval run {stamp} ({mode} mode)", "", f"Payment keys: {summary['payment_keys']} (checkout is mock).", "",
              f"**{passed}/{n} scenarios passed.** Core: {summary['core']} · Probes (phrasings the rules weren't written for): {summary['probes']}."
              + (f" Skipped in {mode} mode: {len(skipped)}." if skipped else "")
              + (f" Who answered: {summary['ai_readings']} messages read by the AI, {summary['rules_fallbacks']} fell "
@@ -243,14 +266,22 @@ def main() -> int:
              + ("" if summary["valid_ai_run"] in (None, True) else
                 f"\n\n**NOT A VALID AI-MODE RUN:** only {summary['ai_readings']} of {readings} message readings came "
                 "from the AI (needs 80%). Most answers came from the rules, so this measures the rules, not the AI."),
-             "",
-             "| Scenario | Group | Probe | Result | What failed | Trace (first failing event) |", "|---|---|---|---|---|---|"]
+             ""]
+    if mode != "rules":
+        lines += ["## Score by model", "", "| Answered by | Scenarios | Passed | Score |", "|---|---|---|---|"]
+        for name, b in sorted(by_model.items(), key=lambda kv: -len(kv[1]["scenarios"])):
+            k = len(b["scenarios"])
+            lines.append(f"| {name} | {k} | {b['passed']} | {round(100 * b['passed'] / k)}% |")
+        lines += ["", "\"mixed\" means the free quota ran out mid-scenario and another model took over. "
+                  "\"rules only\" means no AI answered in that scenario.", ""]
+    lines += ["| Scenario | Group | Probe | Answered by | Result | What failed | Trace (first failing event) |",
+              "|---|---|---|---|---|---|---|"]
     for r in results:
         what = "; ".join(f"turn {f['turn']}: {f['check']}" for f in r["failures"]) or ""
         tr = f"`{r['trace_id']}`" + (f" #{r['first_failing_event']['seq']}" if r["first_failing_event"] else "")
-        lines.append(f"| {r['id']} | {r['group']} | {'yes' if r['probe'] else ''} | {'pass' if r['passed'] else '**FAIL**'} | {what} | {tr if not r['passed'] else ''} |")
+        lines.append(f"| {r['id']} | {r['group']} | {'yes' if r['probe'] else ''} | {r['answered_by']} | {'pass' if r['passed'] else '**FAIL**'} | {what} | {tr if not r['passed'] else ''} |")
     out.with_suffix(".md").write_text("\n".join(lines) + "\n")
-    print("\n".join(lines[:3]))
+    print("\n".join(lines[:5]))
     for r in results:
         if not r["passed"]:
             print(f"FAIL {r['id']}: " + "; ".join(f["check"] for f in r["failures"]))

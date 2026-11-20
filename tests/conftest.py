@@ -23,6 +23,14 @@ def traces_to_tmp(monkeypatch, tmp_path_factory):
 
 
 @pytest.fixture(autouse=True)
+def no_real_payment_keys(monkeypatch):
+    """Audit finding A (2026-11-20): with real Razorpay test keys in the shell, 17 tests failed, because checkout
+    then asks for payment. Tests never use the shell's keys (and never call Razorpay); the payment tests set fakes."""
+    for var in ("RAZORPAY_KEY_ID", "RAZORPAY_KEY_SECRET"):
+        monkeypatch.delenv(var, raising=False)
+
+
+@pytest.fixture(autouse=True)
 def rules_only(monkeypatch, request):
     """Deterministic tests use the rules extractor unless a test is marked `llm`."""
     if "llm" not in request.keywords:

@@ -218,3 +218,33 @@ Approved by the PM. Scenarios: `evals/model_mode_scenarios.json` (AI mode only).
 - **Fixed:** all four. `tests/test_manual_check.py` replays the PM's whole chat as one conversation; 5 tests pass, and undoing the fixes makes 3 fail.
 - **Lesson:** our scripted evals start every scenario fresh; real shoppers have long chats. Long-chat replays are now part of the tests.
 - Full suite: 338 pass, 2 skipped.
+
+## AI-mode run, 2026-11-20 (quotas reset)
+
+Paced run with AI on: 15 s between messages, 20 s per message to reach a backup model, 60 s cool-down after a limit, payment keys off. Each scenario now records which model answered it (`answered_by` in the results).
+
+| Suite | Score | AI share of message readings | Valid AI run? | Results |
+|---|---|---|---|---|
+| Model-mode MM-01 to MM-05 | 5/5 | 3 of 3 | Yes | `evals/results/20261120T042958Z_model_mode_scenarios_gemini.md` |
+| **Held-out round 2** | **22/24 (92%)** | 9 of 9; 13 of 16 answers by the AI | **Yes** | `evals/results/20261120T043129Z_heldout_round2_gemini.md` |
+| Round 2 (written with the code) | 42/43 | 13 of 19 (68%) | No (under 80%) | `evals/results/20261120T044036Z_round2_scenarios_gemini.md` |
+| **All 72** | **69/72 (96%)** | | | |
+
+**Score by model (all 72 scenarios):**
+
+| Answered by | Scenarios | Passed |
+|---|---|---|
+| nvidia/nemotron-3.5-super-vl:free (OpenRouter) | 38 | 37 |
+| gemini-3.5-flash (Gemini keys 1 and 2) | 11 | 10 |
+| gemini-2.5-flash (Gemini keys 1 and 2) | 1 | 1 |
+| Rules only (no AI call needed, or every model busy) | 22 | 21 |
+| Ollama cloud (gpt-oss:20b, gemma4:31b) | 0 | n/a: HTTP 402, the account has no credits |
+
+- **Gemini ran out fast:** 122 "limit reached" (429) replies across both keys, so OpenRouter's Nemotron answered most of round 2.
+- **Fails:** H2-C03 (gemini-3.5-flash asked a question instead of giving the 12 cm answer: a real miss); R2-N04 and H2-N02 (the reply didn't say "sorry": wording checks, see audit finding E).
+- **Not yet done:** the before/after comparison on the old code (Option B).
+
+## Fixes, 2026-11-20
+
+- **Audit finding A fixed:** tests and eval runs no longer depend on whether Razorpay keys are set in the shell. With keys set: 341 tests pass, 2 skipped; rules-mode scores unchanged (39/39, 36/36, 40/40, 14/14, 30/30; held-out 26/35, 22/25, 14/15). Each results file now states "Payment keys: off".
+- **O-68 fixed:** "tell me about the sofa" after choosing a sofa now describes the sofa in the cart instead of repeating the search; with two sofas shown and none chosen, it asks which one. 3 new tests.

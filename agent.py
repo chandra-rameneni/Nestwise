@@ -1316,6 +1316,16 @@ class Session:
                 return self._respond(Response("CLARIFY", f"Which one do you mean? I showed: {names}.",
                                               reason_codes=["FROM_SHOWN_RESULTS"]))
             return None
+        named = self._named_product(low)                 # O-68: "tell me about the sofa" -> the sofa in the cart
+        if isinstance(named, Response):
+            return named
+        if named is not None:
+            self.current = named
+            if re.search(r"\b(tell me (more )?about|describe|details|what about|more about)\b", low):
+                return self._describe(named)
+            r = self._answer(named, Intent(intent="PRODUCT_QUESTION", question=text))
+            r.reason_codes = list(dict.fromkeys(r.reason_codes + ["FROM_SHOWN_RESULTS"]))
+            return r
         if not self.shown and self.current is None:
             return None
         as_product = intent_mod.extract_rules(text, {"page": "product"}, None)
@@ -1330,6 +1340,56 @@ class Session:
             return r
         names = "; ".join(f"{i}. {p.title}" for i, p in enumerate(self.shown, 1))
         return self._respond(Response("CLARIFY", f"Which one do you mean? I showed: {names}.",
+                                      reason_codes=["FROM_SHOWN_RESULTS"]))
+
+    _THE_NOUN = re.compile(r"\b(?:the|that|this|my)\s+([a-z][a-z-]{2,})\b")
+    _ASKING = re.compile(r"\?|^\s*(tell me|describe|what|how|is|are|does|do|can|will|which)\b|\bmore about\b")
+
+    def _named_product(self, low: str):
+        """O-68: "tell me about the sofa" names one product the shopper already has in front of them. The cart wins
+        (that's the one they chose), then the product being discussed, then the results just shown. If several match,
+        ask which one instead of searching again. Returns a product, a CLARIFY response, or None."""
+        if not self._ASKING.search(low):
+            return None
+        nouns = [n.rstrip("s") for n in self._THE_NOUN.findall(low)
+                 if n not in ("one", "first", "second", "third", "last", "store", "cart", "price", "same", "other")]
+        if not nouns:
+            return None
+        def matching(ps):
+            seen, out = set(), []
+            for p in ps:
+                if p is not None and p.product_id not in seen and any(
+                        n in f"{p.title} {p.category_path or p.category}".lower() for n in nouns):
+                    seen.add(p.product_id)
+                    out.append(p)
+            return out
+        in_cart = matching([self._get(ln.product_id) for ln in (self.cart.lines if self.cart else [])])
+        if len(in_cart) == 1:
+            return in_cart[0]
+        pool = in_cart or matching([self.current] if self.current else []) or matching(self.shown or [])
+        if len(pool) == 1:
+            return pool[0]
+        if len(pool) > 1:
+            names = "; ".join(f"{i}. {p.title}" for i, p in enumerate(pool, 1))
+            return self._respond(Response("CLARIFY", f"Which one do you mean? {names}.",
+                                          reason_codes=["FROM_SHOWN_RESULTS"]))
+        return None
+
+    def _describe(self, p: ProductView) -> Response:
+        """A short, plain summary of one product (O-68), from its own details only."""
+        f = qa.listing_fields(p)
+        total = (p.list_price_inr or 0) + (p.shipping_inr or 0)
+        parts = [f"Here's the {p.title}: ₹{total:,} including delivery, arriving in about {p.delivery_days} days."]
+        for field in ("Seating Capacity", "Width", "Primary Material", "Primary Color"):
+            if field not in f:
+                continue
+            seats = re.search(r"\d+", str(f[field])) if field == "Seating Capacity" else None
+            parts.append(f"It seats {seats.group()}." if seats else f"It comes in {str(f[field]).lower()}."
+                         if field == "Primary Color" else qa._say(p, field, f[field]))
+        parts.append("Ask me anything else about it.")
+        cited = ["Price", "Delivery time"] + [x for x in ("Seating Capacity", "Width", "Primary Material", "Primary Color")
+                                               if x in f]
+        return self._respond(Response("ANSWER", " ".join(parts), cited_fields=cited, product_id=p.product_id,
                                       reason_codes=["FROM_SHOWN_RESULTS"]))
 
     # ------------------------------------------------------------------ cart / approval / checkout

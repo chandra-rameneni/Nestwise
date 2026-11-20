@@ -2,7 +2,7 @@
 
 **Every fact cited. Every requirement checked. Nothing bought without your OK. And it's tested like an exam, not just shown in a nice demo.**
 
-Most shopping assistants compete on how much they can do. Nestwise competes on **whether you can trust what it says and buys**. It's a working home-and-living store with **2,043 real products**, an AI assistant on every page, and **real Razorpay test payments**. It was built in **3 days, PRD first, with ₹0 spent on AI**.
+Most shopping assistants compete on how much they can do. Nestwise competes on **whether you can trust what it says and buys**. It's a working home-and-living store with **2,043 real products**, an AI assistant on every page, and **real Razorpay test payments**. It was built in **4 days, PRD first, with ₹0 spent on AI**.
 
 ## How we know it works
 
@@ -15,14 +15,14 @@ Before building each feature, we wrote down **real shopper chats and the right r
 | Chat naturally: follow-ups like "in meters", store policy questions, a human tone | **6 of 30 → 30 of 30** |
 | The product manager's own hands-on test in the live store, as one long real conversation | **10 of 14 → 14 of 14**, after same-day fixes |
 
-**Can it handle questions we didn't prepare for?** We also kept **85 extra test chats aside**, worded differently, and never used them while building. The assistant's first try on those is reported as-is in [EVALS.md](EVALS.md), so nobody can tune it to look good.
+**Can it handle questions we didn't prepare for?** We also kept **85 extra test chats aside**, worded differently, and never used them while building. On the newest set, **with the AI switched on, it got 22 of 24 right (92%)**, with the AI handling every message. First tries are reported as-is in [EVALS.md](EVALS.md), so nobody can tune it to look good.
 
 **More proof, in plain words**
 
 | | What it means |
 |---|---|
-| **338** automatic checks | Every time the code changes, 338 checks rerun in seconds to make sure nothing that worked before broke. |
-| **67** problems found and logged | Each time testing caught the assistant doing something wrong, it was written down with what should have happened, then fixed or tracked ([evals/OBSERVATIONS.md](evals/OBSERVATIONS.md)). |
+| **341** automatic checks | Every time the code changes, 341 checks rerun in seconds to make sure nothing that worked before broke. |
+| **68** problems found and logged | Each time testing caught the assistant doing something wrong, it was written down with what should have happened, then fixed or tracked ([evals/OBSERVATIONS.md](evals/OBSERVATIONS.md)). |
 | **23** AI product practices | The product management methods used to build it, each linked to where it lives in the code ([AI_PM_SKILLS.md](AI_PM_SKILLS.md)). |
 | **₹24,999** test payment | A full purchase completed through Razorpay's test mode, with the payment verified before the order was created. |
 | **₹0** spent on AI | It runs on free AI models (Gemini, OpenRouter). If they're busy, simple built-in rules answer instead, so the store keeps working. |
@@ -49,7 +49,7 @@ This is an AI product management case study as much as a store. Every step left 
 5. **Refuse flattering numbers.** When the free AI models ran out of daily quota, the backup rules quietly answered instead. So the test runner now labels any "AI" result where the AI answered less than 80% of messages as **not valid**.
 6. **Let the AI understand, let code decide.** The AI reads what you mean and writes the reply. Prices, sizes, stock, store rules, approvals and payments are handled by fixed code the AI can't override.
 7. **Catch known AI mistakes in code.** When the AI was caught guessing ("not waterproof") or misreading "do you sell mobiles?", a code check was added to stop it, with a test that replays the AI's real wrong answer.
-8. **Turn every real failure into a test.** 67 problems found in hands-on testing were logged and fixed or tracked. On the live store, the dashboard's "Add to eval candidates" button saves any bad reply for the next round of tests.
+8. **Turn every real failure into a test.** 68 problems found in hands-on testing were logged and fixed or tracked. On the live store, the dashboard's "Add to eval candidates" button saves any bad reply for the next round of tests.
 9. **Write decisions down.** 13 product decisions, each with the reasoning ([DECISIONS.md](DECISIONS.md)).
 
 ## Facts behind the numbers
@@ -73,7 +73,7 @@ This is an AI product management case study as much as a store. Every step left 
 | Round 2: conversation, policy, voice | 6/30 | **30/30** | 1/15 → 14/15 |
 | PM's manual check in the store (one long chat) | 10/14 (71%) | **14/14 (100%)** | — |
 
-**Still to prove, said plainly:** the scores above were measured with the backup rules. A clean measurement with the AI switched on hasn't been possible yet, because the free AI models kept hitting their daily limits. It's next on the list.
+**With the AI switched on** (2026-11-20, paced so the free models wouldn't hit their limits): **22 of 24 (92%)** on the newest set kept aside, with the AI handling every message, and 5 of 5 on the tests written for known AI mistakes. Most answers came from Nvidia's Nemotron (via OpenRouter) and Google's Gemini. **Still to measure:** the same AI-on test on the code from before the latest round, to show the improvement with the AI on.
 
 Full results and result files: [EVALS.md](EVALS.md). Every failure: [evals/OBSERVATIONS.md](evals/OBSERVATIONS.md).
 
@@ -99,7 +99,7 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 .venv/bin/python -I -c "import kagglehub; kagglehub.dataset_download('PromptCloudHQ/flipkart-products', output_dir='data/raw/flipkart')"
 .venv/bin/python build_catalog.py          # writes data/catalog.sqlite and data/CATALOG_REPORT.md
 .venv/bin/uvicorn server:app --port 8000   # store at http://localhost:8000, dashboard at /dashboard
-.venv/bin/python -m pytest -q              # 338 passed, 2 skipped (they need a paid Claude key, which this project doesn't use)
+.venv/bin/python -m pytest -q              # 341 passed, 2 skipped (they need a paid Claude key, which this project doesn't use)
 .venv/bin/python evals/run_evals.py evals/round2_scenarios.json   # run one eval set
 ```
 

@@ -7,6 +7,7 @@ Providers (decided 2026-11-18, no paid key):
   1. Google Gemini, if GEMINI_API_KEY is set (free tier; usually the most reliable free option), then a second
      Gemini key from another account, if GEMINI_API_KEY_2 is set.
   2. OpenRouter free models, if OPENROUTER_API_KEY is set (often "rate-limited upstream", so several are tried).
+  3. Ollama cloud, if OLLAMA_API_KEY is set (needs credits on the account; HTTP 402 otherwise).
 - None configured: rules mode.
 
 INTENTGUARD_LLM=off forces rules mode. Keys are read from the environment only, never from files in the repo.
@@ -37,6 +38,10 @@ OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 # Checked 2026-11-18: both Gemma models returned 429 ("rate-limited upstream") and Nemotron answered.
 OPENROUTER_FREE_MODELS = ["nvidia/nemotron-3.5-super-vl:free", "google/gemma-4-31b-it:free",
                           "google/gemma-4-26b-a4b-it:free"]
+# Ollama's cloud API (OLLAMA_API_KEY), same request shape. Added 2026-11-20 as the 4th fallback. Checked that day:
+# the key returns HTTP 402 ("add usage credits"), so it only answers if the account has credits.
+OLLAMA_URL = "https://ollama.com/v1/chat/completions"
+OLLAMA_MODELS = ["gpt-oss:20b", "gemma4:31b"]
 
 
 # O-29: a demo can't wait 25 seconds. The whole chain gets one time budget, and a model that says "limit reached"
@@ -84,6 +89,8 @@ def _chain() -> list[tuple[str, str, str, list[str]]]:
         chosen = os.environ.get("INTENTGUARD_OPENROUTER_MODEL")
         out.append(("openrouter", OPENROUTER_URL, os.environ["OPENROUTER_API_KEY"],
                     [chosen] if chosen else OPENROUTER_FREE_MODELS))
+    if os.environ.get("OLLAMA_API_KEY"):
+        out.append(("ollama", OLLAMA_URL, os.environ["OLLAMA_API_KEY"], OLLAMA_MODELS))
     return out
 
 
@@ -183,8 +190,10 @@ def _free_chain(system: str, user: str, schema: Type[T], max_tokens: int, meta: 
                 tried.append(f"{prov}/{m}: HTTP {r.status_code}")
                 if r.status_code in (429, 500, 502, 503, 504):
                     _cool(name)
-                if r.status_code in (401, 403):
-                    break                           # this provider's key is wrong: skip its other models
+                if r.status_code in (401, 402, 403):
+                    for other in models:            # wrong key or no credits (402): rest this whole provider
+                        _cool(f"{prov}/{other}")
+                    break
                 continue
             data = r.json()
             try:

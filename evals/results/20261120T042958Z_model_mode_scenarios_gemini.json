@@ -1,0 +1,164 @@
+{
+ "run_at": "20261120T042958Z",
+ "mode": "gemini",
+ "model": "gemini-2.5-flash",
+ "scenarios_version": "mm-1",
+ "total": 5,
+ "passed": 5,
+ "core": "5/5",
+ "probes": "0/0",
+ "skipped_for_mode": [],
+ "ai_readings": 3,
+ "rules_fallbacks": 0,
+ "ai_answers": 1,
+ "answers": 2,
+ "results": [
+  {
+   "id": "MM-01",
+   "group": "no_guess",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 0,
+   "ai_answers": 0,
+   "answers": 1,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_c99e0f382258",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "Sorry, I don't have that detail for this bed. I can tell you about its size, materials, delivery or care.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "MM-02",
+   "group": "no_guess",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 0,
+   "ai_answers": 1,
+   "answers": 1,
+   "models": [
+    "gemini-2.5-flash"
+   ],
+   "answered_by": "gemini-2.5-flash",
+   "failures": [],
+   "trace_id": "tr_ee9fdf799fb3",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "Sorry, I don't have that detail for this filling. I can tell you about its size, materials, delivery or care.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "MM-03",
+   "group": "not_sold",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 1,
+   "rules_fallbacks": 0,
+   "ai_answers": 0,
+   "answers": 0,
+   "models": [
+    "gemini-3.5-flash"
+   ],
+   "answered_by": "gemini-3.5-flash",
+   "failures": [],
+   "trace_id": "tr_186177f388ef",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "NOT_AVAILABLE",
+     "message": "Sorry, we don't sell mobiles. We're a home and living store: home décor, kitchen & dining, home furnishing and furniture.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "MM-04",
+   "group": "not_sold",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 1,
+   "rules_fallbacks": 0,
+   "ai_answers": 0,
+   "answers": 0,
+   "models": [
+    "gemini-3.5-flash"
+   ],
+   "answered_by": "gemini-3.5-flash",
+   "failures": [],
+   "trace_id": "tr_1d5c386cbe48",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "NOT_AVAILABLE",
+     "message": "Sorry, we don't sell laptops. We're a home and living store: home décor, kitchen & dining, home furnishing and furniture.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "MM-05",
+   "group": "guard",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 1,
+   "rules_fallbacks": 0,
+   "ai_answers": 0,
+   "answers": 0,
+   "models": [
+    "gemini-3.5-flash"
+   ],
+   "answered_by": "gemini-3.5-flash",
+   "failures": [],
+   "trace_id": "tr_7654c7d5acf0",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 52 sofas to choose from. Here are the 3 best value:\n• Durian BID/32625/A/1 Leatherette 1 Seater Sofa: ₹9,209 total, arrives in 8 days, 1 seat, 56 cm wide.\n• Durian BID/32626/A/1 Leatherette 1 Seater Sofa: ₹11,375 total, arrives in 9 days, 1 seat, 80 cm wide.\n• Durian BID/32625/A/2 Leather",
+     "cited": []
+    }
+   ],
+   "notes": null
+  }
+ ],
+ "ai_share": 1.0,
+ "valid_ai_run": true,
+ "by_model": {
+  "rules only": {
+   "scenarios": [
+    "MM-01"
+   ],
+   "passed": 1
+  },
+  "gemini-2.5-flash": {
+   "scenarios": [
+    "MM-02"
+   ],
+   "passed": 1
+  },
+  "gemini-3.5-flash": {
+   "scenarios": [
+    "MM-03",
+    "MM-04",
+    "MM-05"
+   ],
+   "passed": 3
+  }
+ }
+}
