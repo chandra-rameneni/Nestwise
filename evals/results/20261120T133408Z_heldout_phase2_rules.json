@@ -1,0 +1,726 @@
+{
+ "run_at": "20261120T133408Z",
+ "mode": "rules",
+ "model": null,
+ "payment_keys": "off for this run",
+ "scenarios_version": "heldout2-1",
+ "total": 25,
+ "passed": 22,
+ "core": "22/25",
+ "probes": "0/0",
+ "skipped_for_mode": [],
+ "ai_readings": 0,
+ "rules_fallbacks": 34,
+ "ai_answers": 0,
+ "answers": 1,
+ "results": [
+  {
+   "id": "H2-01",
+   "group": "search_first",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 1,
+   "ai_answers": 0,
+   "answers": 0,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_b8958777b490",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 52 couchs to choose from. Here are the 3 best value:\n• Durian BID/32625/A/1 Leatherette 1 Seater Sofa: ₹9,209 total, arrives in 8 days, 1 seat, 56 cm wide.\n• Durian BID/32626/A/1 Leatherette 1 Seater Sofa: ₹11,375 total, arrives in 9 days, 1 seat, 80 cm wide.\n• Durian BID/32625/A/2 Leathe",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-02",
+   "group": "search_first",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 1,
+   "ai_answers": 0,
+   "answers": 0,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_7664fb000d62",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 7 sofas are under ₹15,000. Here are the 3 best value:\n• Durian BID/32625/A/1 Leatherette 1 Seater Sofa: ₹9,209 total, arrives in 8 days, 1 seat, 56 cm wide.\n• Durian BID/32626/A/1 Leatherette 1 Seater Sofa: ₹11,375 total, arrives in 9 days, 1 seat, 80 cm wide.\n• Durian BID/32625/A/2 Leath",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-03",
+   "group": "reply",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 2,
+   "ai_answers": 0,
+   "answers": 0,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_07e3e24a7290",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 52 sofas to choose from. Here are the 3 best value:\n• Durian BID/32625/A/1 Leatherette 1 Seater Sofa: ₹9,209 total, arrives in 8 days, 1 seat, 56 cm wide.\n• Durian BID/32626/A/1 Leatherette 1 Seater Sofa: ₹11,375 total, arrives in 9 days, 1 seat, 80 cm wide.\n• Durian BID/32625/A/2 Leather",
+     "cited": []
+    },
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 13 sofas fit what you need. Here are the 3 best value:\n• Durian BID/32625/A/2 Leatherette 2 Seater Sofa: ₹12,220 total, arrives in 8 days, 2 seats, 110 cm wide.\n• ARRA Engineered Wood 2 Seater Sofa: ₹15,900 total, arrives in 5 days, 2 seats.\n• ARRA Solid Wood 2 Seater Sofa: ₹16,900 total,",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-04",
+   "group": "reply",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 2,
+   "ai_answers": 0,
+   "answers": 0,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_743e6dc20fee",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 52 sofas to choose from. Here are the 3 best value:\n• Durian BID/32625/A/1 Leatherette 1 Seater Sofa: ₹9,209 total, arrives in 8 days, 1 seat, 56 cm wide.\n• Durian BID/32626/A/1 Leatherette 1 Seater Sofa: ₹11,375 total, arrives in 9 days, 1 seat, 80 cm wide.\n• Durian BID/32625/A/2 Leather",
+     "cited": []
+    },
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 19 sofas fit what you need. Here are the 3 best value:\n• Durian BID/32625/A/1 Leatherette 1 Seater Sofa: ₹9,209 total, arrives in 8 days, 1 seat, 56 cm wide.\n• Durian BID/32626/A/1 Leatherette 1 Seater Sofa: ₹11,375 total, arrives in 9 days, 1 seat, 80 cm wide.\n• Durian BID/32625/A/2 Leat",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-05",
+   "group": "reply",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 2,
+   "ai_answers": 0,
+   "answers": 0,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_b17c69b4fec4",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 52 sofas to choose from. Here are the 3 best value:\n• Durian BID/32625/A/1 Leatherette 1 Seater Sofa: ₹9,209 total, arrives in 8 days, 1 seat, 56 cm wide.\n• Durian BID/32626/A/1 Leatherette 1 Seater Sofa: ₹11,375 total, arrives in 9 days, 1 seat, 80 cm wide.\n• Durian BID/32625/A/2 Leather",
+     "cited": []
+    },
+    {
+     "kind": "UNSUPPORTED",
+     "message": "Sorry, I didn't quite get that. I can help you find and buy things for your home.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-06",
+   "group": "show",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 2,
+   "ai_answers": 0,
+   "answers": 0,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_9aa239764371",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 16 sofas fit what you need. Here are the 3 best value:\n• ARRA Solid Wood 3 Seater Sofa: ₹14,500 total, arrives in 9 days, 3 seats.\n• ARRA Solid Wood 3 Seater Sofa: ₹14,800 total, arrives in 10 days, 3 seats.\n• HomeTown CIAZ Fabric 3 Seater Sectional: ₹14,900 total, arrives in 9 days, 3 se",
+     "cited": []
+    },
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 16 sofas fit what you need. Here are the 3 best value:\n• ARRA Solid Wood 3 Seater Sofa: ₹14,500 total, arrives in 9 days, 3 seats.\n• ARRA Solid Wood 3 Seater Sofa: ₹14,800 total, arrives in 10 days, 3 seats.\n• HomeTown CIAZ Fabric 3 Seater Sectional: ₹14,900 total, arrives in 9 days, 3 se",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-07",
+   "group": "show",
+   "probe": false,
+   "passed": false,
+   "ai_readings": 0,
+   "rules_fallbacks": 2,
+   "ai_answers": 0,
+   "answers": 0,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [
+    {
+     "turn": 1,
+     "check": "kind: expected RECOMMEND, got NOT_AVAILABLE"
+    },
+    {
+     "turn": 1,
+     "check": "message should not contain \"We don't sell\""
+    }
+   ],
+   "trace_id": "tr_63d0b6538c29",
+   "first_failing_event": {
+    "seq": 13,
+    "name": "agent.response",
+    "response_kind": "NOT_AVAILABLE"
+   },
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 2 sets to choose from. Here they are:\n• Handiana Solid Wood Dining Set: ₹17,999 total, arrives in 9 days, 2 seats.\n• Handiana Solid Wood Dining Set: ₹24,999 total, arrives in 5 days, 4 seats.\nTell me your budget or anything else that matters, and I'll narrow these down.",
+     "cited": []
+    },
+    {
+     "kind": "NOT_AVAILABLE",
+     "message": "Sorry, we don't sell founds. We're a home and living store: home décor, kitchen & dining, home furnishing and furniture.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-08",
+   "group": "store",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 1,
+   "ai_answers": 0,
+   "answers": 0,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_93fa9972a7fc",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "We have 2,043 products: 761 in home décor, 639 in kitchen & dining, 479 in home furnishing, 164 in furniture.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-09",
+   "group": "help",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 1,
+   "ai_answers": 0,
+   "answers": 0,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_0a1f428dfd8e",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "I can find products in this store (home décor, kitchen & dining, home furnishing and furniture), answer questions about a product, and place an order once you approve it. Try: “Find a 3-seater sofa under ₹30,000”, “Bedsheets under ₹1,000”, or on a product page, “How wide is it?”",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-10",
+   "group": "store",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 1,
+   "ai_answers": 0,
+   "answers": 0,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_50ccae99bc3d",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "We have 798 brands. The biggest are Raymond (47), Lal Haveli (33), Durian (29), Digilight (27), Pet Club51 (25).",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-11",
+   "group": "store",
+   "probe": false,
+   "passed": false,
+   "ai_readings": 0,
+   "rules_fallbacks": 1,
+   "ai_answers": 0,
+   "answers": 1,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [
+    {
+     "turn": 0,
+     "check": "reason codes should include STORE_INFO, got ['STORE_POLICY']"
+    }
+   ],
+   "trace_id": "tr_c3edd0dbdfc8",
+   "first_failing_event": {
+    "seq": 5,
+    "name": "agent.response",
+    "response_kind": "ANSWER"
+   },
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "Payments run through Razorpay in test mode, by card only for now, using Razorpay's test card details. No real money moves.",
+     "cited": [
+      "P7 Payment"
+     ]
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-12",
+   "group": "brand",
+   "probe": false,
+   "passed": false,
+   "ai_readings": 0,
+   "rules_fallbacks": 1,
+   "ai_answers": 0,
+   "answers": 0,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [
+    {
+     "turn": 0,
+     "check": "kind: expected RECOMMEND, got NOT_AVAILABLE"
+    },
+    {
+     "turn": 0,
+     "check": "every recommendation should be a lal"
+    }
+   ],
+   "trace_id": "tr_91a608cdb6d6",
+   "first_failing_event": {
+    "seq": 5,
+    "name": "agent.response",
+    "response_kind": "NOT_AVAILABLE"
+   },
+   "replies": [
+    {
+     "kind": "NOT_AVAILABLE",
+     "message": "Sorry, we don't sell lal pets. We're a home and living store: home décor, kitchen & dining, home furnishing and furniture.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-13",
+   "group": "brand",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 1,
+   "ai_answers": 0,
+   "answers": 0,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_659b57f555f9",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 27 products to choose from. Here are the 3 best value:\n• Durian BID/32625/A/1 Leatherette 1 Seater Sofa: ₹9,209 total, arrives in 8 days, 1 seat, 56 cm wide.\n• Durian BID/32626/A/1 Leatherette 1 Seater Sofa: ₹11,375 total, arrives in 9 days, 1 seat, 80 cm wide.\n• Durian BID/32625/A/2 Leat",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-14",
+   "group": "material",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 1,
+   "ai_answers": 0,
+   "answers": 0,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_b5a3b4104c3b",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 57 products to choose from. Here are the 3 best value:\n• Geol Wooden Wet and Dry Broom: ₹84 total, arrives in 4 days.\n• SKY TRENDS GIFT Square Wood Coaster: ₹248 total, arrives in 3 days.\n• Miracle Furnishings Gemstone Wooden Box Showpiece  -  3.5 cm: ₹248 total, arrives in 3 days, 11 cm ",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-15",
+   "group": "material",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 2,
+   "ai_answers": 0,
+   "answers": 0,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_0cbf7ae1d52f",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 13 sofas fit what you need. Here are the 3 best value:\n• Durian BID/32625/A/2 Leatherette 2 Seater Sofa: ₹12,220 total, arrives in 8 days, 2 seats, 110 cm wide.\n• ARRA Engineered Wood 2 Seater Sofa: ₹15,900 total, arrives in 5 days, 2 seats.\n• ARRA Solid Wood 2 Seater Sofa: ₹16,900 total,",
+     "cited": []
+    },
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 4 sofas fit what you need. Here are the 3 best value:\n• ARRA Engineered Wood 2 Seater Sofa: ₹15,900 total, arrives in 5 days, 2 seats.\n• ARRA Fabric 2 Seater Sectional: ₹17,999 total, arrives in 8 days, 2 seats.\n• Durian Fabric 2 Seater Sofa: ₹54,795 total, arrives in 7 days, 2 seats, 150",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-16",
+   "group": "shown",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 1,
+   "ai_answers": 0,
+   "answers": 0,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_b8304ce102c5",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 2 sofas fit what you need. Here they are:\n• HomeTown CIAZ Fabric 3 Seater Sectional: ₹14,900 total, arrives in 9 days, 3 seats, 181.5 cm wide.\n• Durian BID/32625/A/3 Leatherette 3 Seater Sofa: ₹17,680 total, arrives in 5 days, 3 seats, 168 cm wide.\nTell me which one you'd like, and I'll s",
+     "cited": []
+    },
+    {
+     "kind": "CART_PROPOSED",
+     "message": "Great choice! Durian BID/32625/A/3 Leatherette 3 Seater Sofa: ₹17,680 + free delivery = **₹17,680**. Arrives in 5 days.\nTap **Approve this exact cart** when you're ready. Nothing is ordered without your approval.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-17",
+   "group": "shown",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 1,
+   "ai_answers": 0,
+   "answers": 0,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_fbb8c969ff54",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 2 sofas fit what you need. Here they are:\n• HomeTown CIAZ Fabric 3 Seater Sectional: ₹14,900 total, arrives in 9 days, 3 seats, 181.5 cm wide.\n• Durian BID/32625/A/3 Leatherette 3 Seater Sofa: ₹17,680 total, arrives in 5 days, 3 seats, 168 cm wide.\nTell me which one you'd like, and I'll s",
+     "cited": []
+    },
+    {
+     "kind": "ANSWER",
+     "message": "Durian BID/32625/A/3 Leatherette 3 Seater Sofa: It comes unassembled (flat-packed).",
+     "cited": [
+      "Delivery Condition"
+     ]
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-18",
+   "group": "shown",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 1,
+   "ai_answers": 0,
+   "answers": 0,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_e2adf6b6d870",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 2 sofas fit what you need. Here they are:\n• HomeTown CIAZ Fabric 3 Seater Sectional: ₹14,900 total, arrives in 9 days, 3 seats, 181.5 cm wide.\n• Durian BID/32625/A/3 Leatherette 3 Seater Sofa: ₹17,680 total, arrives in 5 days, 3 seats, 168 cm wide.\nTell me which one you'd like, and I'll s",
+     "cited": []
+    },
+    {
+     "kind": "CART_PROPOSED",
+     "message": "Great choice! HomeTown CIAZ Fabric 3 Seater Sectional: ₹14,900 + free delivery = **₹14,900**. Arrives in 9 days.\nTap **Approve this exact cart** when you're ready. Nothing is ordered without your approval.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-19",
+   "group": "several",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 1,
+   "ai_answers": 0,
+   "answers": 0,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_6e92597a2dc7",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "Curtains:\n• Shopgalore Polyester Brown Abstract Eyelet Window & Door Curtain — ₹275\n• SWHF Cotton Maroon Striped Eyelet Window & Door Curtain — ₹348\n• Ville Style Polyester Maroon Floral Eyelet Door Curtain — ₹448\n\nCushion covers:\n• Adt Saral Printed Cushions Cover — ₹129\n• Adt Saral Printed Cushion",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-20",
+   "group": "closest",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 1,
+   "ai_answers": 0,
+   "answers": 0,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_0f2c3282461c",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "NO_ELIGIBLE",
+     "message": "Sorry, none of our sofas meet everything you asked for. These come closest:\n• Durian BID/32625/A/1 Leatherette 1 Seater Sofa: ₹9,209 (₹6,209 over your budget)\n• Durian BID/32626/A/1 Leatherette 1 Seater Sofa: ₹11,375 (₹8,375 over your budget)\n• Durian BID/32625/A/2 Leatherette 2 Seater Sofa: ₹12,220",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-21",
+   "group": "vague",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 1,
+   "ai_answers": 0,
+   "answers": 0,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_73979484c443",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "CLARIFY",
+     "message": "Happy to check! How much space do you have for it? Then I'll tell you which ones fit.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-22",
+   "group": "quantity",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 1,
+   "ai_answers": 0,
+   "answers": 0,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_765c1c3f7753",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "CART_PROPOSED",
+     "message": "Great choice! 3 × HomeTown CIAZ Fabric 3 Seater Sectional: ₹44,700 + free delivery = **₹44,700**. Arrives in 9 days.\nJust checking: you're buying **3** of these, ₹44,700 in total. Is 3 right?",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-23",
+   "group": "stuck",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 3,
+   "ai_answers": 0,
+   "answers": 0,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_fa1683d7aaf6",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "CLARIFY",
+     "message": "Happy to help! What kind of product do you have in mind, for example a sofa, a bedsheet or a dining set?",
+     "cited": []
+    },
+    {
+     "kind": "NOT_AVAILABLE",
+     "message": "Sorry, we don't sell ideas. We're a home and living store: home décor, kitchen & dining, home furnishing and furniture.",
+     "cited": []
+    },
+    {
+     "kind": "UNSUPPORTED",
+     "message": "Sorry, I didn't quite get that. I can help you find and buy things for your home.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-24",
+   "group": "stuck",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 2,
+   "ai_answers": 0,
+   "answers": 0,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_5bdf2ac75aab",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 52 sofas to choose from. Here are the 3 best value:\n• Durian BID/32625/A/1 Leatherette 1 Seater Sofa: ₹9,209 total, arrives in 8 days, 1 seat, 56 cm wide.\n• Durian BID/32626/A/1 Leatherette 1 Seater Sofa: ₹11,375 total, arrives in 9 days, 1 seat, 80 cm wide.\n• Durian BID/32625/A/2 Leather",
+     "cited": []
+    },
+    {
+     "kind": "RECOMMEND",
+     "message": "Sorry about that. 52 sofas to choose from. Here are the 3 best value:\n• Durian BID/32625/A/1 Leatherette 1 Seater Sofa: ₹9,209 total, arrives in 8 days, 1 seat, 56 cm wide.\n• Durian BID/32626/A/1 Leatherette 1 Seater Sofa: ₹11,375 total, arrives in 9 days, 1 seat, 80 cm wide.\n• Durian BID/32625/A/2 ",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "H2-25",
+   "group": "lookalike",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 1,
+   "ai_answers": 0,
+   "answers": 0,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_adf1d47cbe49",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "NOT_AVAILABLE",
+     "message": "Sorry, we don't sell mobile phones. We're a home and living store: home décor, kitchen & dining, home furnishing and furniture.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  }
+ ],
+ "ai_share": 0.0,
+ "valid_ai_run": null,
+ "by_model": {
+  "rules only": {
+   "scenarios": [
+    "H2-01",
+    "H2-02",
+    "H2-03",
+    "H2-04",
+    "H2-05",
+    "H2-06",
+    "H2-07",
+    "H2-08",
+    "H2-09",
+    "H2-10",
+    "H2-11",
+    "H2-12",
+    "H2-13",
+    "H2-14",
+    "H2-15",
+    "H2-16",
+    "H2-17",
+    "H2-18",
+    "H2-19",
+    "H2-20",
+    "H2-21",
+    "H2-22",
+    "H2-23",
+    "H2-24",
+    "H2-25"
+   ],
+   "passed": 22
+  }
+ }
+}

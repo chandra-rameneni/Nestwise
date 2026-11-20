@@ -7,6 +7,7 @@ are redacted when written, and this module only reads a fixed set of fields.
 from __future__ import annotations
 
 import json
+import os
 import re
 import time
 from collections import Counter
@@ -188,7 +189,8 @@ def summary(trace_dir: Optional[Path] = None, period: str = "7d", include_eval: 
     }
 
 
-CANDIDATES = Path(__file__).parent / "evals" / "candidates.jsonl"
+# INTENTGUARD_CANDIDATES_FILE keeps a rehearsal store's clicks out of the real file (demo/record_walkthrough.py).
+CANDIDATES = Path(os.environ.get("INTENTGUARD_CANDIDATES_FILE") or Path(__file__).parent / "evals" / "candidates.jsonl")
 
 
 def add_candidate(item: dict, path: Path = CANDIDATES) -> dict:

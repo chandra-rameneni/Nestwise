@@ -248,3 +248,16 @@ Paced run with AI on: 15 s between messages, 20 s per message to reach a backup 
 
 - **Audit finding A fixed:** tests and eval runs no longer depend on whether Razorpay keys are set in the shell. With keys set: 341 tests pass, 2 skipped; rules-mode scores unchanged (39/39, 36/36, 40/40, 14/14, 30/30; held-out 26/35, 22/25, 14/15). Each results file now states "Payment keys: off".
 - **O-68 fixed:** "tell me about the sofa" after choosing a sofa now describes the sofa in the cart instead of repeating the search; with two sofas shown and none chosen, it asks which one. 3 new tests.
+
+## Closing the test blind spots, 2026-11-20 (`tests/test_coverage_gaps.py`)
+
+O-71 to O-73 were found by the PM, not by tests, because the tests followed the happy path: one well-documented product (the bed), single questions, and no browser. Four new kinds of tests:
+
+| Kind | What it checks | Result |
+|---|---|---|
+| Product variety | 6 common questions on 40 products (10 per category): grounded, human wording, never treated as a search | 235/240 first run; the 5 misses were raw "Field: value." replies (O-74), fixed |
+| "Did it answer the real question?" | Width has a measurement, delivery has days, installation is addressed, no unsupported waterproof verdict, material is named | Included above |
+| Follow-ups | Answering "Which one do you mean?" by name, position or number; ignoring it; room size after "will it fit?"; "no" to a quantity check | 9/9 |
+| Browser | Chat and sofa cards look the same after clicking through to a product page (Chrome, rules-mode copy of the store) | Pass; proven to fail with the O-72 fix switched off |
+
+Full suite: **602 passed, 2 skipped**. Eval sets unchanged (39/39, 36/36, 40/40, 14/14, 30/30; held-out 26/35, 22/25, 14/15).

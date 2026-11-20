@@ -183,7 +183,11 @@ def _say(p: ProductView, field_name: str, value: str) -> str:
                 else f"Sorry, the {thing} isn't included.")
     if yes_no:
         return f"{'Yes' if v.lower() == 'yes' else 'No'}, {field_name.lower()}: {v.lower()}."
-    return f"{field_name}: {v}."
+    # Any other field, said as a sentence rather than a spec-sheet line ("Outer Material: Cotton." reads like a
+    # table; coverage tests, 2026-11-20).
+    if field_name.lower().endswith("material"):
+        return f"Its {field_name.lower()} is {v.lower()}."
+    return f"Its {field_name[0].lower() + field_name[1:]} is {v}."
 
 
 def _spec_lookup(p: ProductView, question: str) -> QAResult:
@@ -314,8 +318,28 @@ def format_length(mm: float, unit: str) -> str:
 _PHOTO_Q = re.compile(r"\b(images?|photos?|pictures?|pics?)\b", re.I)
 
 
+_INSTALL_Q = re.compile(r"\b(install|installation|installed|assembl|assemble|set (it )?up|fit (it|this) for me|"
+                        r"put (it|this) together|technician|carpenter)", re.I)
+
+
 def answer_about_product(p: ProductView, question: str, extracted: intent_mod.IntentExtraction,
                          use_llm: Optional[bool] = None, history: Optional[list[str]] = None) -> QAResult:
+    res = _answer_core(p, question, extracted, use_llm, history)
+    # O-73: "does it come with installation?" means "will someone install it?". If this product's details say
+    # nothing about installation, say so plainly and point to the store's rule, instead of only "it's flat-packed".
+    fields = listing_fields(p)
+    if (_INSTALL_Q.search(question or "") and "Installation & Demo Details" not in fields
+            and not re.search(r"install", res.answer, re.I)):
+        import store_policy
+        lead = "" if res.status == "not_in_listing" else res.answer.rstrip() + " "
+        res = QAResult(lead + "Its details don't say whether someone will install it for you. Free installation is "
+                       "only included when a product's page says so, so I can't promise it for this one.",
+                       [c for c in res.cited_fields] + [store_policy.label("P2")], res.method, meta=res.meta)
+    return res
+
+
+def _answer_core(p: ProductView, question: str, extracted: intent_mod.IntentExtraction,
+                 use_llm: Optional[bool] = None, history: Optional[list[str]] = None) -> QAResult:
     checked = _requirement_check(p, extracted)
     if checked:
         return checked

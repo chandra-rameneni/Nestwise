@@ -75,6 +75,9 @@ def detail(p: ProductView) -> dict:
 def agent_json(s: Session, r: AgentResponse) -> dict:
     payload = _agent_payload(r)
     s.last_reply = payload                  # lets the panel restore the latest reply with its buttons
+    # O-72: every reply as it was shown (cards, checks, sources), so moving to another page restores the chat
+    # exactly, not as plain text. Kept to the last 30.
+    s.ui_replies = (getattr(s, "ui_replies", []) + [payload])[-30:]
     return payload | {"state": state(s)}
 
 
@@ -232,7 +235,7 @@ class PriceChange(BaseModel):
 def agent_state(response: HTTPResponse, ig_session: Optional[str] = Cookie(None)):
     s = _session(ig_session, response)
     return state(s) | {"history": [{"role": r, "text": t} for r, t in s.history],
-                       "last_reply": getattr(s, "last_reply", None)}
+                       "last_reply": getattr(s, "last_reply", None), "replies": getattr(s, "ui_replies", [])}
 
 
 @app.post("/api/agent/message")

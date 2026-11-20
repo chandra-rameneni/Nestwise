@@ -332,8 +332,11 @@
     fetch("/api/agent/state").then((r) => r.json()).then((s) => {
       const hist = s.history.slice(-30);
       const lastBot = hist.map((h) => h.role).lastIndexOf("assistant");
+      const saved = (s.replies || []).slice();             // O-72: replies as they were shown, in order
       hist.forEach((h, i) => {
-        if (h.role === "user") addUser(h.text);
+        if (h.role === "user") { addUser(h.text); return; }
+        const k = saved.findIndex((r) => r.message === h.text);
+        if (k >= 0) { addBot(saved[k]); saved.splice(0, k + 1); }
         else if (i === lastBot && s.last_reply && s.last_reply.message === h.text) addBot(s.last_reply);
         else msgs.insertAdjacentHTML("beforeend", `<div class="msg bot">${format(h.text)}</div>`);
       });

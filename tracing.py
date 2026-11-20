@@ -6,6 +6,7 @@ The Agent Inspector (web/inspector.html) renders these real events; nothing is h
 from __future__ import annotations
 
 import json
+import os
 import re
 import time
 import uuid
@@ -14,7 +15,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-TRACE_DIR = Path(__file__).parent / "traces"
+# INTENTGUARD_TRACE_DIR lets a rehearsal copy of the store (demo/record_walkthrough.py) keep its chats out of the
+# real dashboard.
+TRACE_DIR = Path(os.environ.get("INTENTGUARD_TRACE_DIR") or Path(__file__).parent / "traces")
 
 _SECRET_KEYS = re.compile(r"(api[_-]?key|token|secret|password|card|cvv|auth|signature)", re.I)
 

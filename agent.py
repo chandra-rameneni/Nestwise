@@ -131,6 +131,8 @@ class Session:
         self._closest_ids: list[str] = []           # closest options just shown (B21)
         self._rzp_order: Optional[dict] = None      # PRD §13: Razorpay test order for the current approval
         self._pending_qty: Optional[dict] = None    # B26: "Shall I make it 5?"
+        self._pending_which: Optional[str] = None   # O-71: the question behind "Which one do you mean?"
+        self._which_q: Optional[str] = None
         self.tracer.event("session", "session.start", catalog_version=self.catalog.meta.get("version"),
                           llm_configured=intent_mod.llm_available(), source=source,
                           payments=payments.mode())
@@ -156,6 +158,9 @@ class Session:
             self._no_progress = self._no_progress + 1 if self._is_no_progress(r) else 0
         if r.kind != "CLARIFY":
             self._last_clarify = None
+        if r.kind == "CLARIFY" and r.message.startswith("Which one do you mean?"):
+            asked = next((m for role, m in reversed(self.history) if role == "user"), None)
+            self._pending_which = self._which_q or asked   # keep the original question if we ask twice
         if r.kind in ("RECOMMEND", "NO_ELIGIBLE") and self._turn_labels:
             r.reason_codes = list(dict.fromkeys(r.reason_codes + self._turn_labels))
         self._turn_labels = []
@@ -249,6 +254,7 @@ class Session:
                    + ("When you're ready, just tap the Pay button and Razorpay will take it from there."
                       if has_cart else "Once something's in your cart and approved, you'll see a Pay button to tap."))
             return self._respond(Response("ANSWER", msg, reason_codes=["PAYMENT_IS_MANUAL"]))
+        self._which_q, self._pending_which = self._pending_which, None
         pend_qty, self._pending_qty = self._pending_qty, None
         if pend_qty is not None and _YES.match(text):        # "Shall I make it 5?" -> yes
             return self.set_line_quantity(pend_qty["pid"], pend_qty["qty"])
@@ -479,6 +485,21 @@ class Session:
                 names = "; ".join(f"{i}. {p.title}" for i, p in enumerate(self.shown, 1))
                 return self._respond(Response("CLARIFY", f"Which one do you mean? I showed: {names}.",
                                               reason_codes=["FROM_SHOWN_RESULTS"]))
+        if self._which_q and target is None and len(hits) != 1:
+            n = re.fullmatch(r"\s*(?:the\s+|number\s+|no\.?\s*)?([1-9])(?:st|nd|rd|th)?(?:\s+one)?\s*[.!]?\s*", low)
+            if n and int(n.group(1)) <= len(self.shown):
+                target = self.shown[int(n.group(1)) - 1]
+        if target is not None and self._which_q:
+            # O-71: the answer to "Which one do you mean?" ("I meant the Ciaz", "the first one", "2"): answer the
+            # question that was asked, about that product. Never a new search, never a silent add to cart.
+            question, self._which_q = self._which_q, None
+            self.current = target
+            self.tracer.event("agent", "which_one_resolved", product_id=target.product_id, question=question)
+            if re.search(r"\b(tell me (more )?about|describe|details|what about|more about)\b", question.lower()):
+                return self._describe(target)
+            result = qa.answer_about_product(target, question, Intent(intent="PRODUCT_QUESTION", question=question))
+            return self._respond(Response("ANSWER", f"{target.title}: {result.answer}", cited_fields=result.cited_fields,
+                                          product_id=target.product_id, reason_codes=["FROM_SHOWN_RESULTS"]))
         if target is None or not (ref or self._Q.search(low) or self._TAKE.search(low)):
             return None
         self.tracer.event("agent", "shown_reference", product_id=target.product_id, text=text)

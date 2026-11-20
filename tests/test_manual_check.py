@@ -1,6 +1,7 @@
 """O-61 to O-64, from the PM's manual check (evals/MANUAL_CHECK.md, 2026-11-19). The PM's real chat is replayed as
 ONE long conversation, because O-61 and O-62 only happened after earlier messages. The AI is faked as out of quota."""
 import pytest
+from pathlib import Path
 
 import intent as I
 import llm
@@ -99,3 +100,49 @@ def test_o69_requirements_still_apply_to_the_same_kind():
     ruled_out = r.rejected[0]["product_id"]                   # a sofa that failed the shopper's checks
     r = s.handle_message("buy this", {"page": "product", "product_id": ruled_out})
     assert r.kind == "BLOCKED"
+
+
+# ---------------------------------------------------------------- O-71 (PM screenshot, 2026-11-20)
+@pytest.mark.parametrize("answer,which", [("I meant the Ciaz", 0), ("I meant Ciaz", 0), ("the second one", 1),
+                                          ("1", 0), ("Durian", 1)])
+def test_o71_the_answer_to_which_one_answers_the_original_question(answer, which):
+    s = Session()
+    shown = s.handle_message("Find a 3-seater sofa under ₹30,000 that fits 200 cm", {"page": "listing"}).recommendations
+    r = s.handle_message("does it come with installation?", {"page": "listing"})
+    assert r.kind == "CLARIFY" and r.message.startswith("Which one do you mean?")
+    r = s.handle_message(answer, {"page": "listing"})
+    assert r.kind == "ANSWER" and "don't sell" not in r.message and s.cart is None
+    assert r.product_id == shown[which]["product_id"]
+
+
+def test_o71_the_pending_question_lasts_one_turn_only():
+    s = Session()
+    s.handle_message("Find a 3-seater sofa under ₹30,000 that fits 200 cm", {"page": "listing"})
+    s.handle_message("does it come with installation?", {"page": "listing"})
+    s.handle_message("show me beds", {"page": "listing"})
+    r = s.handle_message("1", {"page": "listing"})
+    assert s._pending_which is None and "installation" not in r.message.lower() and "assembled" not in r.message.lower()
+
+
+# ---------------------------------------------------------------- O-72, O-73 (PM screenshots, 2026-11-20)
+def test_o72_moving_pages_restores_every_reply_with_its_cards():
+    from fastapi.testclient import TestClient
+    import server
+    c = TestClient(server.app)
+    c.post("/api/agent/message", json={"text": SOFA_ASK, "context": {"page": "listing"}})
+    c.post("/api/agent/message", json={"text": "do you sell mobiles?", "context": {"page": "listing"}})
+    st = c.get("/api/agent/state").json()
+    assert len(st["replies"]) == 2 and st["replies"][0]["recommendations"]     # the sofa cards come back too
+    js = (Path(__file__).resolve().parents[1] / "web" / "agent.js").read_text()
+    assert "s.replies" in js
+
+
+def test_o73_installation_question_when_the_details_are_silent():
+    CIAZ = "SOFEB7MHGWTHZFVJ"
+    r = Session().handle_message("does it come with installation?", {"page": "product", "product_id": CIAZ})
+    assert "don't say whether someone will install it" in r.message and "P2 Installation" in r.cited_fields
+
+
+def test_o73_installation_answer_unchanged_when_the_details_cover_it():
+    r = Session().handle_message("does it come with installation?", BED)
+    assert "free of cost" in r.message and "don't say whether" not in r.message
