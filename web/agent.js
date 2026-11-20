@@ -78,7 +78,7 @@
       <div class="msgs" id="ig-msgs" aria-live="polite"></div>
       <div id="ig-cart"></div>
       <details class="demo" id="ig-demo" hidden>
-        <summary>Demo: simulate a change to the cart item</summary>
+        <summary>Demo: simulate a change to the first cart item</summary>
         <div class="row">
           <label for="ig-price">New price ₹</label><input id="ig-price" type="number" min="1" step="50" inputmode="numeric">
           <button class="btn small" id="ig-setprice" type="button">Change price</button>
@@ -189,7 +189,7 @@
           ${approved && rzp ? `<div class="testcard">Test mode: use card 4100 2800 0000 1007, any future expiry, any CVV, OTP 1234. No real money moves.</div>` : ""}
           </div>`;
         $("ig-demo").hidden = false;
-        if (!$("ig-price").value) $("ig-price").value = (c.total_inr || 0) + 500;
+        if (!$("ig-price").value) $("ig-price").value = ((c.lines && c.lines[0] ? c.lines[0].unit_price_inr : c.total_inr) || 0) + 500;
       } else if (c && c.status === "ORDERED") {
         const o = s.orders[s.orders.length - 1];
         cartEl.innerHTML = `<div class="cart done"><span class="tick" aria-hidden="true">✓</span>
@@ -313,15 +313,17 @@
       if (!state || !state.cart) return;
       const price = parseInt($("ig-price").value, 10);
       if (!(price > 0)) return;
-      const r = await api("/api/sim/price", { product_id: state.cart.product_id, price_inr: price });
-      msgs.insertAdjacentHTML("beforeend", `<div class="typing">Simulated: ${esc(state.cart.title)} now costs ${inr(price)} (before delivery).</div>`);
+      const first = (state.cart.lines && state.cart.lines[0]) || state.cart;   // several items: the first one changes
+      const r = await api("/api/sim/price", { product_id: first.product_id, price_inr: price });
+      msgs.insertAdjacentHTML("beforeend", `<div class="typing">Simulated: ${esc(first.title)} now costs ${inr(price)} (before delivery).</div>`);
       renderState(r.state); scroll();
       document.dispatchEvent(new CustomEvent("ig:product-changed", { detail: r.product }));
     });
     $("ig-oos").addEventListener("click", async () => {
       if (!state || !state.cart) return;
-      const r = await api("/api/sim/stock", { product_id: state.cart.product_id });
-      msgs.insertAdjacentHTML("beforeend", `<div class="typing">Simulated: ${esc(state.cart.title)} is now out of stock.</div>`);
+      const first = (state.cart.lines && state.cart.lines[0]) || state.cart;
+      const r = await api("/api/sim/stock", { product_id: first.product_id });
+      msgs.insertAdjacentHTML("beforeend", `<div class="typing">Simulated: ${esc(first.title)} is now out of stock.</div>`);
       renderState(r.state); scroll();
       document.dispatchEvent(new CustomEvent("ig:product-changed", { detail: r.product }));
     });
