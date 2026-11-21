@@ -25,6 +25,21 @@ POLICY_PROMPT_VERSION = "store_policy_v1"
 POLICY_PROMPT_PATH = Path(__file__).parent / "prompts" / f"{POLICY_PROMPT_VERSION}.txt"
 MAX_PER_ORDER = 5                     # P6
 
+
+def _delivery_range() -> tuple[int, int, int]:
+    """Delivery days (shortest, longest) and the share with free delivery, from the catalog (simulated values)."""
+    import sqlite3
+    try:
+        con = sqlite3.connect(Path(__file__).parent / "data" / "catalog.sqlite")
+        lo, hi, free = con.execute("SELECT min(delivery_days), max(delivery_days), "
+                                   "round(100.0 * sum(shipping_inr = 0) / count(*)) FROM inventory").fetchone()
+        return int(lo), int(hi), int(free)
+    except Exception:
+        return 2, 10, 50
+
+
+DELIVERY_RANGE = _delivery_range()
+
 TOPICS = {"delivery_damage": ["P1"], "installation": ["P2"], "returns": ["P3"], "refunds": ["P4"],
           "cancellation": ["P5"], "order_limits": ["P6"], "payment": ["P7"], "warranty": ["P8", "P2"],
           "delivery_area": ["P9"], "contact": ["P10"]}
@@ -38,13 +53,15 @@ _PATTERNS = [
     ("warranty", r"\bwarranty\b"),
     ("installation", r"\binstall\w*\b.*\b(myself|my ?self|break\w*|damag\w*|who)\b|\b(install|assemble)\w* (it|this) (myself|my ?self)\b|"
                      r"\binstallation (person|guy|man|technician|team)\b"),
-    ("returns", r"\breturn (policy|window)\b|\bcan i (return|send (it|this) back)\b|\bsend (it|this) back\b|\breturnable\b|"
+    ("returns", r"\bwhat if i (don'?t|do not) like (it|this)\b|\bif i (don'?t|do not) like (it|this)\b|\breturn (policy|window)\b|\bcan i (return|send (it|this) back)\b|\bsend (it|this) back\b|\breturnable\b|"
                 r"\bexchange (it|this)\b|\bcan (it|this) be returned\b"),
     ("refunds", r"\brefunds? (take|policy|time)\b|\bhow long\b.*\brefunds?\b|\bwhen (will|do) i get (my )?refund"),
     ("cancellation", r"\bcancel\w*\b"),
     ("order_limits", r"\b(min(imum)?|max(imum)?)\b.*\border\b|\border limit\b|\bhow many\b.*\b(can i|at once|per order)\b"),
     ("payment", r"\bcash on delivery\b|\bcod\b|\bpayment (method|option)s?\b|\bpay (by|with|using|via)\b|\bupi\b|\bemi\b"),
-    ("delivery_area", r"\bdeliver (to|in|across)\b|\bwhich (cities|areas|pincodes?)\b"),
+    ("delivery_area", r"\bdeliver (to|in|across)\b|\bwhich (cities|areas|pincodes?)\b|"
+                      r"\bhow long (does|will|do) (the )?(delivery|shipping|it take to deliver)\b|\bdelivery (time|charges?|fees?|cost)\b|"
+                      r"\b(charge|pay) (for|extra for) (delivery|shipping)\b|\bis (delivery|shipping) free\b|\bfree (delivery|shipping)\b"),
     ("contact", r"\b(contact|customer (care|support|service))\b|\btalk to (a |someone|a person|a human)"),
 ]
 
@@ -118,6 +135,16 @@ def answer(topic: str, question: str, product=None, use_llm: bool = False) -> Po
         return PolicyAnswer("Sorry, this one can't be returned: it's one of our small no-return items. If it arrives "
                             "broken, send us a photo within 48 hours and we'll review it and send a replacement "
                             "(no refunds on these).", [label("P3")], "code")
+    if topic == "delivery_area" and re.search(r"how long|days?|when|charge|cost|fee|free|pay", question.lower()):
+        # O-95: delivery time and charge are facts in the data, so code answers them (P9)
+        if product is not None:
+            charge = "free" if not product.shipping_inr else f"₹{product.shipping_inr:,}"
+            return PolicyAnswer(f"This one arrives in about {product.delivery_days} days, and delivery is {charge}. "
+                                "We deliver across India.", [label("P9")], "code")
+        lo, hi, free = DELIVERY_RANGE
+        return PolicyAnswer(f"Most products arrive in {lo} to {hi} days, and about {free}% have free delivery. Each "
+                            "product shows its own delivery time and charge, and I can tell you for any product you "
+                            "pick. We deliver across India.", [label("P9")], "code")
     if use_llm:
         given = "\n\n".join(f"[{i}] {secs[i][0]}\n{secs[i][1]}" for i in ids)
         extra = ""

@@ -98,7 +98,10 @@ _VAGUE = {"something", "anything", "stuff", "item", "items", "product", "product
           "affordable", "cheap", "cheaper", "nice", "good", "great", "best", "actually", "ok", "okay", "also",
           "and", "yes", "no", "maybe", "it", "one", "this", "that", "please", "me", "to", "buy", "a", "an",
           "the", "some", "new", "really", "just", "i", "you", "can", "help", "is", "budget", "my", "price",
-          "not", "sure", "dunno", "idk", "don't", "dont", "know", "whatever", "hmm", "um", "no idea"}
+          "not", "sure", "dunno", "idk", "don't", "dont", "know", "whatever", "hmm", "um", "no idea",
+          "non", "cheapest", "most", "least", "expensive", "lowest", "priced", "lowest-priced", "about", "how",
+          "gift", "gifts", "present", "mom", "mother", "dad", "father", "wife", "husband", "friend", "sister",
+          "brother", "kitchen"}
 _GREETING = re.compile(r"^\s*(hi|hello|hey|hiya|thanks|thank you|good (morning|afternoon|evening)|yo|namaste)\b"
                        r"(\s+(there|all|team|everyone|folks))?[\s!.,?]*$", re.I)
 _BUY = re.compile(r"\b(buy|order|purchase|add (it |this )?to (my )?cart|checkout|check out|i'?ll take)\b", re.I)
@@ -106,7 +109,7 @@ _SIMILAR = re.compile(r"\b(similar|alternatives?|other options|like this|anythin
                       r"cheaper|less expensive|lower price)\b", re.I)
 _CUT = re.compile(r"\b(under|within|below|not more than|no more than|max(?:imum)?|up ?to|upto|less than|that|"
                   r"which|with|for|arriving|arrive|delivered|delivery|by|including|incl|prefer(?:ably)?|around|"
-                  r"budget|costing|priced|in|to fit|fits?|and it|but)\b|[₹,.;!?]")
+                  r"budget|costing|priced|in|to fit|fits?|and it|but|between|from)\b|[₹,.;!?]")
 # Words that describe a requirement, not a product: "2 seater" refines the current product, it isn't one.
 _REQ_WORDS = {"seater", "seaters", "seat", "seats", "people", "persons", "person", "wide", "width", "size",
               "limit", "budget", "rupees", "rs", "inr", "cm", "make", "change", "forget", "remove", "drop",
@@ -168,8 +171,18 @@ _OUTPUT_WORDS = {"results", "result", "options", "option", "query", "queries", "
                  "understand", "only", "made"}
 
 
+_NEG_MATERIAL = re.compile(r"\b(?:non|not|no|without|except|other than|anything but)[- ]+(?:a |made of |in )?(" +
+                           "|".join(_MATERIALS) + r")\b", re.I)
+
+
+def excluded_material(text: str) -> Optional[str]:
+    """O-88: "non leather sofa", "sofa not leather" -> "leather" (a material to leave out)."""
+    m = _NEG_MATERIAL.search(text or "")
+    return {"wooden": "wood"}.get(m.group(1).lower(), m.group(1).lower()) if m else None
+
+
 def material_of(text: str) -> Optional[str]:
-    m = _MATERIAL_RE.search(text or "")
+    m = _MATERIAL_RE.search(_NEG_MATERIAL.sub(" ", text or ""))
     if not m:
         return None
     w = m.group(1).lower()
@@ -246,7 +259,46 @@ def _num(s: str) -> int:
     return int(s) if s.isdigit() else _NUM_WORDS[s.lower()]
 
 
+_UNIT_WORDS = (r"(?:cms?|centimet(?:er|re)s?|mm|millimet(?:er|re)s?|metres?|meters?|mtrs?|m|inch(?:es)?|in|ft|feet|foot|"
+               r"seaters?|seats?|people|persons?|days?|kg)")
+_TENS = {"twenty": 20, "thirty": 30, "forty": 40, "fifty": 50, "sixty": 60, "seventy": 70, "eighty": 80, "ninety": 90}
+_UNITS = dict(_NUM_WORDS, eleven=11, twelve=12, fifteen=15, a=1)
+
+
+def words_to_digits(text: str) -> str:
+    """O-86: "thirty thousand" -> "30000", "one lakh" -> "100000", "five hundred" -> "500"."""
+    def num(m):
+        tens, unit, mult = m.group(1), m.group(2), m.group(3).lower()
+        n = (_TENS.get((tens or "").lower(), 0) + _UNITS.get((unit or "").lower(), 0)) or 1
+        return str(n * {"hundred": 100, "thousand": 1000, "lakh": 100000, "lakhs": 100000}[mult])
+    words = "|".join(_TENS)
+    units = "|".join(k for k in _UNITS if k != "a") + "|a"
+    return re.sub(rf"\b(?:({words})[- ]?)?(?:({units})\s+)?(hundred|thousand|lakhs?)\b", num, text, flags=re.I)
+
+
+_RANGE = re.compile(r"(?:between|from)\s*(?:₹|rs\.?|inr)?\s*([\d,]+)\s*(k)?\s*(?:and|to|-)\s*(?:₹|rs\.?|inr)?\s*([\d,]+)\s*(k)?\b"
+                    r"|(?:₹|rs\.?\s*)([\d,]+)\s*(k)?\s*(?:-|to)\s*(?:₹|rs\.?\s*)?([\d,]+)\s*(k)?\b", re.I)
+
+
+def money_range(text: str) -> tuple[Optional[int], Optional[int]]:
+    """O-87: "between 10000 and 20000", "from 10k to 20k" -> (10000, 20000). (None, None) if no range."""
+    m = _RANGE.search(words_to_digits(text or ""))
+    if not m:
+        return None, None
+    g = [x for x in m.groups()]
+    lo, lk, hi, hk = (g[0], g[1], g[2], g[3]) if g[0] else (g[4], g[5], g[6], g[7])
+    val = lambda v, k: int(float(v.replace(",", "")) * (1000 if k else 1))
+    lo_v, hi_v = val(lo, lk), val(hi, hk)
+    return (lo_v, hi_v) if hi_v >= lo_v and hi_v >= 100 else (None, None)
+
+
 def _money(text: str) -> Optional[int]:
+    text = words_to_digits(text)
+    if money_range(text)[1] is not None:
+        return money_range(text)[1]
+    # "under 2 metres wide" is a size, not a ₹2 budget (O-86 probe)
+    text = re.sub(r"\b(?:under|within|below|up ?to|upto|less than|max(?:imum)?)\s*[\d.]+\s*" + _UNIT_WORDS + r"\b", " ", text,
+                  flags=re.I)
     m = re.search(r"(?:under|within|below|not more than|no more than|max(?:imum)?|budget(?: is| of)?|up ?to|"
                   r"less than|make it|upto)\s*(?:₹|rs\.?|inr)?\s*([\d,]+(?:\.\d+)?)\s*(k)?\b", text, re.I)
     if not m:   # Hinglish "20000 tak" = up to ₹20,000
@@ -303,6 +355,29 @@ def head_term(phrase: Optional[str]) -> Optional[str]:
     return re.sub(r"(es|s)$", "", w) if len(w) > 3 and not w.endswith("ss") else w
 
 
+_WEEKDAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+
+
+def delivery_days_from_words(t: str, today: Optional["date"] = None) -> Optional[int]:
+    """O-91: "by friday", "within a week", "this week", "tomorrow" -> a number of days from today."""
+    from datetime import date
+    today = today or date.today()
+    if not re.search(r"\b(deliver\w*|arriv\w*|get it|reach|by|within|this week|tomorrow)\b", t):
+        return None
+    if re.search(r"\bwithin (?:a|one|1) week\b|\bin (?:a|one|1) week\b", t):
+        return 7
+    if re.search(r"\b(?:within|in) (?:two|2) weeks\b", t):
+        return 14
+    if re.search(r"\btomorrow\b", t):
+        return 1
+    if re.search(r"\bthis week\b", t):
+        return max(1, 6 - today.weekday())
+    m = re.search(r"\bby (?:this |next )?(" + "|".join(_WEEKDAYS) + r")\b", t)
+    if m:
+        return (_WEEKDAYS.index(m.group(1)) - today.weekday()) % 7 or 7
+    return None
+
+
 def extract_rules(text: str, context: Optional[dict] = None, prior: Optional[Intent] = None) -> IntentExtraction:
     page = (context or {}).get("page", "listing")
     t = re.sub(r"\s+", " ", re.sub(r"\balso\b", " ", text.lower()))    # filler: "do you also have bedsheets" (O-32)
@@ -346,6 +421,12 @@ def extract_rules(text: str, context: Optional[dict] = None, prior: Optional[Int
                                 max_total_inr=_money(text))
     if kind is not None:
         return IntentExtraction(intent="UNSUPPORTED", message_kind=kind)
+    about = re.match(r"\s*(?:and|what about|how about|what of|and what about|ok,? what about)\s+(?:the\s+|some\s+)?"
+                     r"([a-z][a-z -]{2,40}?)\s*[?.!]*\s*$", t)
+    if about and looks_like_product(about.group(1)) and not _REQ_WORDS & set(about.group(1).split()) \
+            and not re.search(r"\b(it|this|that|them|price|delivery|installation)\b", about.group(1)):
+        # O-94: "what about beds?" mid-chat starts a search for beds
+        return extract_rules(about.group(1), context, prior).model_copy(update={"intent": "PRODUCT_DISCOVERY"})
     if page == "listing" and re.match(r"\s*(who|what|why|when|where|how|can you|could you|will you|are you|do you)\b", t) \
             and not re.search(_SHOP_VERB, t) and not re.search(r"\b(sofa|couch|price|cost|cheap)", t) \
             and len(re.findall(r"[a-z]+", t)) >= 3:
@@ -357,6 +438,8 @@ def extract_rules(text: str, context: Optional[dict] = None, prior: Optional[Int
     m = re.search(rf"(?:in|within|by|arriv\w* in|delivered in)\s+{_NUM}\s+days?", t)
     if m:
         days = _num(m.group(1))
+    else:
+        days = delivery_days_from_words(t)
     compat = ["macOS"] if re.search(r"\b(mac|macos|macbook|imac)\b", t) else []
     brands = [b.strip().title() for b in re.findall(r"prefer(?:ably)?\s+([a-z][\w-]+)", t)]
     seats = None
@@ -395,7 +478,11 @@ def extract_rules(text: str, context: Optional[dict] = None, prior: Optional[Int
         category = "keyboard_mouse_combo"
     elif re.search(r"\b(sofa|couch|settee)\b", t) and not re.search(r"\bcover", t):
         category = "sofa"
-    phrase = product_phrase(text)
+    phrase = product_phrase(words_to_digits(text))
+    if phrase is None and category is None and seats is not None:
+        category = "sofa"                            # "3-seater that fits 200 cm" means a sofa
+    if phrase is not None and re.search(r"\b(gift|present)s?\b", t) and not looks_like_product(phrase):
+        phrase = None
     if phrase is None and category is not None:      # the real catalog searches by words, not fixture categories
         phrase = {"sofa": "sofa", "keyboard_mouse_combo": "keyboard mouse combo"}[category]
     common = dict(max_total_inr=budget, max_delivery_days=days, required_compatibility=compat,
@@ -418,7 +505,8 @@ def extract_rules(text: str, context: Optional[dict] = None, prior: Optional[Int
                                                      r"tell me|any)\b", t):
             return IntentExtraction(intent="PRODUCT_QUESTION", question=text.strip(), **common)
 
-    if category or phrase or re.search(_SHOP_VERB, t) or has_constraint or re.match(r"\s*(something|anything)\b", t):
+    if category or phrase or re.search(_SHOP_VERB, t) or has_constraint or re.match(r"\s*(something|anything)\b", t) \
+            or re.search(r"\b(gift|present)s?\b", t):
         intent = "PRODUCT_DISCOVERY"
     else:
         intent = "UNSUPPORTED"
@@ -432,9 +520,11 @@ def extract_rules(text: str, context: Optional[dict] = None, prior: Optional[Int
     if mv and page == "listing" and width is None and not re.search(r"\d", t):
         vague = mv.group(1).lower()                  # "is the hometown sofa wide?" (B28)
     missing = []
-    if intent == "PRODUCT_DISCOVERY" and not (category or phrase) and not has_constraint:
-        missing.append("product")
-    if budget is None and re.search(r"\b(affordable|cheap|budget[- ]friendly|inexpensive|low[- ]cost)\b", t):
+    if intent == "PRODUCT_DISCOVERY" and not (category or phrase) and (
+            not has_constraint or re.search(r"\b(gift|present)s?\b|^\s*(something|anything)\b", t)):
+        missing.append("product")                    # O-92: "gift for my mom under 1000" -> ask what kind
+    if budget is None and re.search(r"\b(affordable|cheap|budget[- ]friendly|inexpensive|low[- ]cost)\b", t) \
+            and not re.search(r"\b(most|cheapest|least|lowest)\b", t):
         missing.append("budget")
     # B18 (search first): sofas no longer require seats and width before a search.
     return IntentExtraction(intent=intent, category=category, product_query=phrase, missing_info=missing,

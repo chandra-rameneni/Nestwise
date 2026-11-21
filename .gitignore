@@ -8,3 +8,4 @@ data/catalog.sqlite
 .DS_Store
 notes/
 demo/recordings/
+data/sessions/

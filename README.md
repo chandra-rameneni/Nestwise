@@ -21,7 +21,7 @@ Before building each feature, we wrote down **real shopper chats and the right r
 
 | | What it means |
 |---|---|
-| **602** automatic checks | Every time the code changes, 602 checks rerun in seconds to make sure nothing that worked before broke. |
+| **751** automatic checks | Every time the code changes, 751 checks rerun in seconds to make sure nothing that worked before broke. |
 | **74** problems found and logged | Each time testing caught the assistant doing something wrong, it was written down with what should have happened, then fixed or tracked ([evals/OBSERVATIONS.md](evals/OBSERVATIONS.md)). |
 | **23** AI product practices | The product management methods used to build it, each linked to where it lives in the code ([AI_PM_SKILLS.md](AI_PM_SKILLS.md)). |
 | **₹24,999** test payment | A full purchase completed through Razorpay's test mode, with the payment verified before the order was created. |
@@ -49,7 +49,7 @@ This is an AI product management case study as much as a store. Every step left 
 5. **Refuse flattering numbers.** When the free AI models ran out of daily quota, the backup rules quietly answered instead. So the test runner now labels any "AI" result where the AI answered less than 80% of messages as **not valid**.
 6. **Let the AI understand, let code decide.** The AI reads what you mean and writes the reply. Prices, sizes, stock, store rules, approvals and payments are handled by fixed code the AI can't override.
 7. **Catch known AI mistakes in code.** When the AI was caught guessing ("not waterproof") or misreading "do you sell mobiles?", a code check was added to stop it, with a test that replays the AI's real wrong answer.
-8. **Turn every real failure into a test.** 74 problems found in hands-on testing were logged and fixed or tracked. On the live store, the dashboard's "Add to eval candidates" button saves any bad reply for the next round of tests.
+8. **Turn every real failure into a test.** 95 problems found in hands-on testing and wider probing were logged and fixed or tracked. On the live store, the dashboard's "Add to eval candidates" button saves any bad reply for the next round of tests.
 9. **Get an independent check.** The tests themselves were audited with Hamel Husain's eval-audit skill ([evals/EVAL_AUDIT.md](evals/EVAL_AUDIT.md)). It found 7 weaknesses, such as scores changing when payment keys were set. The worst were fixed the same day; the rest are tracked in the open.
 10. **Write decisions down.** 13 product decisions, each with the reasoning ([DECISIONS.md](DECISIONS.md)).
 
@@ -100,7 +100,7 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 .venv/bin/python -I -c "import kagglehub; kagglehub.dataset_download('PromptCloudHQ/flipkart-products', output_dir='data/raw/flipkart')"
 .venv/bin/python build_catalog.py          # writes data/catalog.sqlite and data/CATALOG_REPORT.md
 .venv/bin/uvicorn server:app --port 8000   # store at http://localhost:8000, dashboard at /dashboard
-.venv/bin/python -m pytest -q              # 602 passed, 2 skipped (they need a paid Claude key, which this project doesn't use)
+.venv/bin/python -m pytest -q              # 751 passed, 2 skipped (they need a paid Claude key, which this project doesn't use)
 .venv/bin/python evals/run_evals.py evals/round2_scenarios.json   # run one eval set
 ```
 

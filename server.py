@@ -4,11 +4,16 @@ Run:  .venv/bin/uvicorn server:app --port 8000      (needs data/catalog.sqlite: 
 
 Each browser gets its own agent Session (cookie `ig_session`), with its own copy of the catalog's
 demo overrides, so a simulated price change in one browser never affects another. Sessions live in
-memory and disappear when the server restarts.
+memory and are also saved to data/sessions/ after every reply, so a chat (and what the assistant remembers)
+survives a server restart. "New chat" deletes the saved copy; copies older than 7 days are removed at start.
 """
 from __future__ import annotations
 
+import os
+import pickle
+import re
 import secrets
+import time
 from pathlib import Path
 from typing import Optional
 
@@ -32,6 +37,51 @@ MAX_SESSIONS = 500
 app = FastAPI(title="Nestwise storefront")
 app.mount("/static", StaticFiles(directory=WEB), name="static")
 _sessions: dict[str, Session] = {}
+SESSION_DIR = Path(os.environ.get("INTENTGUARD_SESSION_DIR", Path(__file__).parent / "data" / "sessions"))
+SESSION_DAYS = 7
+
+
+def _session_file(sid: str) -> Optional[Path]:
+    # the cookie value becomes a file name, so only our own token format is accepted
+    return SESSION_DIR / f"{sid}.pkl" if re.fullmatch(r"[A-Za-z0-9_-]{16,64}", sid or "") else None
+
+
+def _save(sid: Optional[str], s: Session) -> None:
+    f = _session_file(sid or "")
+    if f is None:
+        return
+    try:
+        SESSION_DIR.mkdir(parents=True, exist_ok=True)
+        tmp = f.with_suffix(".tmp")
+        tmp.write_bytes(pickle.dumps(s))
+        tmp.replace(f)
+    except Exception as e:                      # saving is a convenience; never break the chat over it
+        print(f"[Nestwise] couldn't save chat {sid[:6]}…: {e!r}")
+
+
+def _load(sid: Optional[str]) -> Optional[Session]:
+    """O-72 follow-up (2026-11-21): a restart used to wipe every chat. Files here are written only by this server."""
+    f = _session_file(sid or "")
+    if f is None or not f.exists():
+        return None
+    try:
+        s = pickle.loads(f.read_bytes())
+        _sessions[sid] = s
+        return s
+    except Exception as e:
+        print(f"[Nestwise] couldn't restore chat {sid[:6]}…: {e!r}")
+        return None
+
+
+def _cleanup_saved() -> None:
+    if SESSION_DIR.exists():
+        cutoff = time.time() - SESSION_DAYS * 86400
+        for f in SESSION_DIR.glob("*.pkl"):
+            if f.stat().st_mtime < cutoff:
+                f.unlink(missing_ok=True)
+
+
+_cleanup_saved()
 _browse = SqliteCatalog(STORE_DB_PATH) if STORE_DB_PATH.exists() else None
 
 
@@ -39,10 +89,13 @@ _browse = SqliteCatalog(STORE_DB_PATH) if STORE_DB_PATH.exists() else None
 def _session(sid: Optional[str], response: HTTPResponse) -> Session:
     if sid and sid in _sessions:
         return _sessions[sid]
+    if sid and _load(sid) is not None:
+        return _sessions[sid]
     if len(_sessions) >= MAX_SESSIONS:
         _sessions.pop(next(iter(_sessions)))
     sid = secrets.token_urlsafe(16)
     _sessions[sid] = Session(catalog=SqliteCatalog(STORE_DB_PATH), source="store")
+    _sessions[sid].sid = sid
     response.set_cookie(COOKIE, sid, httponly=True, samesite="lax")
     return _sessions[sid]
 
@@ -50,7 +103,7 @@ def _session(sid: Optional[str], response: HTTPResponse) -> Session:
 def _catalog(sid: Optional[str]) -> SqliteCatalog:
     """Browsing uses the shopper's own session catalog when there is one, so simulated price or stock
     changes show on the pages they're looking at."""
-    if sid and sid in _sessions:
+    if sid and (sid in _sessions or _load(sid) is not None):
         return _sessions[sid].catalog
     if _browse is None:
         raise HTTPException(503, "Catalog not built. Run: .venv/bin/python build_catalog.py")
@@ -78,6 +131,7 @@ def agent_json(s: Session, r: AgentResponse) -> dict:
     # O-72: every reply as it was shown (cards, checks, sources), so moving to another page restores the chat
     # exactly, not as plain text. Kept to the last 30.
     s.ui_replies = (getattr(s, "ui_replies", []) + [payload])[-30:]
+    _save(getattr(s, "sid", None), s)
     return payload | {"state": state(s)}
 
 
@@ -335,6 +389,9 @@ def pay_dismissed(response: HTTPResponse, ig_session: Optional[str] = Cookie(Non
 @app.post("/api/session/reset")
 def reset(response: HTTPResponse, ig_session: Optional[str] = Cookie(None)):
     _sessions.pop(ig_session or "", None)
+    f = _session_file(ig_session or "")
+    if f is not None:
+        f.unlink(missing_ok=True)
     response.delete_cookie(COOKIE)
     return {"ok": True}
 

@@ -173,7 +173,8 @@ def live_store(tmp_path_factory):
         pytest.skip("Chrome not installed")
     port, tmp = _free_port(), tmp_path_factory.mktemp("live")
     env = dict(os.environ, INTENTGUARD_LLM="off", INTENTGUARD_TRACE_DIR=str(tmp),
-               INTENTGUARD_CANDIDATES_FILE=str(tmp / "c.jsonl"), RAZORPAY_KEY_ID="", RAZORPAY_KEY_SECRET="")
+               INTENTGUARD_CANDIDATES_FILE=str(tmp / "c.jsonl"), RAZORPAY_KEY_ID="", RAZORPAY_KEY_SECRET="",
+               INTENTGUARD_SESSION_DIR=str(tmp / "sessions"))
     proc = subprocess.Popen([sys.executable, "-m", "uvicorn", "server:app", "--port", str(port)], cwd=ROOT, env=env,
                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     for _ in range(50):
@@ -209,3 +210,58 @@ def test_browser_chat_looks_the_same_after_opening_a_product(live_store):
         after = (page.locator("#ig-msgs .msg").count(), page.locator("#ig-msgs .rec").count())
         b.close()
     assert after == before, f"messages/cards before {before}, after {after}"
+
+
+def _start_store(port, tmp):
+    env = dict(os.environ, INTENTGUARD_LLM="off", INTENTGUARD_TRACE_DIR=str(tmp),
+               INTENTGUARD_CANDIDATES_FILE=str(tmp / "c.jsonl"), RAZORPAY_KEY_ID="", RAZORPAY_KEY_SECRET="",
+               INTENTGUARD_SESSION_DIR=str(tmp / "sessions"))
+    proc = subprocess.Popen([sys.executable, "-m", "uvicorn", "server:app", "--port", str(port)], cwd=ROOT, env=env,
+                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    for _ in range(50):
+        try:
+            socket.create_connection(("127.0.0.1", port), timeout=0.2).close()
+            break
+        except OSError:
+            time.sleep(0.2)
+    return proc
+
+
+def test_browser_chat_survives_a_store_restart(tmp_path):
+    """2026-11-21: the PM's sofa chat vanished because the store restarted. Chats are now saved after every reply."""
+    pytest.importorskip("playwright")
+    if not Path("/Applications/Google Chrome.app").exists() and not shutil.which("google-chrome"):
+        pytest.skip("Chrome not installed")
+    from playwright.sync_api import sync_playwright
+    port = _free_port()
+    proc = _start_store(port, tmp_path)
+    url = f"http://127.0.0.1:{port}"
+    try:
+        with sync_playwright() as pw:
+            b = pw.chromium.launch(channel="chrome", headless=True)
+            page = b.new_page(viewport={"width": 1400, "height": 900})
+            page.goto(url + "/", wait_until="networkidle")
+            page.click("#ig-fab")
+            for text in (SOFA_ASK, "buy the first one"):
+                n = page.locator("#ig-msgs .msg.bot").count()
+                page.fill("#ig-input", text)
+                page.press("#ig-input", "Enter")
+                page.wait_for_function("n => document.querySelectorAll('#ig-msgs .msg.bot').length > n", arg=n)
+            before = page.locator("#ig-msgs .msg").count()
+            proc.terminate()
+            proc.wait(timeout=10)
+            proc = _start_store(port, tmp_path)                      # the restart that used to wipe the chat
+            page.reload(wait_until="networkidle")
+            if not page.locator("#ig-input").is_visible():
+                page.click("#ig-fab")
+            page.wait_for_function("n => document.querySelectorAll('#ig-msgs .msg').length >= n", arg=before)
+            n = page.locator("#ig-msgs .msg.bot").count()
+            page.fill("#ig-input", "what's in my cart?")               # and the assistant still remembers
+            page.press("#ig-input", "Enter")
+            page.wait_for_function("n => document.querySelectorAll('#ig-msgs .msg.bot').length > n", arg=n)
+            last = page.locator("#ig-msgs .msg.bot").last.inner_text()
+            b.close()
+    finally:
+        proc.terminate()
+        proc.wait(timeout=10)
+    assert "1 ×" in last and "Seater" in last, last

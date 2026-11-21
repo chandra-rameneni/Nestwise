@@ -192,6 +192,16 @@ class SqliteCatalog:
         self._stock_override: dict[str, int] = {}
         self._versions: dict[str, int] = {}
 
+    def __getstate__(self):
+        """Saved chats (server restarts) keep the demo overrides, never the open database connections."""
+        state = dict(self.__dict__)
+        state.pop("_local", None)
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        self._local = threading.local()
+
     @property
     def _con(self) -> sqlite3.Connection:
         """One read-only connection per thread. The web server answers several requests at once, and one shared

@@ -140,7 +140,7 @@ def test_o72_moving_pages_restores_every_reply_with_its_cards():
 def test_o73_installation_question_when_the_details_are_silent():
     CIAZ = "SOFEB7MHGWTHZFVJ"
     r = Session().handle_message("does it come with installation?", {"page": "product", "product_id": CIAZ})
-    assert "don't say whether someone will install it" in r.message and "P2 Installation" in r.cited_fields
+    assert "don't mention installation, so I can't promise it's included" in r.message and "P2 Installation" in r.cited_fields
 
 
 def test_o73_installation_answer_unchanged_when_the_details_cover_it():

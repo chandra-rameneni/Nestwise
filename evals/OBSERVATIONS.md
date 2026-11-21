@@ -173,3 +173,57 @@ Fixed in code (rules mode and with Gemini): O-1, O-2, O-3, O-4, O-5, O-7, O-8, O
 | O-72 | (PM, 2026-11-20) Clicking a product name to open its page | Sometimes the whole chat was gone; other times older replies came back as plain text, without the sofa cards and checks | The chat follows you across pages, exactly as it looked | Two causes. (1) The dev server restarts itself whenever code changes, which wipes chats kept in memory; Claude was editing code during the PM's test. (2) Only the last reply was restored with its cards; earlier ones were redrawn as text. | **Fixed (2026-11-20).** Every reply is kept as it was shown (last 30) and redrawn the same way; the dev server no longer restarts for test or demo files. Before recording, run the server without auto-restart. |
 | O-73 | (PM, CIAZ sofa page, AI mode) "does it come with installation?", meaning "will someone install it?" | "It comes unassembled (flat-packed)." | Say plainly whether installation is included | This sofa's details have no installation information, so only the delivery condition was answered; the real question was skipped. | **Fixed (2026-11-20).** When a product's details are silent on installation, the reply says so and points to store policy P2 (free installation only when the page says so). Products that do list installation are unchanged. 2 tests. |
 | O-74 | (Claude, new coverage tests, 2026-11-20) "What is it made of?" / "How wide is it?" on 5 of 40 sampled products | "Outer Material: Cotton." / "Width: 850 mm. That value doesn't look right…" | A sentence, like every other answer | Fields without a hand-written phrasing fell back to a raw "Field: value." line. Only showed up once questions were asked on many products, not just the bed. | **Fixed (2026-11-20).** Any field is now said as a sentence ("Its outer material is cotton."). |
+
+## Wider probe after the O-75 report (Claude, 2026-11-21)
+
+The PM spotted "Will I get the bed with it?" and asked what else would fail. Claude asked 32 kinds of question on 40 products, ran 31 searches and 6 short chats (rules mode), then repeated a subset with the AI on (the free quota ran out after 11 of 56 messages, so that run doesn't count). Why these were missed: the test questions came from what was built (6 questions per product), not from how shoppers ask, and a 100% pass rate on those hid the gap. Fix plan approved by the PM on 2026-11-21.
+
+| # | Shopper said | Agent replied | Expected | Goes to |
+|---|---|---|---|---|
+| O-75 | (bed page) "Will I get the bed with it?" / "I was told I'll get a mattress with it" / "Does it come with pillows?" | "Its bed size is Queen…" / shows 3 mattresses / "I don't have that detail" | Checked against the box list, "With X" fields and the product itself: "Sorry, this is only the bed. Its details don't mention a mattress, so I can't promise one." Never a search. | Fix group 2 |
+| O-76 | (listing, after sofas shown) "cheaper" | Put the first sofa in the cart | Shows cheaper sofas; never adds to the cart | Fix group 1, high priority |
+| O-77 | (cart has sofa 1) "actually the second one" | Added sofa 2 as well (cart of 2) | Swaps sofa 1 for sofa 2 | Fix group 1 |
+| O-78 | (cart shown) typed "approve" / "cancel" | "Didn't get that" / "we don't sell cancels" | "approve" points to the Approve button (the agent never approves); "cancel" empties the cart | Fix group 1 |
+| O-79 | (cart has sofa) "also add a coffee mug" | "we don't sell add coffee mugs" | Searches mugs; the sofa stays in the cart | Fix group 1 |
+| O-80 | (any product page) "tell me about it" | "I don't have that detail" (40 of 40 products) | A short plain summary of the product | Fix group 2 |
+| O-81 | "What's in the box?" / "How many pieces?" | "I don't have that detail" (28 and 30 of the products that list it) | The box list / piece count | Fix group 2 |
+| O-82 | "Is it handmade?" | "I don't have that detail" (6 of 6 that say "Handcrafted") | From the Handcrafted field | Fix group 2 |
+| O-83 | "What colour is it?" | "Its primary Color is Brown. Its finish Color is Brown." | "It's brown." | Fix group 2 |
+| O-84 | (AI mode, bed page) "What comes in the box?" | "You'll receive one Queen Bed in the box." | The bed has no box list, so the AI can't claim one | Fix group 2 |
+| O-85 | "show me beds" / "cheaper beds" / "something similar" | Pet beds first | Real beds; pet beds only when "pet" is said | Fix group 3 |
+| O-86 | "sofa under thirty thousand" | Budget ignored | Budget ₹30,000 | Fix group 4 |
+| O-87 | "sofa between 10000 and 20000" | "we don't sell sofa betweens" | Both limits applied | Fix group 4 |
+| O-88 | "non leather sofa" / "sofa not leather" | "we don't sell non sofas" / leatherette first | Leather and leatherette left out | Fix group 4 |
+| O-89 | "a blue bedsheet" | "we don't sell blue bedsheets" | Bedsheets whose colour field says blue, or "no blue ones; here are other bedsheets" | Fix group 4 |
+| O-90 | "cheapest sofa" | "I couldn't find a cheapest sofa…" | Sofas sorted by price, lowest first | Fix group 4 |
+| O-91 | "sofa delivered by friday" | Date ignored | Only sofas that arrive by then | Fix group 4 |
+| O-92 | "gift for my mom under 1000" | "Didn't get that" | Asks what kind of gift, keeps the ₹1,000 budget | Fix group 4 |
+| O-93 | "king size bed" | "we don't sell king beds" (no alternative) | Says so and offers the queen beds | Fix group 4 |
+| O-94 | (mid-chat) "what about beds?" | "That's not something I can help with" | A new search for beds | Fix group 5 |
+| O-95 | (listing) "how long does delivery take?" | "That's not something I can help with" | The delivery answer from store policy | Fix group 5 |
+
+**Fixed O-75 to O-95 (2026-11-21).** All 21 are covered by `tests/test_shopper_questions.py` (148 tests, written and approved before the code changed; 74 failed before the fixes, all pass after).
+- **Cart:**
+  - "cheaper" re-sorts by price and never adds to the cart.
+  - "actually the second one" swaps the item.
+  - Typed "approve" points to the Approve button; "cancel" or "forget it" empties the cart.
+  - "also add a mug" searches mugs and keeps the cart.
+- **Product pages:** code answers these from the details, in both modes:
+  - overview, what's in the box, pieces;
+  - "comes with" items, checked as whole words ("pillow covers" are not pillows; "bed" is not inside "bedsheet");
+  - the product itself, handmade, colour as a sentence, measurements.
+- **Wording:**
+  - yes/no fields are said as sentences;
+  - fit checks say "Yes, it fits" or "Sorry, it won't fit".
+- **Searches:**
+  - "bed" means a real bed;
+  - budgets in words, and ranges like "between X and Y";
+  - "not/non leather";
+  - colour from the details;
+  - "cheapest" sorts by price;
+  - "by Friday" and "within a week";
+  - "gift under ₹1,000" asks what kind and keeps the budget;
+  - "king size bed" says so and shows the beds we have;
+  - "what about beds?";
+  - delivery time and charge answered from the data (P9).
+- **Also fixed:** "under 2 metres wide" was read as a ₹2 budget.

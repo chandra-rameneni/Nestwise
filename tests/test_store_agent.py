@@ -121,9 +121,9 @@ def test_pq02_not_in_listing(store, store_db):
 
 def test_requirement_question_uses_the_policy_check(store):
     r = store.handle_message("Will it fit a 2 m wall?", page(COMFORT_COUCH))
-    assert r.kind == "ANSWER" and r.message.startswith("No on width") and "215.9" in r.message
+    assert r.kind == "ANSWER" and r.message.startswith("Sorry, it won't fit") and "215.9" in r.message
     r = store.handle_message("Will it fit a 2 m wall?", page(DURIAN_BID_3S))
-    assert r.message.startswith("Yes on width")
+    assert r.message.startswith("Yes, it fits")
 
 
 def test_implausible_listed_width_is_not_relied_on(store):

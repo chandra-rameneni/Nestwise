@@ -261,3 +261,31 @@ O-71 to O-73 were found by the PM, not by tests, because the tests followed the 
 | Browser | Chat and sofa cards look the same after clicking through to a product page (Chrome, rules-mode copy of the store) | Pass; proven to fail with the O-72 fix switched off |
 
 Full suite: **602 passed, 2 skipped**. Eval sets unchanged (39/39, 36/36, 40/40, 14/14, 30/30; held-out 26/35, 22/25, 14/15).
+
+## Shopper question list, 2026-11-21 (`evals/SHOPPER_QUESTIONS.md`, `tests/test_shopper_questions.py`)
+
+Why: the PM found "Will I get the bed with it?" failing, and a wider probe found 21 problems (O-75 to O-95). The old tests asked 6 questions written from what was built; this list asks the way shoppers do.
+
+- **Product pages:** 30 question types × 3 wordings, each on 40 products (3,600 checks).
+- **Searches:** 40, including odd wording.
+- **Short chats:** 15, testing the cart and changes of mind.
+- **Bugs found while reading replies:** 3 extra tests ("pillow covers" are not pillows; "bed" inside "bedsheet"; the swap message for two sofas with the same name).
+
+**Before the fixes:** 74 of 145 tests failed. **After:** all pass. The full suite is 751 passed, 2 skipped (including a browser test that restarts the store mid-chat).
+
+**Sabotage checks:** turning off the "cheaper" fix failed C1; turning off the product-page answers failed the mattress question on 39 of 40 products.
+
+**Eval sets (rules mode):** 39/39, 36/36, 40/40, 14/14, 30/30. Held-out: 27/35 (H-09 newly passes, nothing newly fails), 22/25 and 14/15 (both unchanged).
+
+**Wording changes:**
+- PQ-05 and one older eval now expect the new phrasing: "Sorry, it won't fit: it's 215.9 cm wide…" instead of "No on width: the listing gives…".
+- C4 was changed with a stated reason. With 3 sofas shown and 1 in the cart, "the other one" is ambiguous, so the agent asks which one instead of guessing.
+
+**Design decision:** some questions are answered by code from the product's details, with or without the AI:
+- overview, what's in the box, number of pieces;
+- whether something else is included;
+- handmade, colour, measurements.
+
+So the AI can no longer claim box contents the details don't list (O-84), and these questions use no AI quota.
+
+**Not covered yet:** these phrasings are written by Claude, not taken from real shoppers. The AI-mode run is still pending, because the free quota is used up.

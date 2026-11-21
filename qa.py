@@ -58,24 +58,29 @@ def listing_fields(p: ProductView) -> dict:
 
 # keyword -> listing fields that answer it
 _TOPICS = [
-    (r"\bwide|width|breadth\b", ["Width"]), (r"\bdeep|depth\b", ["Depth"]), (r"\btall|height|high\b", ["Height"]),
+    (r"\bwide|width|breadth|\bbroad\b", ["Width"]), (r"\bdeep|depth\b", ["Depth", "Length"]), (r"\btall|height|high\b", ["Height"]),
     (r"\blong|length\b", ["Length", "Depth"]), (r"\bdimension|size|big|measure", ["Width", "Depth", "Height", "Length", "Size"]),
-    (r"\bweigh|heavy|weight\b", ["Weight"]), (r"\bmade of|material|fabric|wood|leather", ["Primary Material", "Primary Material Subtype", "Material",
-     "Upholstery Type", "Outer Material", "Secondary Material"]), (r"\bcolou?r\b", ["Primary Color", "Color",
-     "Upholstery Color", "Finish Color"]), (r"\bseat|people|persons?\b", ["Seating Capacity"]),
+    (r"\bweigh|heavy|weight\b", ["Weight"]), (r"\bmade (of|from|out of)|material|fabric|wood|leather", ["Primary Material", "Primary Material Subtype", "Material",
+     "Upholstery Type", "Outer Material", "Body Material", "Frame Material", "Secondary Material"]), (r"\bcolou?r\b", ["Primary Color", "Color",
+     "Upholstery Color", "Finish Color"]), (r"\bseat|people|persons?\b|\bsit\b", ["Seating Capacity"]),
     (r"\bprice|cost|how much\b", ["Price"]), (r"\bbrand|who makes|manufacturer\b", ["Brand"]),
     (r"\bwarrant", ["Warranty Summary", "Covered in Warranty", "Not Covered in Warranty", "Warranty Service Type"]),
-    (r"\bcapacity|litre|liter\b", ["Capacity"]), (r"\bdeliver|arrive|shipping\b", ["Delivery time", "Delivery charge"]),
-    (r"\bstock|available|availability\b", ["Stock"]), (r"\bassembl|install", ["Delivery Condition", "Installation & Demo Details"]),
-    (r"\bclean|wash|care\b", ["Care Instructions", "Machine Washable", "Hand Washable"]),
+    (r"\bcapacity|litre|liter\b", ["Capacity"]), (r"\bdeliver|arrive|shipping\b|\bhow soon\b", ["Delivery time", "Delivery charge"]),
+    (r"\bstock|available|availability\b|\bhow many (are )?left\b", ["Stock"]),
+    (r"\bassembl|install|put (it|this) together", ["Delivery Condition", "Assembly Required", "Pre-assembled",
+                                                  "Installation & Demo Details"]),
+    (r"\bclean|\bwash|\bcare\b", ["Care Instructions", "Fabric Care", "Wash Care", "Care and Cleaning",
+     "Machine Washable", "Hand Washable", "Washable"]),
     (r"\bkids?\b|\bchild|\bsuitable|\bideal for|\bwhich room", ["Suitable For", "Ideal For"]),
 ]
 # Words shared by many field names; on their own they don't say which field is meant
 # ("safe" is in both "Microwave Safe" and "Freezer Safe": eval PQ-07).
 _GENERIC_KEY_WORDS = {"safe", "type", "number", "model", "name", "code", "pack", "included", "package", "sales",
-                      "contents", "suitable", "ideal", "other", "features", "details", "service"}
+                      "contents", "suitable", "ideal", "other", "features", "details", "service", "resistant", "machine", "hand",
+                      "proof", "free", "all", "come", "comes", "get", "set", "items", "much", "many", "day", "days"}
 _STOP = {"is", "it", "the", "a", "an", "does", "do", "this", "what", "how", "can", "will", "of", "for", "to", "in",
-         "be", "my", "i", "you", "are", "there", "any", "have", "has", "with", "and", "or", "me", "tell", "about"}
+         "be", "my", "i", "you", "are", "there", "any", "have", "has", "with", "and", "or", "me", "tell", "about",
+         "was", "were", "told", "said", "seller", "someone", "anyone", "actually", "really"}
 
 
 def _requirement_check(p: ProductView, extracted: intent_mod.IntentExtraction) -> Optional[QAResult]:
@@ -93,20 +98,35 @@ def _requirement_check(p: ProductView, extracted: intent_mod.IntentExtraction) -
     parts, cited = [], []
     names = {"max_width_cm": ("Width", "cm"), "max_depth_cm": ("Depth", "cm"), "max_height_cm": ("Height", "cm"),
              "seats": ("Seating Capacity", ""), "max_total_inr (incl. shipping)": ("Price", "")}
+    have = listing_fields(p)
     for c in checks:
         fname, unit = names.get(c.constraint, (c.constraint, ""))
-        cited.append(fname)
+        if fname in have:
+            cited.append(fname)
+        word = {"Width": "wide", "Depth": "deep", "Height": "high"}.get(fname)
+        u = (" " + unit) if unit else ""
+        num = isinstance(c.observed, (int, float))
         if c.status == policy.PASS:
-            parts.append(f"Yes on {fname.lower()}: the listing gives {c.observed:g}{(' ' + unit) if unit else ''}, "
-                         f"within your {c.required:g}{(' ' + unit) if unit else ''}." if isinstance(c.observed, (int, float))
-                         else f"Yes on {fname.lower()}.")
+            if word and num:
+                parts.append(f"Yes, it fits: it's {c.observed:g}{u} {word}, within your {c.required:g}{u}.")
+            elif fname == "Price" and num:
+                parts.append(f"Yes, it's within budget: ₹{c.observed:,.0f} including delivery.")
+            else:
+                parts.append(f"Yes, its {fname.lower()} matches what you asked for.")
         elif c.status == policy.FAIL:
-            parts.append(f"No on {fname.lower()}: the listing gives {c.observed:g}{(' ' + unit) if unit else ''}, "
-                         f"more than your {c.required:g}{(' ' + unit) if unit else ''}." if isinstance(c.observed, (int, float))
-                         and fname != "Seating Capacity" else f"No on {fname.lower()}: it has {c.observed}, you asked for {c.required}.")
+            if word and num:
+                parts.append(f"Sorry, it won't fit: it's {c.observed:g}{u} {word}, more than your {c.required:g}{u}.")
+            elif fname == "Price" and num:
+                parts.append(f"Sorry, it's over budget: ₹{c.observed:,.0f} including delivery, more than your "
+                             f"₹{c.required:,.0f}.")
+            else:
+                parts.append(f"Sorry, it has {c.observed} for {fname.lower()}, and you asked for {c.required}.")
         else:
-            why = f" ({c.observed})" if c.observed else ""
-            parts.append(f"I can't confirm the {fname.lower()}: the listing doesn't give a usable value{why}.")
+            listed = re.search(r"'([^']+)'", str(c.observed or ""))
+            why = ((f" It lists {listed.group(1)}, which doesn't look right for this product." if listed else
+                    " The value it lists doesn't look right for this product.")
+                   if "implausible" in str(c.observed or "") else "")
+            parts.append(f"Sorry, I can't confirm the {fname.lower()}: its details don't give a usable value.{why}")
     return QAResult(" ".join(parts), cited, "policy_check")
 
 
@@ -163,7 +183,7 @@ def _say(p: ProductView, field_name: str, value: str) -> str:
     if field_name == "Delivery Condition":             # O-64
         low = v.lower()
         if "knock" in low:
-            return "It comes unassembled (flat-packed)."
+            return "It comes flat-packed, so it needs assembling."
         if "diy" in low or "do-it-yourself" in low:
             return "It comes unassembled, for you to put together."
         if "assembled" in low:
@@ -181,8 +201,9 @@ def _say(p: ProductView, field_name: str, value: str) -> str:
         thing = m.group(1).strip().lower()
         return (f"Yes, the {thing} is included." if v.lower() == "yes"
                 else f"Sorry, the {thing} isn't included.")
-    if yes_no:
-        return f"{'Yes' if v.lower() == 'yes' else 'No'}, {field_name.lower()}: {v.lower()}."
+    if yes_no:          # "Machine Washable: Yes" -> "Yes, it's machine washable."
+        prop = field_name.lower()
+        return f"Yes, it's {prop}." if v.lower() == "yes" else f"No, it isn't {prop}."
     # Any other field, said as a sentence rather than a spec-sheet line ("Outer Material: Cotton." reads like a
     # table; coverage tests, 2026-11-20).
     if field_name.lower().endswith("material"):
@@ -200,7 +221,8 @@ def _spec_lookup(p: ProductView, question: str) -> QAResult:
     words = [w for w in re.findall(r"[a-z]+", q) if w not in _STOP and len(w) > 2]
     specific = [w for w in words if w not in _GENERIC_KEY_WORDS]
     for key in fields:  # a word from the question naming a listing field directly, e.g. "microwave safe"
-        if key not in ("Name", "Description", "Category") and any(w in key.lower() for w in specific):
+        if key not in ("Name", "Description", "Category") and any(re.search(rf"\b{re.escape(w)}(?:s|es)?\b", key.lower())
+                                                                   for w in specific):
             wanted.append(key)
     wanted = list(dict.fromkeys(wanted))
     if wanted:
@@ -322,6 +344,199 @@ _INSTALL_Q = re.compile(r"\b(install|installation|installed|assembl|assemble|set
                         r"put (it|this) together|technician|carpenter)", re.I)
 
 
+# ---- questions answered by code from the product's own details, with or without the AI (O-75, O-80 to O-84)
+_OVERVIEW_Q = re.compile(r"^\s*(?:can you |could you |please )?(?:tell me (?:more )?about (?:it|this)|describe (?:it|this)|"
+                         r"what(?:'s| is) (?:this|it)(?: exactly| product| item)?\??|what exactly is (?:this|it)|"
+                         r"give me (?:a |an )?(?:summary|overview)|more about (?:it|this))\b", re.I)
+_BOX_Q = re.compile(r"\bin the (?:box|package|pack)\b|\bwhat (?:do|will|would) i (?:get|receive)\b|\bwhat (?:all )?comes (?:in|with)\b|"
+                    r"\b(?:box|package) contents?\b|\bsales package\b|\bwhat(?:'s| is) included\b", re.I)
+_PIECES_Q = re.compile(r"\bhow many (?:pieces|items|things|pcs|units|in (?:the|a|one) (?:set|pack|box))\b|\bsingle piece or\b|"
+                       r"\bis (?:it|this) a (?:set|pack)\b|\bpack of how many\b", re.I)
+_HANDMADE_Q = re.compile(r"\bhand ?made\b|\bhand-made\b|\bhandcrafted\b|\bmade by hand\b|\bby hand or\b", re.I)
+_COLOUR_Q = re.compile(r"\bcolou?rs?\b", re.I)
+_DIMS_Q = re.compile(r"\b(?:dimensions?|measurements?|how big|what(?:'s| is) the size|what size|overall size)\b", re.I)
+_INCLUDED = [
+    re.compile(r"\b(?:comes?|coming) with (?:a |an |the |any |some )?([a-z][a-z -]{2,30}?)\s*(?:free|too|also|included)?\s*[?.!]*$", re.I),
+    re.compile(r"\b(?:get|receive) (?:a |an |the |any |some )?([a-z][a-z -]{2,30}?) (?:with|along with) (?:it|this)\b", re.I),
+    re.compile(r"\b(?:will|do|would|can) i (?:actually |really |also )?get (?:a |an |the |any |some )([a-z][a-z -]{2,30}?)\s*[?.!]*$", re.I),
+    re.compile(r"^\s*(?:is|are) (?:a |an |the |any |some )?([a-z][a-z -]{2,30}?) (?:included|part of (?:it|this|the deal)|in the box)\b", re.I),
+    re.compile(r"^\s*([a-z][a-z -]{2,30}?) included\s*[?.!]*$", re.I),
+    re.compile(r"\b(?:includes?|including) (?:a |an |the |any |some )?([a-z][a-z -]{2,30}?)\s*[?.!]*$", re.I),
+    re.compile(r"\b(?:said|told me|told|says?)\b.*?\b([a-z]{3,20}(?: [a-z]{3,20})?) (?:comes?|come) (?:free|with it|included)\b", re.I),
+]
+_NOT_ITEMS = {"installation", "install", "assembly", "warranty", "guarantee", "delivery", "shipping", "emi", "discount",
+              "offer", "it", "this", "that", "them", "free installation", "free delivery", "instructions", "manual",
+              "colour", "color", "size", "price", "return", "returns", "demo", "cash on delivery", "cod"}
+
+
+def _singular(w: str) -> str:
+    w = w.lower().strip()
+    return re.sub(r"(es|s)$", "", w) if len(w) > 3 and not w.endswith("ss") else w
+
+
+def included_item(question: str) -> Optional[str]:
+    """'will I get a mattress with it?' -> 'mattress'; 'I was told it comes with cushions' -> 'cushions'."""
+    q = re.sub(r"\b(actually|really|also|please)\b", " ", question.lower())
+    q = re.sub(r"\s+", " ", q).strip()
+    for pat in _INCLUDED:
+        m = pat.search(q)
+        if m:
+            item = re.sub(r"^(a|an|the|any|some)\s+", "", m.group(1).strip())
+            item = re.sub(r"\s+(with it|with this|free|too|also)$", "", item)
+            if item and item not in _NOT_ITEMS and not any(w in _NOT_ITEMS for w in item.split()[:1]) \
+                    and not re.search(r"\binstall|assembl|warrant|deliver", item):
+                return item
+    return None
+
+
+def _box_list(fields: dict) -> Optional[str]:
+    """'1 Bedsheet,2 Pillow Cover' -> '1 bedsheet, 2 pillow cover' (said in a sentence, not as a spec line)."""
+    v = fields.get("Sales Package")
+    if not v:
+        return None
+    v = re.sub(r"\s*,\s*", ", ", str(v).strip().rstrip("."))
+    return v if re.search(r"[a-z]", v) is None else v[0] + v[1:].lower() if not v[:1].isalpha() else v.lower()
+
+
+_PART_OF = r"(?:cover|covers|case|cases|sheet|sheets|protector|protectors|holder|holders|stand|stands|set|sets)"
+
+
+def _in_box(item: str, box: str) -> Optional[bool]:
+    """True if the box list names the item itself; False if it only names a part or cover of it ('pillow cover'
+    when asked about pillows); None if it doesn't mention it at all (O-75: whole words, never 'bed' in 'bedsheet')."""
+    it = _singular(item)
+    hits = [m for m in re.finditer(rf"\b{re.escape(it)}(?:s|es)?\b(\s+{_PART_OF}\b)?", box.lower())]
+    if not hits:
+        return None
+    return any(not m.group(1) for m in hits)
+
+
+def _colour_sentence(fields: dict, question: str) -> Optional[QAResult]:
+    main_key = next((k for k in ("Primary Color", "Color", "color", "Brand Color", "Shade") if k in fields), None)
+    if main_key is None:
+        return None
+    main = str(fields[main_key]).strip().rstrip(".")
+    extras, cited = [], [main_key]
+    for k, label in (("Upholstery Color", "upholstery"), ("Finish Color", "finish")):
+        v = str(fields.get(k, "")).strip().rstrip(".")
+        if v and v.lower() not in main.lower():
+            extras.append(f"{v.lower()} {label}")
+            cited.append(k)
+    asked = re.search(r"\bis (?:it|this) (?:in )?([a-z]+)\b", question.lower())
+    lead = ""
+    if asked and asked.group(1) not in ("available", "a", "the", "in", "colou", "color", "colour"):
+        lead = "Yes, " if asked.group(1) in (main + " " + " ".join(extras)).lower() else "No, "
+    sentence = f"it's {main.lower()}" + (f", with a {' and '.join(extras)}" if extras else "") + "."
+    return QAResult((lead + sentence) if lead else sentence[0].upper() + sentence[1:], cited, "code")
+
+
+def summary(p: ProductView) -> QAResult:
+    """'Tell me about it': a short plain summary from the product's own details (O-80)."""
+    f = listing_fields(p)
+    total = (p.list_price_inr or 0) + (p.shipping_inr or 0)
+    bits = [f"This is the {p.title}."]
+    col = _colour_sentence(f, "")
+    mat_key = next((k for k in ("Primary Material", "Material", "Outer Material", "Body Material") if k in f), None)
+    cited = ["Name", "Price", "Delivery time"]
+    if mat_key:
+        bits.append(_say(p, mat_key, f[mat_key]) if mat_key in ("Primary Material", "Material")
+                    else f"It's made of {str(f[mat_key]).lower()}.")
+        cited.append(mat_key)
+    if col:
+        bits.append(col.answer)
+        cited += col.cited_fields
+    seats = re.search(r"\d+", str(f.get("Seating Capacity", "")))
+    if seats:
+        bits.append(f"It seats {seats.group()}.")
+        cited.append("Seating Capacity")
+    if measurement_mm(p, "Width") is not None:
+        bits.append(_say(p, "Width", f["Width"]).replace(" (", " (").split(" (")[0] + ".")
+        cited.append("Width")
+    box = _box_list(f)
+    if box and box.lower() not in p.title.lower():
+        bits.append(f"It comes with {box}.")
+        cited.append("Sales Package")
+    bits.append(f"It costs ₹{total:,} including delivery and arrives in about {p.delivery_days} days.")
+    return QAResult(" ".join(bits), cited, "code")
+
+
+def direct_answer(p: ProductView, question: str) -> Optional[QAResult]:
+    """Questions whose answer is a fixed lookup in the product's details: overview, what's in the box, number of
+    pieces, whether something else is included, handmade, colour, dimensions. Answered by code with or without
+    the AI, so an answer can never claim box contents the details don't list (O-84). None: not one of these."""
+    q = (question or "").strip()
+    f = listing_fields(p)
+    noun = product_noun_title(p.title) if product_noun(p) == "product" else product_noun(p)
+    if _OVERVIEW_Q.search(q):
+        return summary(p)
+    item = included_item(q)
+    if item and not _BOX_Q.search(q):
+        it_s, box = _singular(item), (_box_list(f) or "")
+        doubt = re.search(r"\b(told|said|says|promised|heard)\b", q, re.I)
+        title_words = {_singular(w) for w in re.findall(r"[a-z]+", p.title.lower())}
+        if it_s in title_words or it_s == _singular(noun.split()[-1]) or it_s in ("product", "item", "thing"):
+            tail = f" It comes with {box}." if box and box.lower() not in p.title.lower() else ""
+            return QAResult(f"Yes, this is the {noun} itself.{tail}", ["Name"] + (["Sales Package"] if tail else []),
+                            "code")
+        flag = next((k for k in f if re.search(rf"^(with {it_s[:5]}\w*|{it_s[:5]}\w* included)$", k, re.I)), None)
+        listed = _in_box(item, box) if box else None
+        if flag and str(f[flag]).lower() == "yes" or listed:
+            what = f"It comes with {box}." if box else f"Yes, the {item} is included."
+            return QAResult(("Yes. " + what) if box else what, [flag or "Sales Package"], "code")
+        lead = "Sorry, I can only go by its details. " if doubt else "Sorry, "
+        if flag and str(f[flag]).lower() == "no":
+            msg = f"{lead}the {item} isn't included. This is only the {noun}."
+            cited = [flag]
+        elif box and listed is False:
+            msg = f"{lead}it comes with {box}, but not {item} themselves." if item.endswith("s") else \
+                  f"{lead}it comes with {box}, but not a {item} itself."
+            cited = ["Sales Package"]
+        elif box:
+            msg = f"{lead}it only comes with {box}. No {item}."
+            cited = ["Sales Package"]
+        else:
+            msg = (f"{lead}this is only the {noun}. Its details don't mention {('a ' if not item.endswith('s') else '')}"
+                   f"{item}, so I can't promise {'one' if not item.endswith('s') else 'them'}.")
+            cited = ["Name"]
+        msg = re.sub(r"([.!?]\s+)([a-z])", lambda m: m.group(1) + m.group(2).upper(), msg)
+        return QAResult(msg[0].upper() + msg[1:], cited, "code")
+    if _BOX_Q.search(q) or _PIECES_Q.search(q):
+        box = _box_list(f)
+        count_key = next((k for k in ("Number of Contents in Sales Package", "Pack of") if k in f), None)
+        if _PIECES_Q.search(q) and count_key:
+            n = str(f[count_key]).strip()
+            n = f"a {n.lower()}" if re.match(r"(?i)pack|set", n) else n.lower() if re.search(r"(?i)piece", n) \
+                else f"a pack of {n}"
+            return QAResult(f"It's {n}." + (f" It comes with {box}." if box else ""),
+                            [count_key] + (["Sales Package"] if box else []), "code")
+        if box:
+            return QAResult(f"It comes with {box}.", ["Sales Package"], "code")
+        return QAResult(f"Sorry, its details don't list what's in the box. The listing is for the {noun} itself, and "
+                        "I can't promise anything else with it.", ["Name"], "code")
+    if _HANDMADE_Q.search(q):
+        k = next((k for k in ("Handcrafted", "Handmade") if k in f), None)
+        if k:
+            yes = str(f[k]).lower() == "yes"
+            return QAResult("Yes, it's handcrafted." if yes else "No, it isn't handmade.", [k], "code")
+        return QAResult("Sorry, its details don't say whether it's handmade.", [], "code")
+    if _COLOUR_Q.search(q):
+        return _colour_sentence(f, q)
+    if _DIMS_Q.search(q):
+        parts, cited = [], []
+        for k, w in (("Width", "wide"), ("Depth", "deep"), ("Length", "long"), ("Height", "high")):
+            mm = measurement_mm(p, k)
+            if mm is not None:
+                parts.append(f"{format_length(mm, 'cm')} {w} ({format_length(mm, 'mm')})")
+                cited.append(k)
+        if parts:
+            joined = parts[0] if len(parts) == 1 else ", ".join(parts[:-1]) + " and " + parts[-1]
+            return QAResult(f"It's {joined}.", cited, "code")
+        if "Size" in f:
+            return QAResult(f"Its size is {f['Size']}.", ["Size"], "code")
+        return QAResult("Sorry, its details don't give its measurements.", [], "code", status="not_in_listing")
+    return None
+
+
 def answer_about_product(p: ProductView, question: str, extracted: intent_mod.IntentExtraction,
                          use_llm: Optional[bool] = None, history: Optional[list[str]] = None) -> QAResult:
     res = _answer_core(p, question, extracted, use_llm, history)
@@ -331,10 +546,18 @@ def answer_about_product(p: ProductView, question: str, extracted: intent_mod.In
     if (_INSTALL_Q.search(question or "") and "Installation & Demo Details" not in fields
             and not re.search(r"install", res.answer, re.I)):
         import store_policy
-        lead = "" if res.status == "not_in_listing" else res.answer.rstrip() + " "
-        res = QAResult(lead + "Its details don't say whether someone will install it for you. Free installation is "
-                       "only included when a product's page says so, so I can't promise it for this one.",
-                       [c for c in res.cited_fields] + [store_policy.label("P2")], res.method, meta=res.meta)
+        # Kept short (PM, 2026-11-21: the two-part reply was too long): one sentence on assembly, one on installation.
+        cond = fields.get("Delivery Condition")
+        if cond:
+            lead = _say(p, "Delivery Condition", cond) + " "
+        elif res.status == "not_in_listing":
+            lead = ""
+        else:
+            lead = re.split(r"(?<=[.!?])\s+", res.answer.strip())[0] + " "
+        cited = [c for c in res.cited_fields if c != "Delivery Condition" or cond] + \
+            (["Delivery Condition"] if cond and "Delivery Condition" not in res.cited_fields else [])
+        res = QAResult(lead + "Its details don't mention installation, so I can't promise it's included.",
+                       cited + [store_policy.label("P2")], res.method, meta=res.meta)
     return res
 
 
@@ -343,6 +566,9 @@ def _answer_core(p: ProductView, question: str, extracted: intent_mod.IntentExtr
     checked = _requirement_check(p, extracted)
     if checked:
         return checked
+    direct = direct_answer(p, question)
+    if direct is not None:
+        return direct
     if _PHOTO_Q.search(question or "") and re.search(r"\bhow many|number of|more\b", question.lower()):
         n = 1 if p.image_url else 0
         return QAResult(("There's one photo of it. Tap the card to see it larger on its page." if n

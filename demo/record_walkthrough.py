@@ -14,7 +14,7 @@ in that window. The recording keeps running, so your payment is in the video. Wi
 
 Each run on the real store uses about 20 free AI requests. Rehearse on a rules-only copy instead:
     INTENTGUARD_LLM=off INTENTGUARD_TRACE_DIR=/tmp/nestwise-rehearsal \\
-    INTENTGUARD_CANDIDATES_FILE=/tmp/nestwise-rehearsal/candidates.jsonl RAZORPAY_KEY_ID= RAZORPAY_KEY_SECRET= \\
+    INTENTGUARD_CANDIDATES_FILE=/tmp/nestwise-rehearsal/candidates.jsonl INTENTGUARD_SESSION_DIR=/tmp/nestwise-rehearsal/sessions RAZORPAY_KEY_ID= RAZORPAY_KEY_SECRET= \\
         .venv/bin/uvicorn server:app --port 8002
 """
 from __future__ import annotations

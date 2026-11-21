@@ -16,6 +16,13 @@ KEYBOARD_REQUEST = ("Find a Mac-compatible wireless keyboard and mouse combo wit
 
 
 @pytest.fixture(autouse=True)
+def saved_chats_to_tmp(monkeypatch, tmp_path_factory):
+    """Tests never write saved chats into the real data/sessions/ folder."""
+    if "server" in sys.modules:
+        monkeypatch.setattr(sys.modules["server"], "SESSION_DIR", tmp_path_factory.mktemp("sessions"))
+
+
+@pytest.fixture(autouse=True)
 def traces_to_tmp(monkeypatch, tmp_path_factory):
     """PRD §14: tests never write to the real traces/ folder (it feeds the observability dashboard)."""
     import tracing
