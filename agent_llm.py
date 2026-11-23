@@ -473,12 +473,12 @@ def _run(session, text: str, context: dict):
             _step(session, "Working out the answer")
         msg, meta = llm.chat_tools(messages, TOOLS, deadline, avoid=empty_models)
         waits = 0
-        while msg is None and waits < 3 and deadline - time.monotonic() > 15:
+        while msg is None and deadline - time.monotonic() > 15:    # keep trying until the time limit, not 3 tries
             # PM, 2026-11-23: keep waiting rather than give up. Busy models are tried again after a short pause.
             waits += 1
             _step(session, "The AI is busy, still working")
             session.tracer.event("model", "agent.retry", status="warn", attempt=waits, why=meta.get("error"))
-            time.sleep(3)
+            time.sleep(min(3 * waits, 12))                           # 3 s, 6 s, 9 s, then every 12 s
             llm.forgive_cooling()
             msg, meta = llm.chat_tools(messages, TOOLS, deadline, avoid=empty_models)
         session.tracer.event("model", "agent.step", status="ok" if msg else "warn",
