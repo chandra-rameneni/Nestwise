@@ -1,0 +1,920 @@
+{
+ "run_at": "20261121T064938Z",
+ "mode": "rules",
+ "model": null,
+ "payment_keys": "off for this run",
+ "scenarios_version": "round2-1",
+ "total": 30,
+ "passed": 30,
+ "core": "30/30",
+ "probes": "0/0",
+ "skipped_for_mode": [
+  "R2-C04",
+  "R2-C08",
+  "R2-X01",
+  "R2-X02",
+  "R2-V01",
+  "R2-V03",
+  "R2-V04",
+  "R2-V05",
+  "R2-P01",
+  "R2-P02",
+  "R2-P03",
+  "R2-P04",
+  "R2-P07",
+  "R2-P08",
+  "R2-N01",
+  "R2-N03",
+  "R2-N04",
+  "R2-F01"
+ ],
+ "ai_readings": 0,
+ "rules_fallbacks": 32,
+ "ai_answers": 0,
+ "answers": 14,
+ "results": [
+  {
+   "id": "R2-C01",
+   "group": "conversation",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 1,
+   "ai_answers": 0,
+   "answers": 1,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_980b2ee1202f",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "It's 165 cm wide (1650 mm).",
+     "cited": [
+      "Width"
+     ]
+    },
+    {
+     "kind": "ANSWER",
+     "message": "That's 1.65 m wide.",
+     "cited": [
+      "Width"
+     ]
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-C02",
+   "group": "conversation",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 1,
+   "ai_answers": 0,
+   "answers": 1,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_31ded3925aeb",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "It's 165 cm wide (1650 mm).",
+     "cited": [
+      "Width"
+     ]
+    },
+    {
+     "kind": "ANSWER",
+     "message": "That's 1.65 m wide.",
+     "cited": [
+      "Width"
+     ]
+    },
+    {
+     "kind": "ANSWER",
+     "message": "Sorry about that! That's 1.65 m wide.",
+     "cited": [
+      "Width"
+     ]
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-C03",
+   "group": "conversation",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 1,
+   "ai_answers": 0,
+   "answers": 1,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_f295603aa98c",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "It's 210 cm deep (2100 mm).",
+     "cited": [
+      "Depth"
+     ]
+    },
+    {
+     "kind": "ANSWER",
+     "message": "That's 6.9 ft long.",
+     "cited": [
+      "Depth"
+     ]
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-C05",
+   "group": "conversation",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 1,
+   "ai_answers": 0,
+   "answers": 0,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_24bafc1606e6",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 1 temple to choose from. Here it is:\n• SRK GROUPS Aluminium, Wooden Home Temple: ₹1,298 total, arrives in 7 days, 18 cm wide.\nTell me your budget or anything else that matters, and I'll narrow these down.",
+     "cited": []
+    },
+    {
+     "kind": "ANSWER",
+     "message": "SRK GROUPS Aluminium, Wooden Home Temple: There's one photo of it. Tap the card to see it larger on its page.",
+     "cited": [
+      "Photos"
+     ]
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-C06",
+   "group": "conversation",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 1,
+   "ai_answers": 0,
+   "answers": 0,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_2278a562215a",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 1 temple to choose from. Here it is:\n• SRK GROUPS Aluminium, Wooden Home Temple: ₹1,298 total, arrives in 7 days, 18 cm wide.\nTell me your budget or anything else that matters, and I'll narrow these down.",
+     "cited": []
+    },
+    {
+     "kind": "ANSWER",
+     "message": "SRK GROUPS Aluminium, Wooden Home Temple: Sorry, I don't have that detail for this temple. I can tell you about its size, materials, delivery or care.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-C07",
+   "group": "conversation",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 1,
+   "ai_answers": 0,
+   "answers": 0,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_dfd71750a61d",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 16 sofas are under ₹20,000. Here are the 3 best value:\n• Durian BID/32625/A/1 Leatherette 1 Seater Sofa: ₹9,209 total, arrives in 8 days, 1 seat, 56 cm wide.\n• Durian BID/32626/A/1 Leatherette 1 Seater Sofa: ₹11,375 total, arrives in 9 days, 1 seat, 80 cm wide.\n• Durian BID/32625/A/2 Leat",
+     "cited": []
+    },
+    {
+     "kind": "CLARIFY",
+     "message": "Which one do you mean? Tap one below: 1. Durian BID/32625/A/1 Leatherette 1 Seater Sofa; 2. Durian BID/32626/A/1 Leatherette 1 Seater Sofa; 3. Durian BID/32625/A/2 Leatherette 2 Seater Sofa.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-X03",
+   "group": "challenge",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 1,
+   "ai_answers": 0,
+   "answers": 1,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_ac4c6ec0e964",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "Sorry, the specs don't cover that, though the description on this page mentions “spill”. Have a look there.",
+     "cited": [
+      "Description"
+     ]
+    },
+    {
+     "kind": "ANSWER",
+     "message": "Sorry, I can only answer from what's in this product's details, like its size, materials, delivery and care. I'm a shopping assistant: I can help you find things and answer questions about this product.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-X04",
+   "group": "challenge",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 1,
+   "ai_answers": 0,
+   "answers": 1,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_33a90a37b114",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "Sorry, I don't have that detail for this bed. I can tell you about its size, materials, delivery or care.",
+     "cited": []
+    },
+    {
+     "kind": "ANSWER",
+     "message": "Sorry, I can only answer from what's in this product's details, like its size, materials, delivery and care. I'm a shopping assistant: I can help you find things and answer questions about this product.",
+     "cited": []
+    },
+    {
+     "kind": "ANSWER",
+     "message": "Sorry, that detail just isn't in this product's information, so I can't tell you more. Want to know its size, materials, delivery time or care instead?",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-V02",
+   "group": "voice",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 1,
+   "ai_answers": 0,
+   "answers": 1,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_3ea792c70d0e",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "This one arrives in about 5 days, and delivery is free. We deliver across India.",
+     "cited": [
+      "P9 Delivery"
+     ]
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-V06",
+   "group": "voice",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 1,
+   "ai_answers": 0,
+   "answers": 1,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_a6a901ee5f67",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "Sorry, I don't have that detail for this bed. I can tell you about its size, materials, delivery or care.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-V07",
+   "group": "voice",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 1,
+   "ai_answers": 0,
+   "answers": 1,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_89629888c7be",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "Sorry, I don't have that detail for this bed. I can tell you about its size, materials, delivery or care.",
+     "cited": []
+    }
+   ],
+   "notes": "rules fallback wording"
+  },
+  {
+   "id": "R2-V08",
+   "group": "voice",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 2,
+   "ai_answers": 0,
+   "answers": 2,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_533b4f889cca",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "It's made of solid wood. Specifically, Rosewood (Sheesham).",
+     "cited": [
+      "Primary Material",
+      "Primary Material Subtype"
+     ]
+    },
+    {
+     "kind": "ANSWER",
+     "message": "It's 165 cm wide (1650 mm).",
+     "cited": [
+      "Width"
+     ]
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-P05",
+   "group": "policy",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 1,
+   "ai_answers": 0,
+   "answers": 1,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_1a227b896767",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "Sorry, this one can't be returned: it's one of our small no-return items. If it arrives broken, send us a photo within 48 hours and we'll review it and send a replacement (no refunds on these).",
+     "cited": [
+      "P3 Returns"
+     ]
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-P06",
+   "group": "policy",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 1,
+   "ai_answers": 0,
+   "answers": 1,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_d02ccfe070b2",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "You can order from 1 up to 5 of these at a time (21 in stock). For more, contact us.",
+     "cited": [
+      "P6 Order limits"
+     ]
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-N02",
+   "group": "not_policy",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 1,
+   "ai_answers": 0,
+   "answers": 0,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_395d2a1e8525",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "UNSUPPORTED",
+     "message": "That's not something I can help with, sorry. But I'd love to help you find something for your home: home décor, kitchen & dining, home furnishing and furniture.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-N05",
+   "group": "not_policy",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 1,
+   "ai_answers": 0,
+   "answers": 0,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_b64ff0ba0dfb",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "DEFER",
+     "message": "Sorry, I can't handle refunds or returns just yet. I can help you find and buy products, though.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-N06",
+   "group": "not_policy",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 1,
+   "ai_answers": 0,
+   "answers": 0,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_37bef2edf035",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "UNSUPPORTED",
+     "message": "That's not something I can help with, sorry. But I'd love to help you find something for your home: home décor, kitchen & dining, home furnishing and furniture.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-F02",
+   "group": "frustration",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 2,
+   "ai_answers": 0,
+   "answers": 2,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_a615e9def58c",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "Sorry, I don't have that detail for this bed. I can tell you about its size, materials, delivery or care.",
+     "cited": []
+    },
+    {
+     "kind": "ANSWER",
+     "message": "Sorry, I don't have that one either. For this bed, I can tell you its size, materials, delivery time and care, or help you order it.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-F03",
+   "group": "frustration",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 1,
+   "ai_answers": 0,
+   "answers": 0,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_94fd2ec726b4",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "For this bed, I can tell you its size, materials, delivery time and care, or help you order it. I can also find other products for your home.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-F04",
+   "group": "trick",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 1,
+   "ai_answers": 0,
+   "answers": 0,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_226d125c3b4c",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "UNSUPPORTED",
+     "message": "Sorry, I can't help with that. I can only help you pick the right product and buy it, with your approval.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-F05",
+   "group": "trick",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 1,
+   "ai_answers": 0,
+   "answers": 0,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_13648bd4cee9",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "UNSUPPORTED",
+     "message": "Sorry, I can't help with that. I can only help you pick the right product and buy it, with your approval.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-F06",
+   "group": "frustration",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 1,
+   "ai_answers": 0,
+   "answers": 0,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_63a5f9bb0b61",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "UNSUPPORTED",
+     "message": "Apologies for the inconvenience. Hope you find what you're looking for.",
+     "cited": []
+    }
+   ],
+   "notes": "lookalike: a real insult still gets B15"
+  },
+  {
+   "id": "R2-B01",
+   "group": "fit",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 0,
+   "ai_answers": 0,
+   "answers": 0,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_2c0be30fc81d",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "CLARIFY",
+     "message": "It's 165 cm wide and 210 cm long. How much space do you have for it? Tell me and I'll check.",
+     "cited": [
+      "Width",
+      "Depth"
+     ]
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-B02",
+   "group": "fit",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 0,
+   "ai_answers": 0,
+   "answers": 0,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_9fe643ab3227",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "CLARIFY",
+     "message": "It's 165 cm wide and 210 cm long. How much space do you have for it? Tell me and I'll check.",
+     "cited": [
+      "Width",
+      "Depth"
+     ]
+    },
+    {
+     "kind": "ANSWER",
+     "message": "Good news, it fits! It's 165 × 210 cm, and your space is 300 × 250 cm.",
+     "cited": [
+      "Width",
+      "Depth"
+     ]
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-B03",
+   "group": "fit",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 0,
+   "ai_answers": 0,
+   "answers": 0,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_d19a6bfe9f60",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "CLARIFY",
+     "message": "It's 165 cm wide and 210 cm long. How much space do you have for it? Tell me and I'll check.",
+     "cited": [
+      "Width",
+      "Depth"
+     ]
+    },
+    {
+     "kind": "ANSWER",
+     "message": "Sorry, it won't fit: it's 165 cm wide, 15 cm more than your 150 cm.",
+     "cited": [
+      "Width",
+      "Depth"
+     ]
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-B04",
+   "group": "browse",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 0,
+   "ai_answers": 0,
+   "answers": 0,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_c8981eb0ed24",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "ANSWER",
+     "message": "Plenty! We have 761 home décor products, including showpieces (311), table decor & handicrafts (147), wall decor & clocks (140), decorative lighting & lamps (86), flowers, plants & vases (24) and festive decor (18). Which would you like to see?",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-B05",
+   "group": "closest",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 2,
+   "ai_answers": 0,
+   "answers": 0,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_da5d17e73817",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 1 temple to choose from. Here it is:\n• SRK GROUPS Aluminium, Wooden Home Temple: ₹1,298 total, arrives in 7 days, 18 cm wide.\nTell me your budget or anything else that matters, and I'll narrow these down.",
+     "cited": []
+    },
+    {
+     "kind": "NO_ELIGIBLE",
+     "message": "Sorry, our only home temple is the SRK GROUPS Aluminium, Wooden Home Temple at ₹1,298, which is ₹298 over your budget. Would you like it anyway?",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-B06",
+   "group": "closest",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 2,
+   "ai_answers": 0,
+   "answers": 0,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_85edec616d54",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 1 temple to choose from. Here it is:\n• SRK GROUPS Aluminium, Wooden Home Temple: ₹1,298 total, arrives in 7 days, 18 cm wide.\nTell me your budget or anything else that matters, and I'll narrow these down.",
+     "cited": []
+    },
+    {
+     "kind": "NO_ELIGIBLE",
+     "message": "Sorry, our only home temple is the SRK GROUPS Aluminium, Wooden Home Temple at ₹1,298, which is ₹298 over your budget. Would you like it anyway?",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-B07",
+   "group": "closest",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 2,
+   "ai_answers": 0,
+   "answers": 0,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_34e21e6a6130",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 1 temple to choose from. Here it is:\n• SRK GROUPS Aluminium, Wooden Home Temple: ₹1,298 total, arrives in 7 days, 18 cm wide.\nTell me your budget or anything else that matters, and I'll narrow these down.",
+     "cited": []
+    },
+    {
+     "kind": "NO_ELIGIBLE",
+     "message": "Sorry, our only home temple is the SRK GROUPS Aluminium, Wooden Home Temple at ₹1,298, which is ₹298 over your budget. Would you like it anyway?",
+     "cited": []
+    },
+    {
+     "kind": "CLARIFY",
+     "message": "Just so you know, the SRK GROUPS Aluminium, Wooden Home Temple is ₹298 over your budget. Add it anyway?",
+     "cited": []
+    },
+    {
+     "kind": "CART_PROPOSED",
+     "message": "Great choice! SRK GROUPS Aluminium, Wooden Home Temple: ₹799 + ₹499 delivery = **₹1,298**. Arrives in 7 days.\nTap **Approve this exact cart** when you're ready. Nothing is ordered without your approval.",
+     "cited": []
+    }
+   ],
+   "notes": null
+  },
+  {
+   "id": "R2-B08",
+   "group": "closest",
+   "probe": false,
+   "passed": true,
+   "ai_readings": 0,
+   "rules_fallbacks": 2,
+   "ai_answers": 0,
+   "answers": 0,
+   "models": [],
+   "answered_by": "rules only",
+   "failures": [],
+   "trace_id": "tr_2cabb0f0fd09",
+   "first_failing_event": null,
+   "replies": [
+    {
+     "kind": "RECOMMEND",
+     "message": "Good news, 1 temple to choose from. Here it is:\n• SRK GROUPS Aluminium, Wooden Home Temple: ₹1,298 total, arrives in 7 days, 18 cm wide.\nTell me your budget or anything else that matters, and I'll narrow these down.",
+     "cited": []
+    },
+    {
+     "kind": "NO_ELIGIBLE",
+     "message": "Sorry, our only home temple is the SRK GROUPS Aluminium, Wooden Home Temple at ₹1,298, which is ₹298 over your budget. Would you like it anyway?",
+     "cited": []
+    },
+    {
+     "kind": "CLARIFY",
+     "message": "Just so you know, the SRK GROUPS Aluminium, Wooden Home Temple is ₹298 over your budget. Add it anyway?",
+     "cited": []
+    },
+    {
+     "kind": "ANSWER",
+     "message": "No problem, I haven't added it. Want me to keep looking with a different budget?",
+     "cited": []
+    }
+   ],
+   "notes": null
+  }
+ ],
+ "ai_share": 0.0,
+ "valid_ai_run": null,
+ "by_model": {
+  "rules only": {
+   "scenarios": [
+    "R2-C01",
+    "R2-C02",
+    "R2-C03",
+    "R2-C05",
+    "R2-C06",
+    "R2-C07",
+    "R2-X03",
+    "R2-X04",
+    "R2-V02",
+    "R2-V06",
+    "R2-V07",
+    "R2-V08",
+    "R2-P05",
+    "R2-P06",
+    "R2-N02",
+    "R2-N05",
+    "R2-N06",
+    "R2-F02",
+    "R2-F03",
+    "R2-F04",
+    "R2-F05",
+    "R2-F06",
+    "R2-B01",
+    "R2-B02",
+    "R2-B03",
+    "R2-B04",
+    "R2-B05",
+    "R2-B06",
+    "R2-B07",
+    "R2-B08"
+   ],
+   "passed": 30
+  }
+ }
+}

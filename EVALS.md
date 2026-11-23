@@ -289,3 +289,18 @@ Why: the PM found "Will I get the bed with it?" failing, and a wider probe found
 So the AI can no longer claim box contents the details don't list (O-84), and these questions use no AI quota.
 
 **Not covered yet:** these phrasings are written by Claude, not taken from real shoppers. The AI-mode run is still pending, because the free quota is used up.
+
+## Follow-ups after a search, 2026-11-21 (`tests/test_followups.py`)
+
+O-96 to O-109, from the PM's screenshots and a probe of 50 follow-up messages.
+- **Tests:** 53, approved before code. 48 failed before the fixes, and all pass after.
+- **Full suite:** 804 passed, 2 skipped.
+- **Eval sets (rules mode):** unchanged at 39/39, 36/36, 40/40, 14/14 and 30/30. Held-out: 27/35, 22/25 and 14/15.
+
+**Lesson:** a chat test has to continue the conversation (name a shown product, compare, push back, say "What?"). Checking only the first reply isn't enough.
+
+## Conversation focus, 2026-11-21 (FOCUS_DESIGN.md)
+
+**Tests:** 12 for rules F1 to F8 and basic mode, plus a browser test of the "Which one?" buttons, the focus bar, the card checkboxes and the "About" tags.
+- **Full suite:** 817 passed, 2 skipped.
+- **Eval sets (rules mode):** unchanged at 39/39, 36/36, 40/40, 14/14 and 30/30. Held-out: 27/35, 22/25 and 14/15.

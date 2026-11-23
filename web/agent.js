@@ -86,6 +86,7 @@
         </div>
       </details>
       <div class="suggest" id="ig-suggest"></div>
+      <div class="focusbar" id="ig-focus" aria-live="polite"></div>
       <form class="composer" id="ig-form">
         <label for="ig-input" class="sr-only">Message</label>
         <input id="ig-input" autocomplete="off" maxlength="1000" placeholder="Ask or tell me what you need…">
@@ -95,6 +96,7 @@
     const msgs = $("ig-msgs");
     const fab = document.getElementById("ig-fab");
     let state = null;
+    let cartOpen = false;                       // the cart is a one-line bar until the shopper opens it
     let lastFocus = null;
 
     function open() {
@@ -115,16 +117,18 @@
     }
     function addBot(r) {
       const label = KIND_LABEL[r.kind];
-      let html = `<div class="msg bot">${label ? `<span class="kind ${esc(r.kind)}">${esc(label)}</span><br>` : ""}${format(r.message)}`;
+      const about = (r.about || []).length ? `<span class="about">About: ${r.about.map((a) => esc(shortName(a.title))).join(" · ")}</span>` : "";
+      let html = `<div class="msg bot">${about}${label ? `<span class="kind ${esc(r.kind)}">${esc(label)}</span><br>` : ""}${format(r.message)}`;
       if (r.cited_fields && r.cited_fields.length) {
         const fromPolicy = r.cited_fields.every((f) => /^P\d+\b/.test(f));   // O-67: store policy isn't the listing
         html += `<div class="cite">${fromPolicy ? "From our store policy" : "From the listing"}: ${r.cited_fields.map((f) => `<span>${esc(f)}</span>`).join("")}</div>`;
       }
       if (r.recommendations && r.recommendations.length) {
         html += `<div class="recs">` + r.recommendations.map((x) => `
-          <div class="rec">
+          <div class="rec" data-rec="${esc(x.product_id)}">
             <a href="/product/${esc(x.product_id)}" tabindex="-1" aria-hidden="true">${thumb(x.image_url, x.title)}</a>
             <div class="body">
+              <label class="pick"><input type="checkbox" data-focus="${esc(x.product_id)}"> Select to ask about it</label>
               <a class="name" href="/product/${esc(x.product_id)}">${esc(x.title)}</a>
               <span class="meta"><strong>${inr(x.total_inr)}</strong> incl. delivery · ${esc(x.delivery_days)} days</span>
               <span class="checks">${(x.checks || []).filter((c) => c.constraint !== "in_stock").map(checkChip).join("")}</span>
@@ -137,7 +141,42 @@
           r.rejected.map((x) => `<li><a href="/product/${esc(x.product_id)}">${esc(x.title)}</a>: ${esc(x.why || "doesn't meet a requirement")}</li>`).join("") +
           (r.rejected_count > r.rejected.length ? `<li>…and ${r.rejected_count - r.rejected.length} more</li>` : "") + `</ul></details>`;
       }
+      if (r.steps && r.steps.length) {           // the AI agent's own steps, so you can see it working
+        html += `<details class="did"><summary>What I did${r.model ? ` · ${esc(r.model.split("/").pop())}` : ""}</summary><ol>` +
+          r.steps.map((x) => `<li>${esc(x)}</li>`).join("") + `</ol></details>`;
+      }
+      if (r.choices && r.choices.length) {
+        html += `<div class="choices">` + r.choices.map((c) => `<button type="button" class="btn small" data-choose="${esc(c.product_id)}">${esc(shortName(c.title))}</button>`).join("") +
+          (r.choices.length > 1 ? `<button type="button" class="btn small" data-choose="${esc(r.choices.map((c) => c.product_id).join(","))}">${r.choices.length === 2 ? "Both" : "All"}</button>` : "") + `</div>`;
+      }
       msgs.insertAdjacentHTML("beforeend", html + "</div>");
+      syncFocus();
+    }
+    // FOCUS_DESIGN: the focus bar and the card checkboxes always show what the assistant is talking about
+    function shortName(t) { const w = String(t || "").split(/\s+/); return w.length > 4 ? w.slice(0, 4).join(" ") + "…" : t; }
+    function syncFocus() {
+      const f = (state && state.focus) || [];
+      const ids = f.map((x) => x.product_id);
+      el.querySelectorAll("input[data-focus]").forEach((cb) => {
+        cb.checked = ids.includes(cb.dataset.focus);
+        cb.closest(".rec").classList.toggle("focused", cb.checked);
+      });
+      const bar = $("ig-focus"), input = $("ig-input");
+      if (!bar) return;
+      if (!f.length) {
+        bar.innerHTML = state && (state.shown || []).length ? `<span class="hint">Select a product above to ask about it, or tell me what you're looking for.</span>` : "";
+        input.placeholder = "Ask or tell me what you need…";
+        return;
+      }
+      bar.innerHTML = `<span class="lbl">${f.length > 1 ? "Comparing" : "Talking about"}:</span>` + f.map((x) =>
+        `<span class="chip">${esc(shortName(x.title))}${context.page === "product" && f.length === 1 ? "" :
+          `<button type="button" data-unfocus="${esc(x.product_id)}" aria-label="Stop talking about ${esc(x.title)}">×</button>`}</span>`).join("");
+      const nm = shortName(f[0].title);
+      input.placeholder = f.length > 1 ? "Ask about these…" : `Ask about the ${nm}${nm.endsWith("…") ? "" : "…"}`;
+    }
+    async function setFocus(ids) {
+      const r = await api("/api/agent/focus", { product_ids: ids });
+      renderState(r.state);
     }
     function scroll() { msgs.scrollTop = msgs.scrollHeight; }
 
@@ -145,7 +184,8 @@
       state = s;
       const mode = $("ig-mode");
       const ai = s.mode && s.mode !== "rules";
-      const fellBack = ai && s.last_extractor && s.last_extractor.startsWith("rules");   // fast_path (O-31) is not a fallback
+      const fellBack = ai && s.last_extractor && s.last_extractor.startsWith("rules");
+      // basic mode = no AI model answered the last message   // fast_path (O-31) is not a fallback
       mode.textContent = fellBack ? "Rules (AI busy)" : ai ? "AI mode" : "Rules mode";
       mode.className = "mode " + (ai && !fellBack ? "claude" : "rules");
       mode.title = fellBack ? "No AI model answered the last message (busy or out of free requests), so the rules handled it." :
@@ -157,12 +197,15 @@
       if (c && c.status === "PROPOSED") {
         const approved = a && a.status === "APPROVED";
         const lines = c.lines || [];
-        cartEl.innerHTML = `<div class="cart">
+        const n = lines.reduce((k, ln) => k + ln.qty, 0);
+        const sumLine = approved ? `Approved · ${inr(c.total_inr)} · ${rzp ? "tap to pay" : "tap to place the order"}`
+                                 : `Cart: ${n} item${n > 1 ? "s" : ""} · ${inr(c.total_inr)} · View & approve`;
+        cartEl.innerHTML = `<details class="cartbox"${cartOpen ? " open" : ""}><summary>${sumLine}</summary><div class="cart">
           ${lines.map((ln) => `<div class="cline">
             ${thumb(ln.image_url, ln.title)}
             <div class="cbody">
               <a class="name" href="/product/${esc(ln.product_id)}">${esc(ln.title)}</a>
-              <span class="meta">${inr(ln.total_inr)}${ln.qty > 1 ? ` · ${esc(ln.qty)} × ${inr(ln.unit_price_inr)}` : ""}${ln.shipping_inr ? ` + ${inr(ln.shipping_inr)} delivery` : ""}</span>
+              <span class="meta">${ln.qty > 1 ? `${esc(ln.qty)} × ${inr(ln.unit_price_inr)}` : inr(ln.unit_price_inr)}${ln.shipping_inr ? ` + ${inr(ln.shipping_inr)} delivery = ${inr(ln.total_inr)}` : " · free delivery"}</span>
               ${ln.returnable === false ? `<span class="noreturn">No returns on this item. If it arrives broken, we'll replace it after a quick review.</span>` : ""}
               <div class="qty" role="group" aria-label="Quantity of ${esc(ln.title)}">
                 <button type="button" class="qbtn" data-qty="${esc(ln.qty - 1)}" data-pid="${esc(ln.product_id)}" aria-label="One less"${ln.qty <= 1 ? " disabled" : ""}>−</button>
@@ -187,8 +230,9 @@
             <button class="btn link" data-act="decline" type="button">Decline</button>
           </div>
           ${approved && rzp ? `<div class="testcard">Test mode: use card 4100 2800 0000 1007, any future expiry, any CVV, OTP 1234. No real money moves.</div>` : ""}
-          </div>`;
-        $("ig-demo").hidden = false;
+          </div></details>`;
+        cartEl.querySelector("details").addEventListener("toggle", (e) => { cartOpen = e.target.open; $("ig-demo").hidden = !cartOpen; });
+        $("ig-demo").hidden = !cartOpen;
         if (!$("ig-price").value) $("ig-price").value = ((c.lines && c.lines[0] ? c.lines[0].unit_price_inr : c.total_inr) || 0) + 500;
       } else if (c && c.status === "ORDERED") {
         const o = s.orders[s.orders.length - 1];
@@ -202,6 +246,7 @@
         cartEl.innerHTML = "";
         $("ig-demo").hidden = true;
       }
+      syncFocus();
       if (onState) onState(s);
     }
 
@@ -217,6 +262,24 @@
       const show = () => { wait.querySelector(".stage").textContent = steps[i] + "…"; };
       show();
       const timer = setInterval(() => { if (i < steps.length - 1) { i++; show(); } }, 1100);
+      // AI agent: show the real step it's on ("Searching beds…"), polled while it works, for as long as it takes
+      let live = null;
+      if (stages && stages.live) {
+        // every step stays on screen for at least a second, so fast steps ("Searching beds") are still seen
+        const queue = [], seen = new Set();
+        let shownAt = 0;
+        live = setInterval(async () => {
+          try {
+            const p = await (await fetch("/api/agent/progress")).json();
+            (p.steps || []).forEach((x) => { if (!seen.has(x)) { seen.add(x); queue.push(x); } });
+          } catch (e) { /* the reply still arrives; only the step text is missed */ }
+          if (queue.length && Date.now() - shownAt > 1000) {
+            clearInterval(timer);
+            wait.querySelector(".stage").textContent = queue.shift() + "…";
+            shownAt = Date.now();
+          }
+        }, 300);
+      }
       msgs.appendChild(wait); scroll();
       try {
         const r = await promise;
@@ -226,6 +289,7 @@
         msgs.insertAdjacentHTML("beforeend", `<div class="msg bot"><span class="kind BLOCKED">Something went wrong</span><br>${esc(e.message)}</div>`);
       } finally {
         clearInterval(timer);
+        if (live) clearInterval(live);
         wait.remove();
       }
       scroll();
@@ -235,7 +299,9 @@
       text = (text || "").trim();
       if (!text) return;
       open();
-      run(api("/api/agent/message", { text, context }), text, stagesFor("message", context));
+      const st = stagesFor("message", context);
+      st.live = true;
+      run(api("/api/agent/message", { text, context }), text, st);
     }
 
     // PRD §13: the Pay button is the only way a payment starts (RZ1). The server creates the Razorpay order from the
@@ -299,9 +365,18 @@
       location.reload();
     });
     document.addEventListener("keydown", (e) => { if (e.key === "Escape" && el.classList.contains("open")) close(); });
+    el.addEventListener("change", (e) => {
+      const cb = e.target.closest("input[data-focus]");
+      if (!cb) return;
+      const cur = ((state && state.focus) || []).map((x) => x.product_id).filter((id) => id !== cb.dataset.focus);
+      if (cb.checked && cur.length >= 3) { cb.checked = false; alert("You can select up to 3 products at a time."); return; }
+      setFocus(cb.checked ? cur.concat([cb.dataset.focus]) : cur);
+    });
     el.addEventListener("click", (e) => {
       const t = e.target.closest("button");
       if (!t) return;
+      if (t.dataset.unfocus) { setFocus(((state && state.focus) || []).map((x) => x.product_id).filter((id) => id !== t.dataset.unfocus)); return; }
+      if (t.dataset.choose) { run(api("/api/agent/choose", { product_ids: t.dataset.choose.split(",") }), t.textContent, ["Checking"]); return; }
       if (t.dataset.say) send(t.dataset.say);
       else if (t.dataset.select) run(api("/api/agent/select", { product_id: t.dataset.select }), "Add to cart: " + t.dataset.title, stagesFor("select", context));
       else if (t.dataset.act === "pay") pay();

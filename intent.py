@@ -90,7 +90,7 @@ CONSTRAINT_FIELDS = ("max_total_inr", "max_delivery_days", "seats", "max_width_c
 _NUM_WORDS = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8,
               "nine": 9, "ten": 10}
 _NUM = r"(\d+|" + "|".join(_NUM_WORDS) + r")"
-_SHOP_VERB = (r"\b(?:do you (?:sell|have|stock|carry)|have you got|is there|are there|any|"
+_SHOP_VERB = (r"\b(?:do (?:you|we) (?:sell|have|stock|carry)|have you got|is there|are there|any|"
               r"(?:what'?s|what is|which is|show me|find|get)?\s*the (?:cheapest|best|biggest|smallest|lowest[- ]priced)|"
               r"find|buy|need|want|looking for|look for|show me|show|get|search for|search|recommend|"
               r"purchase|order|i'?m after|shopping for)\b")
@@ -498,7 +498,7 @@ def extract_rules(text: str, context: Optional[dict] = None, prior: Optional[Int
             return IntentExtraction(intent="PRODUCT_DISCOVERY", wants_similar=True,
                                     wants_cheaper=bool(re.search(r"cheaper|less expensive|lower price", t)), **common)
         # O-32: "do you sell mobiles?" is about the store, not this product: it goes to the normal search below.
-        store_q = re.match(r"\s*(do|does|can) (you|u|the store|this store|y'?all) (also )?(sell|have|carry|stock|get)\b", t)
+        store_q = re.match(r"\s*(do|does|can) (you|we|u|the store|this store|y'?all) (also )?(sell|have|carry|stock|get)\b", t)
         if store_q and not re.search(r"\b(it|its|this|that|them|like this|more of)\b", t):
             pass
         elif phrase is None or "?" in text or re.match(r"\s*(what|how|is|does|do|can|will|which|are|has|have|"

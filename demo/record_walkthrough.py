@@ -255,12 +255,18 @@ padding:1px 5px;border-radius:4px}} h1{{font-size:28px}} h2{{font-size:21px;marg
         self.go(BED)
         self.open_chat()
         self.say("buy this", after=3)
+        if p.locator("details.cartbox:not([open]) > summary").count():      # the cart is a one-line bar: open it
+            p.locator("details.cartbox > summary").first.click()
+            self.hold(1)
         self.click(f'button.qbtn[data-pid="{sofa_pid}"][aria-label="One more"]', after=3)
         if p.locator('[data-act="confirm_qty"]').count():
             self.click('[data-act="confirm_qty"]', after=2)
         self.click('[data-act="approve"]', after=6)
 
         self.scene("7. Real Razorpay, done right")
+        if p.locator("details.cartbox:not([open]) > summary").count():
+            p.locator("details.cartbox > summary").first.click()
+            self.hold(1)
         if p.locator('[data-act="pay"]').count():
             p.locator('[data-act="pay"]').first.click()
             if skip_payment:

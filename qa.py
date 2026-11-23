@@ -369,6 +369,14 @@ _NOT_ITEMS = {"installation", "install", "assembly", "warranty", "guarantee", "d
               "colour", "color", "size", "price", "return", "returns", "demo", "cash on delivery", "cod"}
 
 
+# O-96 (regression from O-75): "will I get a refund / an invoice / a discount / it by Friday?" are not about what's in
+# the box. Only a physical thing can come in the box.
+_ABSTRACT = {"refund", "refunds", "money", "replacement", "invoice", "bill", "receipt", "discount", "discounts",
+             "offer", "offers", "deal", "cashback", "coupon", "emi", "guarantee", "if", "when", "by", "back", "it",
+             "my", "your", "price", "quote", "call", "reply", "response", "update", "tracking", "confirmation",
+             "notification", "email", "sms", "chance", "option", "choice"}
+
+
 def _singular(w: str) -> str:
     w = w.lower().strip()
     return re.sub(r"(es|s)$", "", w) if len(w) > 3 and not w.endswith("ss") else w
@@ -384,7 +392,8 @@ def included_item(question: str) -> Optional[str]:
             item = re.sub(r"^(a|an|the|any|some)\s+", "", m.group(1).strip())
             item = re.sub(r"\s+(with it|with this|free|too|also)$", "", item)
             if item and item not in _NOT_ITEMS and not any(w in _NOT_ITEMS for w in item.split()[:1]) \
-                    and not re.search(r"\binstall|assembl|warrant|deliver", item):
+                    and not re.search(r"\binstall|assembl|warrant|deliver", item) and len(item.split()) <= 3 \
+                    and not set(item.split()) & _ABSTRACT:
                 return item
     return None
 
@@ -469,6 +478,13 @@ def direct_answer(p: ProductView, question: str) -> Optional[QAResult]:
     noun = product_noun_title(p.title) if product_noun(p) == "product" else product_noun(p)
     if _OVERVIEW_Q.search(q):
         return summary(p)
+    if re.search(r"\b(arrive|get it|get this|deliver\w*|reach)\b", q, re.I):
+        by = intent_mod.delivery_days_from_words(q.lower())
+        if by is not None:                               # O-96: "will I get it by friday?"
+            ok = p.delivery_days <= by
+            return QAResult((f"Yes, it should: it arrives in about {p.delivery_days} days." if ok else
+                             f"Sorry, probably not: it takes about {p.delivery_days} days to arrive."),
+                            ["Delivery time"], "code")
     item = included_item(q)
     if item and not _BOX_Q.search(q):
         it_s, box = _singular(item), (_box_list(f) or "")

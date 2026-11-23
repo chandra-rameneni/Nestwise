@@ -322,3 +322,28 @@ details.ruled ul { margin: 6px 0 0; padding-left: 18px; max-height: 180px; overf
 .ev .st-warn { color: var(--unk); }
 .ev pre { margin: 0; padding: 10px 14px; border-top: 1px solid var(--line); overflow-x: auto; font: 12px/1.5 var(--mono); }
 .ev .dur { font: 400 12px var(--mono); color: var(--muted); margin-left: auto; }
+
+/* FOCUS_DESIGN: what the assistant is talking about, always visible */
+.rec.focused { outline: 2px solid var(--accent, #2563eb); outline-offset: -2px; }
+.pick { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); cursor: pointer; }
+.pick input { width: 16px; height: 16px; accent-color: var(--accent, #2563eb); }
+.focusbar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 6px 16px 0; font-size: 13px; color: var(--muted); }
+.focusbar:empty { display: none; }
+.focusbar .lbl { font-weight: 600; color: var(--fg); }
+.focusbar .chip { display: inline-flex; align-items: center; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 980px; padding: 3px 4px 3px 10px; color: var(--fg); }
+.focusbar .chip button { appearance: none; border: 0; background: transparent; font-size: 15px; line-height: 1; cursor: pointer; color: var(--muted); padding: 0 6px; }
+.msg .about { display: inline-block; font-size: 11px; font-weight: 600; letter-spacing: .02em; color: var(--accent, #2563eb); background: color-mix(in srgb, var(--accent, #2563eb) 10%, transparent); border-radius: 6px; padding: 2px 6px; margin-bottom: 6px; }
+.choices { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+
+.did { margin-top: 8px; font-size: 12px; color: var(--muted); }
+.did summary { cursor: pointer; }
+.did ol { margin: 4px 0 0 18px; padding: 0; }
+
+/* PM 2026-11-21: the cart is a one-line bar so it never hides the chat; tap to review and approve */
+.cartbox { margin: 6px 16px 0; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.cartbox > summary { cursor: pointer; list-style: none; padding: 9px 12px; font-size: 14px; font-weight: 600; color: var(--fg); }
+.cartbox > summary::-webkit-details-marker { display: none; }
+.cartbox > summary::before { content: "🛒 "; }
+.cartbox[open] > summary { border-bottom: 1px solid var(--line); }
+.cartbox[open] { max-height: 55vh; overflow: auto; }
+.cartbox .cart { margin: 0; border: 0; }

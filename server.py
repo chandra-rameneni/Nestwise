@@ -138,7 +138,8 @@ def agent_json(s: Session, r: AgentResponse) -> dict:
 def _agent_payload(r: AgentResponse) -> dict:
     return {"kind": r.kind, "message": r.message, "recommendations": r.recommendations,
             "rejected": r.rejected[:30], "rejected_count": len(r.rejected), "reason_codes": r.reason_codes,
-            "cited_fields": r.cited_fields, "product_id": r.product_id,
+            "cited_fields": r.cited_fields, "product_id": r.product_id, "about": r.about, "choices": r.choices,
+            "steps": r.steps, "model": r.model,
             "order": None if r.order is None else {"order_id": r.order.order_id, "total_inr": r.order.total_inr}}
 
 
@@ -188,6 +189,9 @@ def state(s: Session) -> dict:
         "trace_id": s.tracer.trace_id,
         "mode": llm.provider() or "rules", "model": llm.model_name(),
         "payments": payments.mode(), "payments_paused": payments.paused(),
+        "shown": [{"product_id": p.product_id, "title": p.title} for p in getattr(s, "shown", [])],
+        "focus": [{"product_id": p.product_id, "title": p.title} for p in s._focus_products()]
+                 if hasattr(s, "_focus_products") and getattr(s, "focus", None) else [],
         "last_extractor": next((e["attrs"].get("extractor") for e in reversed(s.tracer.events)
                                 if e["name"] == "intent.extracted"), None),
     }
@@ -292,6 +296,14 @@ def agent_state(response: HTTPResponse, ig_session: Optional[str] = Cookie(None)
                        "last_reply": getattr(s, "last_reply", None), "replies": getattr(s, "ui_replies", [])}
 
 
+@app.get("/api/agent/progress")
+def agent_progress(ig_session: Optional[str] = Cookie(None)):
+    """The step the AI agent is on right now ("Searching beds"), polled by the chat while it waits."""
+    s = _sessions.get(ig_session or "")
+    return {"step": getattr(s, "progress", "") if s is not None else "",
+            "steps": list(getattr(s, "progress_log", [])) if s is not None else []}
+
+
 @app.post("/api/agent/message")
 def agent_message(body: Message, response: HTTPResponse, ig_session: Optional[str] = Cookie(None)):
     text = body.text.strip()
@@ -303,6 +315,26 @@ def agent_message(body: Message, response: HTTPResponse, ig_session: Optional[st
     ctx = {"page": "product", "product_id": body.context.get("product_id")} \
         if body.context.get("page") == "product" and body.context.get("product_id") else {"page": "listing"}
     return agent_json(s, s.handle_message(text, ctx))
+
+
+class Focus(BaseModel):
+    product_ids: list[str]
+
+
+@app.post("/api/agent/focus")
+def agent_focus(body: Focus, response: HTTPResponse, ig_session: Optional[str] = Cookie(None)):
+    """Card checkboxes and the focus bar's ×: changes the focus without a chat message (FOCUS_DESIGN F1-F8)."""
+    s = _session(ig_session, response)
+    s.set_focus(body.product_ids[:5])
+    _save(getattr(s, "sid", None), s)
+    return {"state": state(s)}
+
+
+@app.post("/api/agent/choose")
+def agent_choose(body: Focus, response: HTTPResponse, ig_session: Optional[str] = Cookie(None)):
+    """A tap on a "Which one?" button (F2)."""
+    s = _session(ig_session, response)
+    return agent_json(s, s.choose(body.product_ids[:5]))
 
 
 @app.post("/api/agent/select")

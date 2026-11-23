@@ -1,0 +1,380 @@
+{
+ "run_at": "20261122T200123Z",
+ "minutes": 3.4,
+ "passed": 3,
+ "total": 6,
+ "results": [
+  {
+   "id": "C04",
+   "title": "Confusion and pushback",
+   "turns": [
+    {
+     "page": "listing",
+     "you": "Find a 3-seater sofa under ₹30,000 that fits 200 cm",
+     "reply": "Both sofas are within your budget and fit under 200 cm. The HomeTown one is wider (181.5 cm) and cheaper at ₹14,900, while the Durian is narrower (168 cm) at ₹17,680 but delivers faster (5 days vs 9).\n\nWould you like to see full details on either, or add one to your cart?",
+     "steps": [
+      "Searched sofa (≤₹30,000, 3 seats, ≤200 cm) → 2 fit, 52 left out"
+     ],
+     "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+     "kind": "RECOMMEND",
+     "seconds": 6.1,
+     "problems": [],
+     "cards": [
+      "HomeTown CIAZ Fabric 3 Seater Sectional",
+      "Durian BID/32625/A/3 Leatherette 3 Seater Sofa"
+     ]
+    },
+    {
+     "page": "listing",
+     "you": "What?",
+     "reply": "Here are the two 3-seater sofas that fit under 200 cm width and are under ₹30,000:\n\n**1. HomeTown CIAZ Fabric 3 Seater Sectional** — ₹14,900 (free delivery)\n- Width: 181.5 cm ✓ fits under 200 cm\n- Material: Fabric (beige/brown)\n- Delivery: 9 days\n- In stock: Yes\n- Warranty: 1 year on manufacturing defects\n\n**2. Durian BID/32625/A/3 Leatherette 3 Seater Sofa** — ₹17,680 (free delivery)\n- Width: 168 cm ✓ fits under 200 cm\n- Material: Leatherette (beige)\n- Delivery: 5 days\n- In stock: Yes\n- Warranty: 5 years\n\nBoth are returnable and include free delivery. Would you like more details on either one, or would you like to add one to your cart?",
+     "steps": [
+      "Read the details of the HomeTown CIAZ Fabric 3 Seater Sectional",
+      "Read the details of the Durian BID/32625/A/3 Leatherette 3 Seater Sofa"
+     ],
+     "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+     "kind": "ANSWER",
+     "seconds": 10.4,
+     "problems": [],
+     "cards": []
+    },
+    {
+     "page": "listing",
+     "you": "but you already listed them above",
+     "reply": "You're right — I repeated myself. Sorry about that.\n\nSince you've already seen both options, what would you like to do next? I can:\n\n- Get full details on either sofa\n- Add one to your cart\n- Compare them side by side\n- Look for other 3-seater sofas under ₹30,000\n\nJust let me know.",
+     "steps": [
+      "Answered from the conversation"
+     ],
+     "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+     "kind": "ANSWER",
+     "seconds": 1.9,
+     "problems": [],
+     "cards": []
+    }
+   ],
+   "cart": [],
+   "cart_ok": true,
+   "approved_by_ai": false,
+   "review": {
+    "turns": [
+     {
+      "verdict": "PASS",
+      "why": "Correctly interpreted the shopper's request for a 3-seater sofa under ₹30,000 and width ≤200 cm, provided two matching options with accurate prices and widths, and offered next steps."
+     },
+     {
+      "verdict": "PASS",
+      "why": "Responded appropriately to the shopper's confusion ('What?') by re-listing the two sofas with detailed specifications sourced from product detail reads, no made-up facts."
+     },
+     {
+      "verdict": "PASS",
+      "why": "Acknowledged the repetition, apologized, and offered clear next actions (details, cart, compare, more search) without ignoring the shopper's comment."
+     }
+    ],
+    "overall": "PASS",
+    "judge": "nvidia/nemotron-3-ultra-550b-a55b"
+   },
+   "passed": true
+  },
+  {
+   "id": "C13",
+   "title": "Quantity and change of mind",
+   "turns": [
+    {
+     "page": "listing",
+     "you": "coffee mug under 300",
+     "reply": "Here are some coffee mugs under ₹300, all in stock and returnable:\n\n| Mug | Material | Total (incl. delivery) | Delivery |\n|-----|----------|------------------------|----------|\n| Prithish Abstract Design 28 Ceramic Mug | Ceramic | ₹174 | 2 days |\n| Prithish Time To Poop Ceramic Mug | Ceramic | ₹198 | 3 days |\n| Aagam TM-RTX2 Stainless Steel Mug | Stainless Steel | ₹198 | 6 days |\n| Prithish Floral Heart with Butterflies Ceramic Mug | Ceramic | ₹224 | 2 days |\n| Prithish Abstract Design 40 Ceramic Mug | Ceramic | ₹224 | 2 days |\n| Prithish Mr Curve Mooch Ceramic Mug | Ceramic | ₹224 | 2 days |\n\nAll prices include delivery. Would you like me to add any of these to your cart, or would you like more details on a specific one?",
+     "steps": [
+      "Searched coffee mug (≤₹300) → 174 fit, 128 left out"
+     ],
+     "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+     "kind": "RECOMMEND",
+     "seconds": 6.9,
+     "problems": [],
+     "cards": [
+      "Prithish Abstract Design 28 Ceramic Mug",
+      "Prithish Time To Poop Ceramic Mug",
+      "Aagam TM-RTX2 Stainless Steel Mug",
+      "Prithish Floral Heart with Butterflies Ceramic Mug",
+      "Prithish Abstract Design 40 Ceramic Mug",
+      "Prithish Mr Curve Mooch Ceramic Mug"
+     ]
+    },
+    {
+     "page": "listing",
+     "you": "add the first one",
+     "reply": "Added! Your cart now has:\n\n- **Prithish Abstract Design 28 Ceramic Mug** — ₹174 (includes delivery)\n\nTotal: ₹174\n\nIt's not bought yet — you'll need to tap **\"Approve this exact cart\"** and then **Pay** to complete the purchase. Would you like anything else?",
+     "steps": [
+      "Added to your cart: Prithish Abstract Design 28 Ceramic Mug"
+     ],
+     "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+     "kind": "CART_PROPOSED",
+     "seconds": 3.7,
+     "problems": [],
+     "cards": []
+    },
+    {
+     "page": "listing",
+     "you": "make it 2",
+     "reply": "Done! Your cart now has:\n\n- **Prithish Abstract Design 28 Ceramic Mug** × 2 — ₹299 total (includes delivery)\n\nStill not bought — tap **\"Approve this exact cart\"** and then **Pay** when you're ready to complete the order.",
+     "steps": [
+      "Added to your cart: Prithish Abstract Design 28 Ceramic Mug"
+     ],
+     "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+     "kind": "CART_PROPOSED",
+     "seconds": 5.1,
+     "problems": [],
+     "cards": []
+    },
+    {
+     "page": "listing",
+     "you": "actually remove it",
+     "reply": "Removed! Your cart is now empty — total ₹0.\n\nIf you'd like to add anything else, just let me know.",
+     "steps": [
+      "Updated your cart"
+     ],
+     "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+     "kind": "ANSWER",
+     "seconds": 2.7,
+     "problems": [],
+     "cards": []
+    }
+   ],
+   "cart": [],
+   "cart_ok": true,
+   "approved_by_ai": false,
+   "review": {
+    "turns": [
+     {
+      "verdict": "PASS",
+      "why": "Correctly listed coffee mugs under ₹300 with accurate prices and delivery info, no made-up facts."
+     },
+     {
+      "verdict": "PASS",
+      "why": "Added the first mug to cart as requested, showed correct total and clarified not yet purchased."
+     },
+     {
+      "verdict": "PASS",
+      "why": "Updated quantity to 2, recalculated total correctly, maintained clarity about purchase status."
+     },
+     {
+      "verdict": "PASS",
+      "why": "Removed the item from cart, confirmed empty cart with ₹0 total."
+     }
+    ],
+    "overall": "PASS",
+    "judge": "nvidia/nemotron-3-ultra-550b-a55b"
+   },
+   "passed": true
+  },
+  {
+   "id": "N10",
+   "title": "Delivery charge",
+   "turns": [
+    {
+     "page": "product",
+     "you": "do you charge for delivery?",
+     "reply": "Delivery charges vary by product and are shown on each product page — but the prices you see already include delivery. For example, the HomeTown CIAZ Fabric 3 Seater Sectional you're viewing is ₹14,900 incl. delivery.\n\nWe deliver across India; large furniture may take longer to reach remote areas.",
+     "steps": [
+      "Checked the store policy on delivery",
+      "Checked the store policy on delivery area"
+     ],
+     "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+     "kind": "ANSWER",
+     "seconds": 4.1,
+     "problems": [
+      "expected /free/"
+     ],
+     "cards": []
+    }
+   ],
+   "cart": [],
+   "cart_ok": true,
+   "approved_by_ai": false,
+   "review": {
+    "turns": [
+     {
+      "verdict": "PASS",
+      "why": "The assistant correctly answers the delivery charge question, confirms prices include delivery, provides a relevant product example, and mentions delivery coverage."
+     }
+    ],
+    "overall": "PASS",
+    "judge": "nvidia/nemotron-3-ultra-550b-a55b"
+   },
+   "passed": false
+  },
+  {
+   "id": "N11",
+   "title": "Price changed after adding",
+   "turns": [
+    {
+     "page": "listing",
+     "you": "Find a 3-seater sofa under ₹30,000 that fits 200 cm",
+     "reply": "I found two 3-seater sofas under ₹30,000 that fit within 200 cm width:\n\n| | Width | Material | Colour | Price (incl. delivery) | Delivery |\n|---|---|---|---|---|---|\n| **HomeTown CIAZ Fabric 3 Seater Sectional** | 181.5 cm | Fabric | Beige | ₹14,900 | Free, ~9 days |\n| **Durian BID/32625/A/3 Leatherette 3 Seater Sofa** | 168 cm | Leatherette | Beige | ₹17,680 | Free, ~5 days |\n\nBoth are in stock and returnable. Would you like more details on either one, or shall I add one to your cart?",
+     "steps": [
+      "Searched 3-seater sofa (≤₹30,000, 3 seats, ≤200 cm) → 2 fit, 52 left out"
+     ],
+     "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+     "kind": "RECOMMEND",
+     "seconds": 2.8,
+     "problems": [],
+     "cards": [
+      "HomeTown CIAZ Fabric 3 Seater Sectional",
+      "Durian BID/32625/A/3 Leatherette 3 Seater Sofa"
+     ]
+    },
+    {
+     "page": "listing",
+     "you": "add the ciaz",
+     "reply": "Added the **HomeTown CIAZ Fabric 3 Seater Sectional** to your cart — ₹14,900 (delivery included).\n\nIt's not bought yet. When you're ready, tap **\"Approve this exact cart\"** and then **Pay** to complete the order.",
+     "steps": [
+      "Added to your cart: HomeTown CIAZ Fabric 3 Seater Sectional"
+     ],
+     "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+     "kind": "CART_PROPOSED",
+     "seconds": 2.3,
+     "problems": [],
+     "cards": []
+    },
+    {
+     "page": "listing",
+     "you": "what's my cart total now?",
+     "reply": "Your cart total is now **₹16,000** — up from ₹14,900 when you added it (the price changed since then).\n\nWhen you tap **\"Approve this exact cart\"**, the store will re-check and ask you to approve the new total before you pay. Nothing is ordered until you do.",
+     "steps": [
+      "Looked at your cart"
+     ],
+     "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+     "kind": "ANSWER",
+     "seconds": 2.1,
+     "problems": [],
+     "cards": []
+    }
+   ],
+   "cart": [
+    "SOFEB7MHGWTHZFVJ"
+   ],
+   "cart_ok": true,
+   "approved_by_ai": false,
+   "review": {
+    "overall": "NOT GRADED",
+    "turns": [],
+    "judge": null
+   },
+   "passed": false
+  },
+  {
+   "id": "N12",
+   "title": "Out of stock after adding",
+   "turns": [
+    {
+     "page": "listing",
+     "you": "Find a 3-seater sofa under ₹30,000 that fits 200 cm",
+     "reply": "Here are two 3-seater sofas under ₹30,000 that fit within 200 cm:\n\n1. **HomeTown CIAZ Fabric 3 Seater Sectional** — ₹14,900 (free delivery)\n   - Width: 181.5 cm | Material: Fabric | Colour: Beige\n   - Delivery in ~9 days | In stock | Returnable\n\n2. **Durian BID/32625/A/3 Leatherette 3 Seater Sofa** — ₹17,680 (free delivery)\n   - Width: 168 cm | Material: Leatherette | Colour: Beige\n   - Delivery in ~5 days | In stock | Returnable\n\nBoth prices include delivery. Would you like more details on either one, or shall I add one to your cart?",
+     "steps": [
+      "Searched 3-seater sofa (≤₹30,000, 3 seats, ≤200 cm) → 2 fit, 52 left out"
+     ],
+     "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+     "kind": "RECOMMEND",
+     "seconds": 4.1,
+     "problems": [],
+     "cards": [
+      "HomeTown CIAZ Fabric 3 Seater Sectional",
+      "Durian BID/32625/A/3 Leatherette 3 Seater Sofa"
+     ]
+    },
+    {
+     "page": "listing",
+     "you": "add the ciaz",
+     "reply": "Added to your cart:\n\n- **HomeTown CIAZ Fabric 3 Seater Sectional** — ₹14,900\n\nThe cart total is ₹14,900. It's not bought yet — you'll need to tap **\"Approve this exact cart\"** and then **Pay** to complete the purchase.",
+     "steps": [
+      "Added to your cart: HomeTown CIAZ Fabric 3 Seater Sectional"
+     ],
+     "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+     "kind": "CART_PROPOSED",
+     "seconds": 2.1,
+     "problems": [],
+     "cards": []
+    },
+    {
+     "page": "listing",
+     "you": "is the ciaz still available?",
+     "reply": "Unfortunately, no — the HomeTown CIAZ Fabric 3 Seater Sectional is currently **out of stock** (0 available).\n\nWould you like me to look for another 3-seater sofa under ₹30,000 that fits within 200 cm? The Durian leatherette one (₹17,680, 168 cm wide) is still in stock if you're interested.",
+     "steps": [
+      "Read the details of the HomeTown CIAZ Fabric 3 Seater Sectional"
+     ],
+     "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+     "kind": "ANSWER",
+     "seconds": 2.6,
+     "problems": [],
+     "cards": []
+    }
+   ],
+   "cart": [
+    "SOFEB7MHGWTHZFVJ"
+   ],
+   "cart_ok": true,
+   "approved_by_ai": false,
+   "review": {
+    "turns": [
+     {
+      "verdict": "PASS",
+      "why": "Correctly listed two 3-seater sofas under ₹30,000 and within 200 cm with accurate prices and dimensions."
+     },
+     {
+      "verdict": "PASS",
+      "why": "Added the requested sofa to cart and clearly stated it is not yet bought or paid."
+     },
+     {
+      "verdict": "PASS",
+      "why": "Directly answered the availability question and offered a relevant in-stock alternative."
+     }
+    ],
+    "overall": "PASS",
+    "judge": "nvidia/nemotron-3.5-super-vl-120b-a12b"
+   },
+   "passed": true
+  },
+  {
+   "id": "N18",
+   "title": "Several things at once",
+   "turns": [
+    {
+     "page": "listing",
+     "you": "a bed, a mattress and two pillows under 40000 total",
+     "reply": "Bed:\n• FabHomeDecor Fabric Double Sofa Bed — ₹22,646\n• Ethnic Handicrafts Solid Wood Queen Bed — ₹24,999\n• Ethnic Handicrafts Solid Wood Single Bed — ₹24,999\n\nMattress:\n• Nilkamal Double Coir Mattress — ₹5,571\n• Nilkamal Queen Spring Mattress — ₹11,668\n• Springwel Single Spring Mattress — ₹14,212\n\nPillows:\n• JDX Plain Bed/Sleeping Pillow — ₹2,400\n• JDX Plain Bed/Sleeping Pillow — ₹2,880\n• JDX Plain Bed/Sleeping Pillow — ₹3,370",
+     "steps": [],
+     "model": null,
+     "kind": "RECOMMEND",
+     "seconds": 14.4,
+     "problems": [
+      "answered in basic mode (no AI)"
+     ],
+     "cards": [
+      "FabHomeDecor Fabric Double Sofa Bed",
+      "Ethnic Handicrafts Solid Wood Queen Bed",
+      "Ethnic Handicrafts Solid Wood Single Bed",
+      "Nilkamal Double Coir Mattress",
+      "Nilkamal Queen Spring Mattress",
+      "Springwel Single Spring Mattress",
+      "JDX Plain Bed/Sleeping Pillow",
+      "JDX Plain Bed/Sleeping Pillow",
+      "JDX Plain Bed/Sleeping Pillow"
+     ]
+    }
+   ],
+   "cart": [],
+   "cart_ok": true,
+   "approved_by_ai": false,
+   "review": {
+    "turns": [
+     {
+      "verdict": "FAIL",
+      "why": "Did not combine items into a bundle under ₹40,000; only listed individual products without addressing total budget constraint."
+     }
+    ],
+    "overall": "FAIL",
+    "judge": "nvidia/nemotron-3-ultra-550b-a55b"
+   },
+   "passed": false
+  }
+ ]
+}

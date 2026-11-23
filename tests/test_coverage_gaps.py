@@ -265,3 +265,33 @@ def test_browser_chat_survives_a_store_restart(tmp_path):
         proc.terminate()
         proc.wait(timeout=10)
     assert "1 ×" in last and "Seater" in last, last
+
+
+def test_browser_focus_bar_and_buttons(live_store):
+    """FOCUS_DESIGN: "which one" buttons, the focus bar, card checkboxes and "About" tags work on screen."""
+    from playwright.sync_api import sync_playwright
+    with sync_playwright() as pw:
+        b = pw.chromium.launch(channel="chrome", headless=True)
+        page = b.new_page(viewport={"width": 1400, "height": 900})
+        page.goto(live_store + "/", wait_until="networkidle")     # a fresh browser: a fresh chat
+        page.click("#ig-fab")
+
+        def say(text):
+            n = page.locator("#ig-msgs .msg.bot").count()
+            page.fill("#ig-input", text)
+            page.press("#ig-input", "Enter")
+            page.wait_for_function("n => document.querySelectorAll('#ig-msgs .msg.bot').length > n", arg=n)
+        say(SOFA_ASK)
+        say("installation?")
+        n = page.locator("#ig-msgs .msg.bot").count()
+        page.locator("[data-choose]").last.click()                     # "Both"
+        page.wait_for_function("n => document.querySelectorAll('#ig-msgs .msg.bot').length > n", arg=n)
+        page.wait_for_timeout(300)
+        bar_both = page.locator("#ig-focus").inner_text()
+        about = page.locator("#ig-msgs .msg.bot").last.locator(".about").inner_text()
+        page.locator("input[data-focus]").nth(1).uncheck()
+        page.wait_for_timeout(500)
+        bar_one = page.locator("#ig-focus").inner_text()
+        b.close()
+    assert "Comparing" in bar_both and "About:" in about, (bar_both, about)
+    assert "Talking about" in bar_one and "Durian" not in bar_one, bar_one

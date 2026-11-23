@@ -48,14 +48,16 @@ TOPICS = {"delivery_damage": ["P1"], "installation": ["P2"], "returns": ["P3"], 
 # (a request: B9/B45) and "does it come with installation?" (a listing fact: B4) don't match.
 _Q = r"(\?|^\s*(what|how|can|could|do|does|is|are|will|would|when|which|who)\b|\bwhat if\b|\bpolicy\b)"
 _PATTERNS = [
-    ("delivery_damage", r"\b(damag\w*|broken|breaks?|cracked|dent\w*)\b.*\b(deliver\w*|shipping|shipped|transit|arriv\w*)\b|"
+    ("delivery_damage", r"\b(refund|replace\w*|money back|exchange)\b.*\b(damag\w*|broken|defect\w*|cracked)\b|"
+                        r"\b(damag\w*|broken|defect\w*|cracked)\b.*\b(refund|replace\w*|money back)\b|"
+                        r"\b(damag\w*|broken|breaks?|cracked|dent\w*)\b.*\b(deliver\w*|shipping|shipped|transit|arriv\w*)\b|"
                         r"\b(deliver\w*|shipping|transit|arriv\w*)\b.*\b(damag\w*|broken|breaks?)\b"),
     ("warranty", r"\bwarranty\b"),
     ("installation", r"\binstall\w*\b.*\b(myself|my ?self|break\w*|damag\w*|who)\b|\b(install|assemble)\w* (it|this) (myself|my ?self)\b|"
                      r"\binstallation (person|guy|man|technician|team)\b"),
     ("returns", r"\bwhat if i (don'?t|do not) like (it|this)\b|\bif i (don'?t|do not) like (it|this)\b|\breturn (policy|window)\b|\bcan i (return|send (it|this) back)\b|\bsend (it|this) back\b|\breturnable\b|"
                 r"\bexchange (it|this)\b|\bcan (it|this) be returned\b"),
-    ("refunds", r"\brefunds? (take|policy|time)\b|\bhow long\b.*\brefunds?\b|\bwhen (will|do) i get (my )?refund"),
+    ("refunds", r"\b(get|have) (my |the )?money back\b|\bwill i get a refund\b|\brefunds? (take|policy|time)\b|\bhow long\b.*\brefunds?\b|\bwhen (will|do) i get (my )?refund"),
     ("cancellation", r"\bcancel\w*\b"),
     ("order_limits", r"\b(min(imum)?|max(imum)?)\b.*\border\b|\border limit\b|\bhow many\b.*\b(can i|at once|per order)\b"),
     ("payment", r"\bcash on delivery\b|\bcod\b|\bpayment (method|option)s?\b|\bpay (by|with|using|via)\b|\bupi\b|\bemi\b"),
@@ -145,6 +147,15 @@ def answer(topic: str, question: str, product=None, use_llm: bool = False) -> Po
         return PolicyAnswer(f"Most products arrive in {lo} to {hi} days, and about {free}% have free delivery. Each "
                             "product shows its own delivery time and charge, and I can tell you for any product you "
                             "pick. We deliver across India.", [label("P9")], "code")
+    if topic == "returns" and product is not None:
+        # O-104: the rule for this product's category only, said by code (furniture differs from everything else)
+        text = secs.get("P3", ("", ""))[1]
+        want = "Furniture" if product.category == "furniture" else "Home décor"
+        line = next((ln.strip(" -") for ln in text.splitlines() if ln.strip(" -").startswith(want)), None)
+        if line:
+            rule = line.split(":", 1)[1].strip()
+            rule = rule[0].upper() + rule[1:]
+            return PolicyAnswer(rule, [label("P3")], "code")
     if use_llm:
         given = "\n\n".join(f"[{i}] {secs[i][0]}\n{secs[i][1]}" for i in ids)
         extra = ""

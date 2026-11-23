@@ -1,0 +1,87 @@
+{
+ "run_at": "20261122T200628Z",
+ "minutes": 1.5,
+ "passed": 0,
+ "total": 2,
+ "results": [
+  {
+   "id": "N10",
+   "title": "Delivery charge",
+   "turns": [
+    {
+     "page": "product",
+     "you": "do you charge for delivery?",
+     "reply": "Delivery charges vary by product and are shown on each product page — but the prices you see already include delivery. For example, the HomeTown CIAZ Fabric 3 Seater Sectional on your screen is ₹14,900 incl. delivery.\n\nWe deliver across India, and large furniture may take longer to reach remote areas.",
+     "steps": [
+      "Checked the store policy on delivery",
+      "Checked the store policy on delivery area"
+     ],
+     "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+     "kind": "ANSWER",
+     "seconds": 5.0,
+     "problems": [
+      "expected /free|no separate|included/"
+     ],
+     "cards": []
+    }
+   ],
+   "cart": [],
+   "cart_ok": true,
+   "approved_by_ai": false,
+   "review": {
+    "turns": [
+     {
+      "verdict": "PASS",
+      "why": "The assistant directly answers the shopper's question about delivery charges, clarifies that prices include delivery, provides a relevant example from the current product page, and adds useful context about delivery coverage and timing. No misunderstanding, fabricated facts, or confusion."
+     }
+    ],
+    "overall": "PASS",
+    "judge": "nvidia/nemotron-3-ultra-550b-a55b"
+   },
+   "passed": false
+  },
+  {
+   "id": "N18",
+   "title": "Several things at once",
+   "turns": [
+    {
+     "page": "listing",
+     "you": "a bed, a mattress and two pillows under 40000 total",
+     "reply": "Bed:\n• FabHomeDecor Fabric Double Sofa Bed — ₹22,646\n• Ethnic Handicrafts Solid Wood Queen Bed — ₹24,999\n• Ethnic Handicrafts Solid Wood Single Bed — ₹24,999\n\nMattress:\n• Nilkamal Double Coir Mattress — ₹5,571\n• Nilkamal Queen Spring Mattress — ₹11,668\n• Springwel Single Spring Mattress — ₹14,212\n\nPillows:\n• JDX Plain Bed/Sleeping Pillow — ₹2,400\n• JDX Plain Bed/Sleeping Pillow — ₹2,880\n• JDX Plain Bed/Sleeping Pillow — ₹3,370",
+     "steps": [],
+     "model": null,
+     "kind": "RECOMMEND",
+     "seconds": 23.9,
+     "problems": [
+      "answered in basic mode (no AI)"
+     ],
+     "cards": [
+      "FabHomeDecor Fabric Double Sofa Bed",
+      "Ethnic Handicrafts Solid Wood Queen Bed",
+      "Ethnic Handicrafts Solid Wood Single Bed",
+      "Nilkamal Double Coir Mattress",
+      "Nilkamal Queen Spring Mattress",
+      "Springwel Single Spring Mattress",
+      "JDX Plain Bed/Sleeping Pillow",
+      "JDX Plain Bed/Sleeping Pillow",
+      "JDX Plain Bed/Sleeping Pillow"
+     ]
+    }
+   ],
+   "cart": [],
+   "cart_ok": true,
+   "approved_by_ai": false,
+   "review": {
+    "turns": [
+     {
+      "verdict": "FAIL",
+      "why": "Ignores the budget constraint of under 40000 total for bed, mattress, and two pillows; only lists individual items without combinations or totals."
+     }
+    ],
+    "overall": "FAIL",
+    "judge": "nvidia/nemotron-3-ultra-550b-a55b"
+   },
+   "passed": false
+  }
+ ]
+}

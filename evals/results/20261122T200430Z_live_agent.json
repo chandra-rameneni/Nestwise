@@ -1,0 +1,156 @@
+{
+ "run_at": "20261122T200430Z",
+ "minutes": 2.3,
+ "passed": 2,
+ "total": 3,
+ "results": [
+  {
+   "id": "N10",
+   "title": "Delivery charge",
+   "turns": [
+    {
+     "page": "product",
+     "you": "do you charge for delivery?",
+     "reply": "Delivery charges are included in the price shown on each product — there's no separate delivery fee at checkout.\n\nFor example, the HomeTown CIAZ Fabric 3 Seater Sectional you're looking at is ₹14,900 including delivery. Delivery time and any specifics are shown on each product page, and we deliver across India (large furniture may take longer to remote areas).",
+     "steps": [
+      "Checked the store policy on delivery",
+      "Checked the store policy on delivery area"
+     ],
+     "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+     "kind": "ANSWER",
+     "seconds": 3.3,
+     "problems": [
+      "expected /free/"
+     ],
+     "cards": []
+    }
+   ],
+   "cart": [],
+   "cart_ok": true,
+   "approved_by_ai": false,
+   "review": {
+    "turns": [
+     {
+      "verdict": "PASS",
+      "why": "The assistant correctly states delivery is included in the product price with no separate fee, provides a concrete example with price, and mentions delivery time and coverage. No misunderstanding, made-up facts, or confusion."
+     }
+    ],
+    "overall": "PASS",
+    "judge": "nvidia/nemotron-3-ultra-550b-a55b"
+   },
+   "passed": false
+  },
+  {
+   "id": "N11",
+   "title": "Price changed after adding",
+   "turns": [
+    {
+     "page": "listing",
+     "you": "Find a 3-seater sofa under ₹30,000 that fits 200 cm",
+     "reply": "Here are two 3-seater sofas under ₹30,000 that fit within 200 cm:\n\n1. **HomeTown CIAZ Fabric 3 Seater Sectional** — ₹14,900 (free delivery)\n   - Width: 181.5 cm | Material: Fabric | Colour: Beige\n   - Delivery in ~9 days | In stock | Returnable\n\n2. **Durian BID/32625/A/3 Leatherette 3 Seater Sofa** — ₹17,680 (free delivery)\n   - Width: 168 cm | Material: Leatherette | Colour: Beige\n   - Delivery in ~5 days | In stock | Returnable\n\nBoth prices include delivery. Would you like me to get more details on either one, or add one to your cart?",
+     "steps": [
+      "Searched 3-seater sofa (≤₹30,000, 3 seats, ≤200 cm) → 2 fit, 52 left out"
+     ],
+     "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+     "kind": "RECOMMEND",
+     "seconds": 10.5,
+     "problems": [],
+     "cards": [
+      "HomeTown CIAZ Fabric 3 Seater Sectional",
+      "Durian BID/32625/A/3 Leatherette 3 Seater Sofa"
+     ]
+    },
+    {
+     "page": "listing",
+     "you": "add the ciaz",
+     "reply": "Added! Your cart now has:\n\n- **HomeTown CIAZ Fabric 3 Seater Sectional** — ₹14,900\n\nTotal: ₹14,900\n\nIt's not bought yet — you'll need to tap **\"Approve this exact cart\"** and then **Pay** to complete the purchase. Would you like anything else?",
+     "steps": [
+      "Added to your cart: HomeTown CIAZ Fabric 3 Seater Sectional"
+     ],
+     "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+     "kind": "CART_PROPOSED",
+     "seconds": 1.9,
+     "problems": [],
+     "cards": []
+    },
+    {
+     "page": "listing",
+     "you": "what's my cart total now?",
+     "reply": "Your cart total is now **₹16,000**.\n\nThe price went up since you added it — it was ₹14,900 when you added it, but it's ₹16,000 now. When you approve and pay, the store will re-check and ask you to confirm the new total before anything is charged.",
+     "steps": [
+      "Looked at your cart"
+     ],
+     "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+     "kind": "ANSWER",
+     "seconds": 3.4,
+     "problems": [],
+     "cards": []
+    }
+   ],
+   "cart": [
+    "SOFEB7MHGWTHZFVJ"
+   ],
+   "cart_ok": true,
+   "approved_by_ai": false,
+   "review": {
+    "turns": [
+     {
+      "verdict": "PASS",
+      "why": "Correctly identified two 3-seater sofas under ₹30,000 and within 200 cm, with prices and dimensions from the search results."
+     },
+     {
+      "verdict": "PASS",
+      "why": "Correctly added the requested CIAZ sofa to the cart as confirmed by the tool, and clearly stated it was not yet purchased."
+     },
+     {
+      "verdict": "PASS",
+      "why": "Reported the cart total from the cart lookup and reasonably explained the change from the earlier price, without claiming a purchase."
+     }
+    ],
+    "overall": "PASS",
+    "judge": "minimaxai/minimax-m3.1-flash"
+   },
+   "passed": true
+  },
+  {
+   "id": "N18",
+   "title": "Several things at once",
+   "turns": [
+    {
+     "page": "listing",
+     "you": "a bed, a mattress and two pillows under 40000 total",
+     "reply": "I found beds and pillows, but I need to be upfront: **this store doesn't sell mattresses**, so I can't include one in your order.\n\nHere are options using only the prices shown in the store:\n\n**Option 1 — Sofa bed + two pillows**\n- FabHomeDecor Fabric Double Sofa Bed (black, 190.5 cm wide, free delivery): ₹22,646\n- JDX Plain Bed/Sleeping Pillow (white, free delivery): ₹2,400 each\n\n**Option 2 — Solid wood queen bed + two pillows**\n- Ethnic Handicrafts Solid Wood Queen Bed (black, 165 cm wide, free delivery): ₹24,999\n- JDX Plain Bed/Sleeping Pillow (white, free delivery): ₹2,400 each\n\nBoth combinations are under your ₹40,000 budget when you add the bed price and two pillow prices from the store.\n\nWould you like me to add any of these to your cart? And since mattresses aren't available here, you may want to source one separately.",
+     "steps": [
+      "Searched bed (≤₹40,000, cheapest first) → 3 fit, 69 left out",
+      "Searched mattress (≤₹40,000, cheapest first) → 0 fit",
+      "Searched pillow (≤₹40,000, cheapest first) → 4 fit, 0 left out"
+     ],
+     "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+     "kind": "RECOMMEND",
+     "seconds": 13.1,
+     "problems": [],
+     "cards": [
+      "JDX Plain Bed/Sleeping Pillow",
+      "JDX Plain Bed/Sleeping Pillow",
+      "JDX Plain Bed/Sleeping Pillow",
+      "JDX Plain Bed/Sleeping Pillow"
+     ]
+    }
+   ],
+   "cart": [],
+   "cart_ok": true,
+   "approved_by_ai": false,
+   "review": {
+    "turns": [
+     {
+      "verdict": "PASS",
+      "why": "The assistant correctly states the store has no mattresses, offers two bed+two-pillow combos within the ₹40,000 budget, and does not misrepresent facts or ignore the request."
+     }
+    ],
+    "overall": "PASS",
+    "judge": "nvidia/nemotron-3-ultra-550b-a55b"
+   },
+   "passed": true
+  }
+ ]
+}

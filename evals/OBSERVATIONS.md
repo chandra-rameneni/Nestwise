@@ -227,3 +227,26 @@ The PM spotted "Will I get the bed with it?" and asked what else would fail. Cla
   - "what about beds?";
   - delivery time and charge answered from the data (P9).
 - **Also fixed:** "under 2 metres wide" was read as a ₹2 budget.
+
+## Follow-ups after a search (PM screenshots + Claude's probe, 2026-11-21)
+
+The PM's chat after the demo sofa search went wrong in six places. Claude then probed 50 follow-up messages and found 14 kinds of failure. **Why they were missed:** the 15 chat tests never named a shown product, compared the shown products, pushed back or said "What?". O-96 is a regression from the O-75 fix.
+
+| # | Shopper said | Agent replied | Expected |
+|---|---|---|---|
+| O-96 | "Will I get a refund if the product is damage?" / "an invoice?" | "Sorry, this is only the sectional…" | Store policy P1/P4; never a "comes with" answer |
+| O-97 | "I'll purchase Ciaz", "get me the ciaz", "ciaz please", "the durian" | "We don't sell Ciazs" / a new Durian brand search | That shown sofa: into the cart, or a description |
+| O-98 | "buy both", "I want the products you listed" | "We don't sell boths" / the list again | Both in the cart |
+| O-99 | "show more", "show me the others" | "We don't sell mores" | Next results, or "those are the only ones" + closest |
+| O-100 | (after the CIAZ installation answer) "what about durian?" | "The description mentions durian" | The same question about the Durian |
+| O-101 | "What?", "huh?", "what do you mean?" | "Didn't get that" / "we don't sell huhs" | The last answer again, with an apology |
+| O-102 | "But already listed them above" | "Didn't get that" | Apology + the shown list + "which one?" |
+| O-103 | "which is cheaper / wider / arrives first?", "compare them" | "Didn't get that" / "can't compare yet" | Answer from the data |
+| O-104 | "can I return the ciaz?" | "Don't have that detail" | The furniture return rule (P3) |
+| O-105 | "the ciaz is too expensive", "cheaper than the durian" | "Don't have that detail" | Cheaper ones, or "it's already the cheapest that fits" |
+| O-106 | "show me only leather ones" | "Didn't get that" | Leather/leatherette only |
+| O-107 | "none of these", "I don't like these" | "Didn't get that" | Ask what to change |
+| O-108 | "why did you leave out others?" | "Not something I can help with" | Reasons from the left-out list |
+| O-109 | "ok" | "Didn't get that" | A gentle next step |
+
+**Fixed (2026-11-21).** All 14 are covered by `tests/test_followups.py`: 53 tests, approved by the PM before the code changed. 48 failed before the fixes, and all pass now.

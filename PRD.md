@@ -99,6 +99,30 @@ The shopper is on the listing page and opens the agent panel. The agent **only c
 
 **Results (2026-11-19, Claude's browser check):** UI-01 to UI-08 all pass. UI-02: the hero box opened the panel and the sofa request returned 2 photo cards. UI-05: approve → place order gave one demo order. UI-06: "How wide is it?" answered "700 mm (about 70 cm)", citing Width. UI-07: at 375 px the page has no sideways scroll and the panel fills the screen. UI-08: 226 tests pass; evals 39/39, 36/36, 40/40, 14/14. Found and fixed along the way: O-30 (parallel requests failed). Still open: O-31 (product questions are slow in AI mode).
 
+## 5B. Conversation focus *(approved by the PM 2026-11-21; built 2026-11-21; full design in `FOCUS_DESIGN.md`)*
+
+**Why:** the agent kept guessing which product the shopper meant (O-71, O-96 to O-109). Now the shopper chooses on screen, and the screen always shows what the conversation is about.
+
+- **Focus:** the 1 to 3 products the conversation is about, shared by the screen and the agent.
+  - It's set by the card checkboxes, the "Which one?" buttons, naming a shown product, or opening a product page.
+  - It's cleared by a new search or the × in the focus bar.
+- **On screen:**
+  - a "Select" checkbox on each result card;
+  - a focus bar above the input ("Talking about: …" / "Comparing: …");
+  - "Which one?" as tap buttons (one per product, plus Both/All);
+  - an "About: …" tag on each reply about a product.
+- **Rules F1 to F8:**
+  - F1: questions apply to the focus, with one answer per product.
+  - F2: no focus means buttons, never a typed name.
+  - F3: naming a shown product moves the focus to it.
+  - F4: a new search clears the focus.
+  - F5: "buy/add" with a focus adds exactly the focus, and approval is still required.
+  - F6: compare uses the focus.
+  - F7: the focus survives pages and restarts.
+  - F8: the agent only acts on products the shopper has seen.
+- **Basic mode:** when no AI model read the message, an unclear message gets an honest "I'm in basic mode right now… tap a product or a button", never a confident wrong guess.
+- **Tests:** `tests/test_followups.py` (F1 to F8) and `tests/test_coverage_gaps.py::test_browser_focus_bar_and_buttons`.
+
 ## 6. Conversation rules
 
 | ID | Rule |
