@@ -4,7 +4,9 @@
 
 Nestwise is a working home-and-living store with **2,043 real products**, an AI shopping assistant built into every page, and **real Razorpay test payments**. It was built PRD first, with **₹0 spent on AI** (free models only).
 
-**Demo video:** [demo/Nestwise_demo.mp4](demo/Nestwise_demo.mp4) · **How the agent works (clickable):** [demo/agent_flow.html](demo/agent_flow.html)
+**Demo video:** [demo/Nestwise_demo.mp4](demo/Nestwise_demo.mp4) · **How the agent works (interactive page):** [Nestwise AI Agent](https://claude.ai/artifact/K3QVH99DvtsSdmgtsxx8ci) (source: [demo/agent_flow.html](demo/agent_flow.html))
+
+**Want to try it?** It runs on your own computer with your own free AI keys: see [Try it yourself](#try-it-yourself-bring-your-own-free-api-keys).
 
 ## What the assistant does
 
@@ -51,22 +53,48 @@ No AI agent is right every time. What matters is that it never invents a price, 
 
 > **What's real:** product names, brands, specs, descriptions and photos come from the Flipkart Products dataset (CC BY-SA 4.0, PromptCloud). **Prices are historical (2015–16).** Stock, delivery time and shipping are **simulated**. Payments run in **Razorpay test mode** only, so no real money moves.
 
-## Run it
+## Try it yourself (bring your own free API keys)
+
+Nestwise runs on your own computer, and **the AI uses your own API keys**. The demo has no shared keys, so to chat with the assistant you need at least one free key from the list below. Each takes a couple of minutes to get and costs nothing.
+
+**1. Get at least one free AI key** (more keys = more free usage before a limit is reached):
+
+| Provider | Where to get it | Environment variable |
+|---|---|---|
+| NVIDIA (recommended: fastest with the store's tools) | https://build.nvidia.com → sign in → "Get API Key" | `NVIDIA_API_KEY` (a second account: `NVIDIA_API_KEY_2`) |
+| Google Gemini | https://aistudio.google.com/apikey | `GEMINI_API_KEY` (a second account: `GEMINI_API_KEY_2`) |
+| OpenRouter (free models) | https://openrouter.ai/keys | `OPENROUTER_API_KEY` |
+
+**2. Put the keys in your shell, never in a file in this repo.** For example, add lines like these to `~/.zshrc` (or `~/.bashrc`), then open a new terminal:
+
+```bash
+export NVIDIA_API_KEY="your-key-here"
+export GEMINI_API_KEY="your-key-here"
+```
+
+**3. Optional: Razorpay test payments.** Add `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET` from your Razorpay dashboard in **Test mode** (`rzp_test_…`; live keys are refused). Without them, checkout places a mock order. Test card: `4100 2800 0000 1007`, any future expiry, any CVV, OTP `1234`. Do the payment in Chrome or Safari.
+
+**4. Install and start the store:**
 
 ```bash
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 .venv/bin/python -I -c "import kagglehub; kagglehub.dataset_download('PromptCloudHQ/flipkart-products', output_dir='data/raw/flipkart')"
-.venv/bin/python build_catalog.py          # writes data/catalog.sqlite and data/CATALOG_REPORT.md
-.venv/bin/uvicorn server:app --port 8000   # store at http://localhost:8000, inspector at /inspector
-.venv/bin/python -m pytest -q              # automated tests (no AI calls)
-.venv/bin/python evals/smoke_check.py      # main demo chats through the live AI (~1 min)
-.venv/bin/python evals/live_agent_run.py   # 28 live conversations + AI reviewer (~10 min)
+.venv/bin/python build_catalog.py          # builds the store's catalog (data/catalog.sqlite)
+.venv/bin/uvicorn server:app --port 8000   # open http://localhost:8000 (Inspector at /inspector, Dashboard at /dashboard)
 ```
 
-**Keys** go in your shell (for example `~/.zshrc`), never in a file in this repo:
-- AI: any of `NVIDIA_API_KEY`, `NVIDIA_API_KEY_2`, `GEMINI_API_KEY`, `GEMINI_API_KEY_2`, `OPENROUTER_API_KEY`. Free tiers are enough.
-- Payments, optional: `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET`. Test keys only (`rzp_test_…`). Without them checkout places a mock order.
-- Test card: `4100 2800 0000 1007`, any future expiry, any CVV, OTP `1234`.
+**What you'll see if something's missing:**
+- **No AI key set:** the chat says "No AI model key is set up…" and points here. Browsing, the cart, Approve and Pay still work.
+- **Your free limit is used up:** the chat says right away that "the free AI usage limit for this demo has been used up". Free limits reset over time (usually within the hour or the next day, depending on the provider), or add another key.
+- **Models busy for a moment:** the chat shows "The AI is busy, still working" and keeps trying for up to 3 minutes.
+
+**Run the tests:**
+
+```bash
+.venv/bin/python -m pytest -q              # automated tests, no AI calls, ~6 s
+.venv/bin/python evals/smoke_check.py      # main demo chats through the live AI, ~1 min (uses your keys)
+.venv/bin/python evals/live_agent_run.py   # 28 live conversations + AI reviewer, ~10–15 min (uses your keys)
+```
 
 ## Read more
 

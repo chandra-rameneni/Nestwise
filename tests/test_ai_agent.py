@@ -102,7 +102,7 @@ def test_no_model_answers_says_so_and_never_uses_the_old_engine(monkeypatch):
     fake_model(monkeypatch, [])
     monkeypatch.setattr(llm, "AGENT_BUDGET_S", 1)          # no retry pauses in the test
     r = Session().handle_message("do you sell mobiles?", L)
-    assert r.message.startswith("Sorry, I couldn't get an answer from the AI") and not r.recommendations
+    assert r.message.startswith("Sorry, the AI models are busy") and not r.recommendations
 
 
 def test_payment_requests_never_reach_the_agent(monkeypatch):
@@ -266,3 +266,29 @@ def test_add_to_cart_button_works_on_products_the_agent_showed(monkeypatch):
     s.handle_message("3 seater sofa under 30000 that fits 200 cm", L)
     r = s.select_product(CIAZ)                             # the card's Add to cart button
     assert r.kind == "CART_PROPOSED" and [ln.product_id for ln in s.cart.lines] == [CIAZ]
+
+
+def test_used_up_limit_stops_at_once_with_a_clear_message(monkeypatch):
+    calls = []
+
+    def chat_tools(messages, tools, deadline, avoid=None):
+        calls.append(1)
+        return None, {"error": "no model answered", "quota_used_up": True}
+    monkeypatch.setattr(intent_mod, "llm_available", lambda: True)
+    monkeypatch.setattr(llm, "chat_tools", chat_tools)
+    r = Session().handle_message("show me sofas", L)
+    assert len(calls) == 1                                  # no waiting and retrying
+    assert "usage limit for this demo has been used up" in r.message and "AI_QUOTA" in r.reason_codes
+
+
+def test_quota_is_detected_when_every_model_says_limit_reached(monkeypatch):
+    monkeypatch.setattr(llm, "_chain", lambda: [("nvidia", "u", "k", ["a", "b"])])
+    monkeypatch.setattr(llm, "_no_quota", {})
+    assert not llm.quota_used_up()
+    llm._no_quota.update({"nvidia/a": 10 ** 12, "nvidia/b": 10 ** 12})
+    assert llm.quota_used_up()
+
+
+def test_no_key_says_how_to_fix_it():
+    r = Session().handle_message("show me sofas", L)          # tests run with the AI off
+    assert "No AI model key is set up" in r.message and "README" in r.message

@@ -197,15 +197,24 @@ class Session:
             p = self._get(page_pid)
             if p is not None:
                 self.current, self.focus = p, [p.product_id]
-        r = None
+        r, self.ai_down_reason = None, ("busy" if intent_mod.llm_available() else "no_key")
         if intent_mod.llm_available():
             import agent_llm
             r = agent_llm.run(self, text, self.context)    # the AI reads the chat, calls store tools, writes the reply
         if r is not None:
             return r
-        self.tracer.event("model", "agent.unavailable", status="warn")
-        return self._respond(Response("ANSWER", "Sorry, I couldn't get an answer from the AI just now. Please "
-                                      "try again in a moment.", reason_codes=["AI_UNAVAILABLE"]))
+        why = getattr(self, "ai_down_reason", "busy")
+        self.tracer.event("model", "agent.unavailable", status="warn", why=why)
+        return self._respond(Response("ANSWER", self._AI_DOWN.get(why, self._AI_DOWN["busy"]),
+                                      reason_codes=["AI_UNAVAILABLE", f"AI_{why.upper()}"]))
+
+    _AI_DOWN = {
+        "quota": "The free AI usage limit for this demo has been used up, so I can't answer chat messages right now. "
+                 "You can still browse, add products to your cart, approve and pay. Please try again later.",
+        "no_key": "No AI model key is set up, so I can't answer chat messages. Add a free API key (see the README) "
+                  "and restart the store. You can still browse, add products to your cart, approve and pay.",
+        "busy": "Sorry, the AI models are busy right now and didn't answer in time. Please try again in a moment.",
+    }
 
 
     def _material_search(self, material: str) -> Response:

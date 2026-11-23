@@ -68,6 +68,20 @@ def _cool(name: str) -> None:
     _cooling[name] = time.monotonic() + COOLDOWN_S
 
 
+QUOTA_REST_S = float(os.environ.get("INTENTGUARD_QUOTA_REST_S", "600"))
+_no_quota: dict[str, float] = {}             # models that said "limit reached" (429/402) or refused the key (401/403)
+
+
+def _out_of_quota(name: str) -> bool:
+    return _no_quota.get(name, 0) > time.monotonic()
+
+
+def quota_used_up() -> bool:
+    """True when every configured model has reported its limit reached (or refused its key) in the last 10 min."""
+    names = [f"{prov}/{m}" for prov, _, _, models in _chain() for m in models]
+    return bool(names) and all(_out_of_quota(n) for n in names)
+
+
 def _is_cooling(name: str) -> bool:
     return _cooling.get(name, 0) > time.monotonic()
 
@@ -162,6 +176,9 @@ def chat_tools(messages: list[dict], tools: list[dict], deadline: float,
                 tried.append(f"{name}: skipped (gave an empty reply)")
                 continue
             remaining = min(deadline - time.monotonic(), AGENT_CALL_S)
+            if _out_of_quota(name):
+                tried.append(f"{name}: limit reached")
+                continue
             if _is_cooling(name) or remaining < 2:
                 tried.append(f"{name}: skipped")
                 continue
@@ -174,11 +191,13 @@ def chat_tools(messages: list[dict], tools: list[dict], deadline: float,
                 continue
             if r.status_code != 200:
                 tried.append(f"{name}: HTTP {r.status_code}")
-                if r.status_code in (429, 500, 502, 503, 504):
+                if r.status_code == 429:                       # this model's limit is reached
+                    _no_quota[name] = time.monotonic() + QUOTA_REST_S
+                if r.status_code in (500, 502, 503, 504):
                     _cool(name)
-                if r.status_code in (401, 402, 403):
+                if r.status_code in (401, 402, 403):           # the key itself is out of credit or refused
                     for other in models:
-                        _cool(f"{prov}/{other}")
+                        _no_quota[f"{prov}/{other}"] = time.monotonic() + QUOTA_REST_S
                     break
                 continue
             try:
@@ -190,7 +209,7 @@ def chat_tools(messages: list[dict], tools: list[dict], deadline: float,
             if tried:
                 meta["tried_first"] = tried
             return msg, meta
-    meta.update(tried=tried, error="no model answered")
+    meta.update(tried=tried, error="no model answered", quota_used_up=quota_used_up())
     return None, meta
 
 

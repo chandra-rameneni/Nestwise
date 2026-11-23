@@ -472,7 +472,8 @@ def _run(session, text: str, context: dict):
             _step(session, "Working out the answer")
         msg, meta = llm.chat_tools(messages, TOOLS, deadline, avoid=empty_models)
         waits = 0
-        while msg is None and deadline - time.monotonic() > 15:    # keep trying until the time limit, not 3 tries
+        while msg is None and not meta.get("quota_used_up") and deadline - time.monotonic() > 15:
+            # keep trying busy models until the time limit; stop at once when every model's limit is used up
             # busy models are tried again after a short pause, until the time limit
             waits += 1
             _step(session, "The AI is busy, still working")
@@ -483,7 +484,9 @@ def _run(session, text: str, context: dict):
         session.tracer.event("model", "agent.step", status="ok" if msg else "warn",
                              **{k: v for k, v in meta.items() if k in ("provider", "model", "tried", "tried_first", "error")})
         if msg is None:
-            session.tracer.event("model", "agent.gave_up", status="warn", why="no model answered after retries")
+            session.ai_down_reason = "quota" if meta.get("quota_used_up") else "busy"
+            session.tracer.event("model", "agent.gave_up", status="warn", why="every model's limit is used up"
+                                 if meta.get("quota_used_up") else "no model answered after retries")
             return None
         model = meta.get("model")
         calls = msg.get("tool_calls") or []

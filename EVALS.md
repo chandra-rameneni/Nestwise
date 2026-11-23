@@ -10,7 +10,7 @@ Four layers, from fast checks to real conversations. Every result below is from 
 - **Automatic checks on every reply:** expected words, cart contents, no invented prices, and that the AI never approves or pays.
 - **Independent AI reviewer:** a different model from the one that answered grades every reply PASS or FAIL. It fails a reply that misunderstands the shopper, gets a fact or price wrong, claims an order was placed, ignores the question, or is confusing.
 
-**Latest run (23 Nov 2026): 27 of 28 conversations passed (96%).** Typical reply time 3.1 s; 6.4 s for the slowest 1 in 10. Results: `evals/results/20261123T064520Z_live_agent.json`.
+**Latest run (23 Nov 2026): 27 of 28 conversations passed (96%).** Typical reply time 3.1 s; 6.4 s for the slowest 1 in 10. Results: `evals/results/20261123T064520Z_live_agent.json`; re-run on the final code, also 27 of 28: `evals/results/20261123T105315Z_live_agent.json`.
 
 ## 2. Hand review and audit
 
