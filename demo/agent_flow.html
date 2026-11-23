@@ -1,0 +1,280 @@
+<title>Nestwise AI Agent</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&family=JetBrains+Mono:wght@400&display=swap">
+<style>
+/* Layout: one vertical flow of steps on the left, the AI + 7 tools inside a dashed loop, a sticky detail panel on the right (stacks below on phones). */
+:root {
+  --bg: #f6f7f9; --surface: #ffffff; --fg: #1b1f2a; --muted: #5d6475; --line: #d9dde5;
+  --ai: #5b4fc4; --ai-bg: #efedfd; --ai-fg: #3a3190;
+  --tool: #0f7a60; --tool-bg: #e3f5ee; --tool-fg: #0a5443;
+  --check: #b8502c; --check-bg: #fbece6; --check-fg: #7a2f14;
+  --you-bg: #eef0f4; --you-fg: #2c3242;
+  --focus: #2f6fdf;
+  --display: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
+  --body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #12141a; --surface: #1b1e27; --fg: #e8eaf0; --muted: #a0a7b8; --line: #2f3442;
+  --ai: #a79ff2; --ai-bg: #2a2652; --ai-fg: #d9d5fb;
+  --tool: #5dcaa5; --tool-bg: #12352c; --tool-fg: #c4eedd;
+  --check: #f0997b; --check-bg: #3d2117; --check-fg: #f9d4c5;
+  --you-bg: #252935; --you-fg: #dfe2ea; --focus: #7aa7f5; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #12141a; --surface: #1b1e27; --fg: #e8eaf0; --muted: #a0a7b8; --line: #2f3442;
+  --ai: #a79ff2; --ai-bg: #2a2652; --ai-fg: #d9d5fb;
+  --tool: #5dcaa5; --tool-bg: #12352c; --tool-fg: #c4eedd;
+  --check: #f0997b; --check-bg: #3d2117; --check-fg: #f9d4c5;
+  --you-bg: #252935; --you-fg: #dfe2ea; --focus: #7aa7f5; color-scheme: dark }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.55; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-block: 32px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header { margin-bottom: 28px; max-width: 640px; }
+.eyebrow { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; }
+h1 { font-family: var(--display); font-weight: 600; font-size: clamp(26px, 4vw, 34px); line-height: 1.15; margin: 0 0 8px; text-wrap: balance; }
+.lede { color: var(--muted); margin: 0; }
+.grid { display: grid; grid-template-columns: minmax(0, 560px) minmax(0, 1fr); gap: 32px; align-items: start; }
+.flow { display: flex; flex-direction: column; align-items: stretch; }
+.down { width: 2px; height: 26px; background: var(--line); margin: 0 auto; position: relative; }
+.down::after { content: ""; position: absolute; left: -4px; bottom: -1px; border: 5px solid transparent; border-top: 6px solid var(--line); border-bottom: 0; }
+.tile { appearance: none; font: inherit; color: inherit; text-align: left; width: 100%; cursor: pointer;
+  border: 1px solid transparent; border-radius: 10px; padding: 12px 16px; display: flex; flex-direction: column; gap: 2px;
+  transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease; }
+.tile:hover { transform: translateY(-1px); }
+.tile:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.tile[aria-pressed="true"] { border-color: currentColor; box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 18%, transparent); }
+.tile .t { font-family: var(--display); font-weight: 600; font-size: 16px; }
+.tile .s { font-size: 13px; opacity: .8; }
+.you { background: var(--you-bg); color: var(--you-fg); }
+.ai { background: var(--ai-bg); color: var(--ai-fg); }
+.check { background: var(--check-bg); color: var(--check-fg); }
+.tool { background: var(--tool-bg); color: var(--tool-fg); padding: 10px 12px; }
+.tool .t { font-family: var(--mono); font-weight: 400; font-size: 13px; }
+.loop { border: 1.5px dashed var(--line); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.loop-label { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+.swap { display: flex; justify-content: center; gap: 28px; font-size: 12px; color: var(--muted); }
+.swap span::before { margin-right: 4px; }
+.swap .callt::before { content: "↓"; } .swap .back::before { content: "↑"; }
+.tools { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.tools-head { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--tool); margin: 2px 0 0; }
+.retry { align-self: flex-start; margin-top: 6px; font-size: 12px; color: var(--check); }
+.panel { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); background: var(--surface); border: 1px solid var(--line);
+  border-radius: 14px; padding: 22px 24px; min-width: 0; }
+.kind { display: inline-block; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; margin-bottom: 10px; }
+.panel h2 { font-family: var(--display); font-weight: 600; font-size: 22px; margin: 0 0 6px; line-height: 1.2; }
+.panel h2.code { font-family: var(--mono); font-weight: 400; font-size: 20px; }
+.panel .intro { margin: 0 0 14px; font-size: 16px; }
+.panel ul { margin: 0 0 16px; padding-left: 18px; display: grid; gap: 6px; }
+.panel .ex { border-left: 3px solid var(--line); padding: 6px 0 6px 12px; color: var(--muted); font-size: 14px; border-radius: 0; }
+.panel .ex b { color: var(--fg); font-weight: 500; display: block; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 2px; }
+.hint { color: var(--muted); font-size: 13px; margin: 14px 0 0; }
+.back-link { display: none; margin-top: 14px; font-size: 13px; color: var(--focus); background: none; border: 0; padding: 0; cursor: pointer; font: inherit; }
+.proof-head { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 32px 0 8px; border-top: 1px solid var(--line); padding-top: 20px; }
+.proof { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+.check-it { background: var(--surface); color: var(--fg); border: 1px solid var(--line); }
+.panel .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin: 0 0 16px; }
+.panel .stat { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.panel .stat .n { font-family: var(--display); font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.panel .stat .l { font-size: 12px; color: var(--muted); margin-top: 2px; line-height: 1.4; }
+.panel figure { margin: 16px 0 0; }
+.panel figure img { display: block; width: 100%; border: 1px solid var(--line); border-radius: 8px; }
+.panel figcaption { font-size: 12px; color: var(--muted); margin-top: 6px; }
+footer { margin-top: 36px; color: var(--muted); font-size: 13px; }
+@media (max-width: 860px) {
+  .grid { grid-template-columns: minmax(0, 1fr); }
+  .panel { position: static; }
+  .back-link { display: inline-block; }
+}
+@media (prefers-reduced-motion: reduce) { .tile { transition: none; } .tile:hover { transform: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Nestwise shopping assistant</p>
+    <h1>What happens when you send a message</h1>
+    <p class="lede">An AI model reads your message, uses the store's tools to look things up, and writes its own reply. Tap any box to see what it does.</p>
+  </header>
+
+  <div class="grid">
+    <div class="flow" id="flow" aria-label="How the AI agent answers">
+      <button class="tile you" data-id="message"><span class="t">You type a message</span><span class="s">In your own words</span></button>
+      <div class="down"></div>
+      <button class="tile ai" data-id="context"><span class="t">Context sent to the AI</span><span class="s">Screen, focus, cart, recent chat</span></button>
+      <div class="down"></div>
+      <div class="loop">
+        <div class="loop-label">Repeats until the AI has what it needs</div>
+        <button class="tile ai" data-id="ai"><span class="t">AI model decides</span><span class="s">Answer, ask you, or use a tool</span></button>
+        <div class="swap"><span class="callt">calls a tool</span><span class="back">gets the result</span></div>
+        <p class="tools-head">7 store tools</p>
+        <div class="tools">
+          <button class="tile tool" data-id="search_products"><span class="t">search_products</span></button>
+          <button class="tile tool" data-id="get_product"><span class="t">get_product</span></button>
+          <button class="tile tool" data-id="store_policy"><span class="t">store_policy</span></button>
+          <button class="tile tool" data-id="add_to_cart"><span class="t">add_to_cart</span></button>
+          <button class="tile tool" data-id="remove_from_cart"><span class="t">remove_from_cart</span></button>
+          <button class="tile tool" data-id="view_cart"><span class="t">view_cart</span></button>
+          <button class="tile tool" data-id="set_focus"><span class="t">set_focus</span></button>
+        </div>
+      </div>
+      <div class="down"></div>
+      <button class="tile check" data-id="checks"><span class="t">Code checks the reply</span><span class="s">Real prices only, no payments</span></button>
+      <span class="retry">↺ A wrong reply goes back to the AI to fix</span>
+      <div class="down"></div>
+      <button class="tile you" data-id="reply"><span class="t">Reply on your screen</span><span class="s">Text, product cards, "What I did"</span></button>
+      <div class="down"></div>
+      <button class="tile you" data-id="approve"><span class="t">You approve and pay</span><span class="s">Only you can do this</span></button>
+      <p class="proof-head">How you can check it</p>
+      <div class="proof">
+        <button class="tile check-it" data-id="inspector"><span class="t">Inspector</span><span class="s">Every step of a chat, recorded</span></button>
+        <button class="tile check-it" data-id="evals"><span class="t">How we test it</span><span class="s">96% of live chats passed</span></button>
+      </div>
+    </div>
+
+    <aside class="panel" id="panel" aria-live="polite">
+      <span class="kind" id="p-kind"></span>
+      <h2 id="p-title"></h2>
+      <p class="intro" id="p-intro"></p>
+      <div class="stats" id="p-stats" hidden></div>
+      <ul id="p-points"></ul>
+      <div class="ex" id="p-ex"></div>
+      <figure id="p-fig" hidden><img id="p-img" alt=""><figcaption id="p-cap"></figcaption></figure>
+      <p class="hint">Tap another box in the diagram to see what it does.</p>
+      <button class="back-link" id="back">↑ Back to the diagram</button>
+    </aside>
+  </div>
+
+  <footer>Nestwise demo store. Payments run in Razorpay test mode.</footer>
+</div>
+
+<script>
+const KIND = {
+  step: ["Step", "var(--you-bg)", "var(--you-fg)"],
+  ai: ["AI", "var(--ai-bg)", "var(--ai-fg)"],
+  tool: ["Store tool", "var(--tool-bg)", "var(--tool-fg)"],
+  check: ["Safety check", "var(--check-bg)", "var(--check-fg)"],
+  proof: ["Proof", "var(--you-bg)", "var(--you-fg)"],
+};
+const D = {
+  message: { kind: "step", title: "You type a message",
+    intro: "You ask in your own words, the way you'd ask a shop assistant.",
+    points: ["Ask for a product, a comparison, a store rule, or to add something to your cart.",
+             "Requests to pay are stopped before they reach the AI. Only you can pay."],
+    ex: "“a bed, a mattress and two pillows under ₹40,000”" },
+  context: { kind: "ai", title: "Context sent to the AI",
+    intro: "Nestwise sends your message to the AI along with what it needs to understand it.",
+    points: ["The page you're on, and the product if you're on a product page.",
+             "Products you've selected, and the ones shown most recently.",
+             "What's in your cart.",
+             "The last 12 messages, with a note of the tools used for each earlier reply.",
+             "The store's instructions: use tools for every fact, ask when a request is too broad, never pay."],
+    ex: "On the CIAZ sofa page you ask “how wide is it?”. The AI knows “it” means the CIAZ." },
+  ai: { kind: "ai", title: "AI model decides",
+    intro: "The AI reads everything and chooses what to do next: answer, ask you a question, or use a store tool.",
+    points: ["It can use several tools, one after another, before it replies.",
+             "Models from NVIDIA (Nemotron, MiniMax, Mistral Large) do the work, with Gemini and OpenRouter as backups. If one is busy, the next takes over.",
+             "You see each step live while it works, like “Searching beds…”.",
+             "If no model can answer, it tells you to try again. There's no scripted fallback."],
+    ex: "For a bed, a mattress and two pillows under ₹40,000, it searches each item, then works out one combination that fits and says how much is left." },
+  search_products: { kind: "tool", title: "search_products", code: true,
+    intro: "Finds products in the store's catalog.",
+    points: ["Filters by kind of product, store section, budget including delivery, seats, width, material, material to avoid, colour and delivery time.",
+             "Results come in the store's best-value order, or cheapest first.",
+             "Returns the top 4, how many matched, and why others were left out.",
+             "If nothing matches, it says whether the store sells that item at all."],
+    ex: "“3-seater sofa under ₹30,000 that fits 200 cm” returns 2 sofas." },
+  get_product: { kind: "tool", title: "get_product", code: true,
+    intro: "Reads every listed detail of one product.",
+    points: ["Size, material, colour and what's in the box.",
+             "Whether a mattress or installation is included.",
+             "Care, warranty, delivery time, stock and whether it's returnable."],
+    ex: "“Will I get a mattress with this bed?” The AI reads the bed's details before answering." },
+  store_policy: { kind: "tool", title: "store_policy", code: true,
+    intro: "Looks up the store's own rules on a topic.",
+    points: ["Returns, refunds, damaged delivery, installation, cancellation.",
+             "Payment, warranty, delivery, order limits, contact."],
+    ex: "“Can I get a refund if it arrives damaged?” The AI reads the damaged-delivery policy." },
+  add_to_cart: { kind: "tool", title: "add_to_cart", code: true,
+    intro: "Puts products in your cart.",
+    points: ["Used only when you ask to buy or add something.",
+             "One of each, unless you ask for more.",
+             "It doesn't buy anything. You still approve and pay."],
+    ex: "“add the cheapest one” puts the ₹599 bedsheet in your cart." },
+  remove_from_cart: { kind: "tool", title: "remove_from_cart", code: true,
+    intro: "Takes a product out of your cart, or empties it.",
+    points: ["Removes one product by name, or everything at once."],
+    ex: "“remove the towel”" },
+  view_cart: { kind: "tool", title: "view_cart", code: true,
+    intro: "Checks what's in your cart and the total.",
+    points: ["Rechecks today's price and stock for each item.",
+             "Flags anything that changed since it was added."],
+    ex: "“what's my cart total now?” “The CIAZ is now ₹16,000, up from ₹14,900.”" },
+  set_focus: { kind: "tool", title: "set_focus", code: true,
+    intro: "Highlights the products being talked about.",
+    points: ["Puts 1 to 3 products in the focus bar so you can see what the AI means.",
+             "You can also tick products yourself, and the AI reads your choice."],
+    ex: "“how wide is the Durian?” puts the Durian in focus." },
+  checks: { kind: "check", title: "Code checks the reply",
+    intro: "Before you see the reply, plain code checks it.",
+    points: ["Every ₹ price must come from a tool result or from you, or be a sum of those. A made-up price goes back to the AI to fix, up to 2 times.",
+             "An empty reply is handed to a different model to write.",
+             "The AI has no payment tool, so it can never pay or approve."],
+    ex: "The AI writes ₹9,999 for a ₹14,900 sofa. The check sends it back, and the AI corrects it." },
+  reply: { kind: "step", title: "Reply on your screen",
+    intro: "You see the AI's answer with everything it used.",
+    points: ["The AI's own words.",
+             "Product cards with Add to cart.",
+             "The focus bar shows which products it's talking about.",
+             "“What I did” lists each step and names the AI model that wrote the reply."],
+    ex: "What I did: Searched cushion covers (up to ₹300) · nemotron-3.5-super" },
+  approve: { kind: "step", title: "You approve and pay",
+    intro: "The AI can fill your cart. Approving and paying stay with you.",
+    points: ["Tap “Approve this exact cart”.",
+             "Then tap Pay. Payments run in Razorpay test mode."],
+    ex: "The AI says “Tap Approve when you're ready”. It never says an order is placed." },
+  inspector: { kind: "proof", title: "Inspector",
+    intro: "Every step of a real chat is recorded, so you can see exactly what the AI did.",
+    points: ["Each message, model step and tool call, in order, with how long it took.",
+             "Tap a tool call to see what the AI asked for and what came back.",
+             "It runs alongside the store, so you can open it during any chat."],
+    ex: "For “cushion covers under 300”, the AI called search_products with a ₹300 limit, and 10 products matched.",
+    img: "inspector_trace.jpg", cap: "The Inspector during a real chat (23 Nov)." },
+  evals: { kind: "proof", title: "How we test it",
+    intro: "Three layers, from fast checks to real conversations. Latest results (23 Nov):",
+    stats: [["96%", "27 of 28 live conversations passed the automatic checks and AI reviewer"],
+            ["89%", "25 of 28 conversations had no clear failure when every reply was read by hand"],
+            ["95%", "61 of 64 replies were correct on the hand read"],
+            ["100%", "17 of 17 automated tests passed"]],
+    points: ["17 automated tests run the agent with a stand-in AI, so the code around it (tools, cart, price check, context) behaves the same every time.",
+             "28 real conversations run against the live AI: follow-ups like “what about the Durian?”, budgets, the cart, products the store doesn't sell, and requests to pay.",
+             "A different AI model, not the one that answered, reviews every reply. It fails a reply that gets a fact or price wrong, misunderstands you, claims an order was placed, or is confusing.",
+             "Each failure is written up, fixed, and run again."],
+    ex: "No AI agent is right every time. The 3 misses on 23 Nov: a wrong installation time, a general delivery answer on a product page, and an internal note showing in a reply." },
+};
+const tiles = [...document.querySelectorAll(".tile")];
+const $ = id => document.getElementById(id);
+function show(id, scroll) {
+  const d = D[id]; if (!d) return;
+  const k = KIND[d.kind];
+  $("p-kind").textContent = k[0]; $("p-kind").style.background = k[1]; $("p-kind").style.color = k[2];
+  $("p-title").textContent = d.title; $("p-title").className = d.code ? "code" : "";
+  $("p-intro").textContent = d.intro;
+  $("p-points").replaceChildren(...d.points.map(p => { const li = document.createElement("li"); li.textContent = p; return li; }));
+  const ex = $("p-ex"); ex.replaceChildren();
+  const b = document.createElement("b"); b.textContent = "Example"; ex.append(b, document.createTextNode(d.ex));
+  $("p-stats").hidden = !d.stats;
+  $("p-stats").replaceChildren(...(d.stats || []).map(([n, l]) => {
+    const s = document.createElement("div"); s.className = "stat";
+    const a = document.createElement("div"); a.className = "n"; a.textContent = n;
+    const b = document.createElement("div"); b.className = "l"; b.textContent = l;
+    s.append(a, b); return s; }));
+  $("p-fig").hidden = !d.img;
+  if (d.img) { $("p-img").src = d.img; $("p-img").alt = d.cap; $("p-cap").textContent = d.cap; }
+  tiles.forEach(t => t.setAttribute("aria-pressed", t.dataset.id === id ? "true" : "false"));
+  if (scroll && matchMedia("(max-width: 860px)").matches) $("panel").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+tiles.forEach(t => t.addEventListener("click", () => show(t.dataset.id, true)));
+$("back").addEventListener("click", () => $("flow").scrollIntoView({ behavior: "smooth", block: "start" }));
+show("ai", false);
+</script>

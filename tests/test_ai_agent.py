@@ -205,3 +205,55 @@ def test_the_agent_sees_what_it_did_in_earlier_turns(monkeypatch):
     s.handle_message("why these?", L)
     earlier = next(m["content"] for m in seen[-1] if m.get("role") == "assistant" and "cushion covers." in (m.get("content") or ""))
     assert earlier.startswith("[What I did for this reply: Searched cushion cover")
+
+
+def test_search_finds_products_by_store_section_name():
+    s, t = Session(), agent_llm.Turn()
+    for q in ("wall decor", "wall art", "rug"):
+        assert agent_llm._search(s, t, {"query": q})["matched_products"] > 0, q
+    res = agent_llm._search(s, t, {"query": "mobile"})
+    assert res["matched_products"] == 0 and "try other words" in res["note"]
+
+
+def test_about_tag_only_for_products_used_in_this_reply(monkeypatch):
+    fake_model(monkeypatch, [
+        {"role": "assistant", "tool_calls": [call("search_products", query="sofa", seats=3, max_total_inr=30000,
+                                                  max_width_cm=200)]},
+        {"role": "assistant", "tool_calls": [call("set_focus", product_ids=[CIAZ])]},
+        {"role": "assistant", "content": "The CIAZ is 182 cm wide."},
+        {"role": "assistant", "content": "What kind of living room decor would you like?"},
+        {"role": "assistant", "tool_calls": [call("set_focus", product_ids=[])]},
+        {"role": "assistant", "content": "Here's some wall decor."}])
+    s = Session()
+    r = s.handle_message("3 seater sofa under 30000 that fits 200 cm, how wide is the ciaz?", L)
+    assert [a["product_id"] for a in r.about] == [CIAZ]
+    r = s.handle_message("give me home decor ideas for the living room", L)
+    assert r.about == [] and s.focus == [CIAZ]             # not used in this reply: no tag
+    s.handle_message("wall art", L)
+    assert s.focus == []                                   # the AI cleared it when the topic moved on
+
+
+def test_the_agent_knows_what_the_store_sells(monkeypatch):
+    seen = fake_model(monkeypatch, [{"role": "assistant", "content": "Wall decor, lamps or showpieces?"}])
+    Session().handle_message("home decor ideas for my living room", L)
+    assert "Wall Decor & Clocks" in seen[0][0]["content"] and "Floor Coverings" in seen[0][0]["content"]
+
+
+def test_a_sofa_search_does_not_pull_in_sofa_beds():
+    res = agent_llm._search(Session(), agent_llm.Turn(), {"query": "sofa", "category": "furniture", "seats": 3,
+                                                          "max_total_inr": 30000, "max_width_cm": 200})
+    assert {p["product_id"] for p in res["products"]} == {CIAZ, DURIAN}
+
+
+def test_reading_a_product_puts_it_in_focus(monkeypatch):
+    fake_model(monkeypatch, [
+        {"role": "assistant", "tool_calls": [call("search_products", query="sofa", seats=3, max_total_inr=30000,
+                                                  max_width_cm=200)]},
+        {"role": "assistant", "content": "Here are two sofas."},
+        {"role": "assistant", "tool_calls": [call("get_product", product_id=CIAZ)]},
+        {"role": "assistant", "content": "The CIAZ: ₹14,900."}])
+    s = Session()
+    s.handle_message("3 seater sofa under 30000 that fits 200 cm", L)
+    s.set_focus([])
+    r = s.handle_message("more about the hometown one", L)
+    assert s.focus == [CIAZ] and [a["product_id"] for a in r.about] == [CIAZ]

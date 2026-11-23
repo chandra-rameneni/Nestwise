@@ -29,7 +29,12 @@ How you work:
 - Prices from the tools already include delivery. Quote them exactly as given (e.g. ₹14,900).
 - Read the whole conversation. When the shopper refers to products ("the durian", "both", "the second one",
   "it"), work out which ones from the conversation and the products in focus, and use their product_ids.
-- If something isn't sold here, say so and say what the store does sell.
+- If something isn't sold here, say so and say what the store does sell. Before saying that, if a search finds
+  nothing, try other words or the matching product type from "What the store sells" (e.g. wall art -> wall decor,
+  painting, wall sticker; rug -> floor coverings, carpet).
+- When you offer the shopper choices, only offer kinds of product listed in "What the store sells".
+- When the shopper moves on to something unrelated to the products in focus, call set_focus with an empty list
+  to clear it.
 - When you talk about specific products, call set_focus with them so the screen shows what you're discussing.
 - Only add to the cart when the shopper asks to buy or add something. Suggesting products is not a reason to
   add them; ask "Would you like me to add these to your cart?" instead.
@@ -48,6 +53,9 @@ How you work:
   don't keep saying "cheapest". Products you showed came from your own searches. Never invent a filter, limit
   or reason the shopper didn't give. Your earlier replies start with "[What I did
   for this reply: ...]": that is your own record of the tools you used. Never write such a note yourself.
+- When you describe one product in detail, always use this layout: one line with its name, price and delivery,
+  then short bold-labelled groups in this order (skip any the details don't cover): **Size & fit**,
+  **Material & colour**, **Delivery & stock**, **Warranty & care**, **Returns**. End with one short question.
 - Be warm, clear and brief: a few sentences or a short list. No tables. Speak to the shopper as "you". No
   internal codes."""
 
@@ -94,7 +102,8 @@ TOOLS = [
         "parameters": {"type": "object", "properties": {}}}},
     {"type": "function", "function": {
         "name": "set_focus",
-        "description": "Show on screen which products the conversation is about now (1 to 3 product_ids).",
+        "description": "Show on screen which products the conversation is about now (1 to 3 product_ids), or an "
+                       "empty list to clear it when the conversation moves on.",
         "parameters": {"type": "object", "properties": {
             "product_ids": {"type": "array", "items": {"type": "string"}}}, "required": ["product_ids"]}}},
 ]
@@ -105,6 +114,7 @@ class Turn:
 
     def __init__(self):
         self.steps: list[str] = []
+        self.focused: list[str] = []          # products the AI put in focus during this reply
         self.prices: set[int] = set()
         self.cards: list[tuple] = []          # (ProductView, Eligibility) from the last search
         self.search_intent: Optional[Intent] = None
@@ -128,12 +138,39 @@ def _category_ids(session, category: str) -> list[str]:
     return [r[0] for r in con.execute("SELECT pid FROM products WHERE category = ? ORDER BY pid", (category,))]
 
 
+def _path_ids(session, query: str) -> list[str]:
+    """Products whose store section path has every word of the query ("wall decor" -> Wall Decor & Clocks)."""
+    con = getattr(session.catalog, "_con", None)
+    words = [w.rstrip("s") for w in re.findall(r"[a-z]+", query.lower()) if len(w) > 2]
+    if con is None or not words:
+        return []
+    sql = "SELECT pid FROM products WHERE " + " AND ".join("lower(category_path) LIKE ?" for _ in words)
+    return [r[0] for r in con.execute(sql + " ORDER BY pid", [f"%{w}%" for w in words])]
+
+
+_KINDS: dict[str, str] = {}
+
+
+def _store_kinds(session) -> str:
+    """What the store sells, section by section, from its own catalog (so the AI only offers real kinds)."""
+    if not _KINDS:
+        for slug in ("furniture", "home_furnishing", "home_decor", "kitchen_dining"):
+            try:
+                kinds = [k for k, n in session.catalog.category_kinds(slug, 15) if n > 1]
+            except Exception:
+                kinds = []
+            _KINDS[slug] = ", ".join(kinds)
+    return "; ".join(f"{slug.replace('_', ' ')}: {k}" for slug, k in _KINDS.items() if k)
+
+
 def _search(session, turn: Turn, a: dict) -> dict:
     query = (a.get("query") or "").strip()
     cat = a.get("category")
     section_note = None
     if query:
         ids, _ = session.catalog.find_products(query)
+        if not ids:                     # nothing by product name: try the store's section names ("wall art")
+            ids = _path_ids(session, query)
         if cat:
             allowed = set(_category_ids(session, cat))
             in_section = [i for i in ids if i in allowed]
@@ -196,7 +233,9 @@ def _search(session, turn: Turn, a: dict) -> dict:
                       f" → {len(ok)} fit" + (f", {max(0, min(len(ids), 400) - len(ok))} left out" if ids else ""))
     return {"matched_products": len(ok), "searched": len(ids), "left_out_reasons": left,
             "products": [_card(p) for p, _ in top],
-            "note": "No products of this kind are sold anywhere in this store." if not ids else section_note}
+            "note": ("Nothing in the store matched these exact words. That doesn't mean the store doesn't sell it: "
+                     "try other words or one of the store's product types (see 'What the store sells') before "
+                     "saying it isn't sold." if not ids else section_note)}
 
 
 def _limits(a: dict) -> str:
@@ -277,7 +316,10 @@ def _run_tool(session, turn: Turn, name: str, a: dict) -> dict:
         turn.steps.append("Looked at your cart")
         return {"cart": _cart(session)}
     if name == "set_focus":
+        found_now = [p for p, _ in turn.cards if p.product_id not in {x.product_id for x in session.shown}]
+        session.shown = list(session.shown) + found_now     # products found in this reply can be focused right away
         session.set_focus(a.get("product_ids") or [])
+        turn.focused = list(session.focus)
         return {"focus": list(session.focus)}
     return {"error": f"Unknown tool {name}"}
 
@@ -322,6 +364,7 @@ def _context(session, context: dict) -> str:
         if p is not None:
             lines.append(f"The shopper is on the product page of: {p.title} (product_id {p.product_id}, "
                          f"₹{p.total_for():,} incl. delivery)")
+    lines.append("What the store sells (product types by section): " + _store_kinds(session))
     if session.focus:
         names = [f"{p.title} ({p.product_id})" for p in session._focus_products()]
         lines.append("Products in focus (selected on screen): " + "; ".join(names))
@@ -506,9 +549,13 @@ def _run(session, text: str, context: dict):
         kind = "RECOMMEND"
     if turn.cart_changed and session.cart is not None and session.cart.status == "PROPOSED" and session.cart.lines:
         kind = "CART_PROPOSED"
-    about = [{"product_id": p.product_id, "title": p.title} for p in session._focus_products()] if session.focus else []
+    # the "About" tag shows only products this reply actually used: ones the AI focused on or read just now
+    about = [{"product_id": p.product_id, "title": p.title} for p in session._focus_products()] if turn.focused else []
     if not about and turn.looked_at:
-        about = [{"product_id": pid, "title": session.catalog.get(pid).title} for pid in dict.fromkeys(turn.looked_at)]
+        about = [{"product_id": pid, "title": session.catalog.get(pid).title}
+                 for pid in list(dict.fromkeys(turn.looked_at))[:session.MAX_FOCUS]]
+        if not turn.cards:                                  # F3: the products a reply is about are the focus
+            session.set_focus([a["product_id"] for a in about])
     r = Response(kind, reply, recommendations=recs,
                  cart=session.cart if kind == "CART_PROPOSED" else None,
                  reason_codes=["AI_AGENT"], about=about)

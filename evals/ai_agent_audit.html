@@ -1,0 +1,131 @@
+<title>Nestwise Agent Eval Audit</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&family=JetBrains+Mono:wght@400&display=swap">
+<style>
+/* Layout: a single reading column; three headline numbers, then failures, then audit findings ordered by impact, then method. */
+:root {
+  --bg: #f6f7f9; --surface: #ffffff; --fg: #1b1f2a; --muted: #5d6475; --line: #d9dde5;
+  --bad: #b3261e; --bad-bg: #fdecea; --warn: #8a5a00; --warn-bg: #fdf3dc; --ok: #1e6b47; --ok-bg: #e4f4ea;
+  --accent: #5b4fc4;
+  --display: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
+  --body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #12141a; --surface: #1b1e27; --fg: #e8eaf0; --muted: #a0a7b8; --line: #2f3442;
+  --bad: #f2a29c; --bad-bg: #3a1d1b; --warn: #f0c86b; --warn-bg: #3a2e12; --ok: #86d3a8; --ok-bg: #15301f;
+  --accent: #a79ff2; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #12141a; --surface: #1b1e27; --fg: #e8eaf0; --muted: #a0a7b8; --line: #2f3442;
+  --bad: #f2a29c; --bad-bg: #3a1d1b; --warn: #f0c86b; --warn-bg: #3a2e12; --ok: #86d3a8; --ok-bg: #15301f;
+  --accent: #a79ff2; color-scheme: dark }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.6; }
+.wrap { max-width: 860px; margin: 0 auto; padding-block: 32px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.eyebrow { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; }
+h1 { font-family: var(--display); font-weight: 600; font-size: clamp(26px, 4vw, 34px); line-height: 1.15; margin: 0 0 10px; text-wrap: balance; }
+h2 { font-family: var(--display); font-weight: 600; font-size: 20px; margin: 40px 0 12px; }
+.lede { color: var(--muted); margin: 0; max-width: 64ch; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-top: 24px; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+.stat .n { font-family: var(--display); font-size: 30px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.stat .l { font-size: 13px; color: var(--muted); margin-top: 4px; }
+.stat.bad .n { color: var(--bad); }
+.table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+table { border-collapse: collapse; width: 100%; min-width: 600px; font-size: 14px; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 500; }
+tr:last-child td { border-bottom: 0; }
+.pill { display: inline-block; font-size: 12px; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.pill.bad { background: var(--bad-bg); color: var(--bad); }
+.pill.warn { background: var(--warn-bg); color: var(--warn); }
+.pill.ok { background: var(--ok-bg); color: var(--ok); }
+q { color: var(--muted); }
+.find { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; display: grid; gap: 6px; }
+.finds { display: grid; gap: 10px; }
+.find h3 { margin: 0; font-size: 16px; font-weight: 600; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.find p { margin: 0; }
+.find .fix { color: var(--muted); font-size: 14px; }
+.find .fix b { color: var(--fg); font-weight: 500; }
+code { font-family: var(--mono); font-size: 13px; }
+ul.plain { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
+footer { margin-top: 40px; color: var(--muted); font-size: 13px; }
+</style>
+
+<div class="wrap">
+  <p class="eyebrow">Nestwise shopping assistant · eval audit · 23 Nov 2026</p>
+  <h1>Can we trust the AI agent's test results?</h1>
+  <p class="lede">I ran 28 real conversations (64 replies) against the live AI after today's changes, then audited the results with the eval-audit method from Hamel Husain's evals skills. The automatic reviewer said almost everything passed. Reading every reply by hand found more.</p>
+
+  <div class="stats">
+    <div class="stat"><div class="n">27 / 28</div><div class="l">Conversations passed by the automatic checks and AI reviewer</div></div>
+    <div class="stat"><div class="n">25 / 28</div><div class="l">Conversations with no clear failure when I read every reply (3 more are borderline)</div></div>
+    <div class="stat bad"><div class="n">0 of 3</div><div class="l">Clear failures the AI reviewer caught. It passed all 64 replies.</div></div>
+  </div>
+
+  <h2>Failures found by reading every reply</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Chat</th><th>What the shopper said</th><th>What went wrong</th><th>Caught by</th></tr></thead>
+    <tbody>
+      <tr><td><span class="pill bad">Fail</span> N05</td><td><q>a cotton one under 1000</q></td><td>The reply started with the AI's internal note, <code>[What I did for this reply: …]</code>. This is a new bug from today's change that shows the AI its past steps.</td><td>Nothing</td></tr>
+      <tr><td><span class="pill bad">Fail</span> N03</td><td><q>installation?</q></td><td>Said installation happens within <b>72 business days</b>. The store policy says 72 business <b>hours</b>.</td><td>Nothing</td></tr>
+      <tr><td><span class="pill bad">Fail</span> N10</td><td><q>do you charge for delivery?</q> on the CIAZ page</td><td>Never read the product, so it didn't say this sofa has free delivery. It gave a general policy answer instead.</td><td>Code check, but for the wrong reason (it expected the word <q>included</q> and the reply said <q>include</q>)</td></tr>
+      <tr><td><span class="pill warn">Borderline</span> N13</td><td><q>ok approve it and place the order</q></td><td>Told the shopper to <q>just tap the Pay button</q>, skipping the Approve step that comes first.</td><td>Nothing</td></tr>
+      <tr><td><span class="pill warn">Borderline</span> C04</td><td><q>What?</q></td><td>Asked what to clarify instead of briefly restating the two sofas it had just shown.</td><td>Nothing</td></tr>
+      <tr><td><span class="pill warn">Borderline</span> N18</td><td><q>a bed, a mattress and two pillows under 40000 total</q></td><td>Picked a sofa bed as the bed. It fits the budget, but most shoppers asking for a bed don't mean a sofa bed.</td><td>Nothing</td></tr>
+    </tbody>
+  </table></div>
+  <p class="lede" style="margin-top:10px">These are my labels. They need your confirmation as the product owner before they count as the official answer key.</p>
+
+  <h2>Audit findings, most important first</h2>
+  <div class="finds">
+    <div class="find">
+      <h3><span class="pill bad">Problem</span> The AI reviewer has never been checked against human labels</h3>
+      <p>No one has measured how often the reviewer catches a real failure or wrongly flags a good reply. On this run it caught none of the 3 clear failures, so its 27 of 28 overstates quality.</p>
+      <p class="fix"><b>Fix:</b> you label about 50 good and 50 bad replies, then measure what share of bad replies the reviewer catches and what share of good ones it passes (the validate-evaluator skill).</p>
+    </div>
+    <div class="find">
+      <h3><span class="pill bad">Problem</span> The reviewer can't see the facts it is judging</h3>
+      <p>It sees each reply and a one-line list of steps, but not what the tools returned or the store policy text. It had no way to know <q>72 business days</q> was wrong. It also checks five things at once (misunderstanding, wrong facts, claiming an order, ignoring the question, confusion), which makes its verdicts vague.</p>
+      <p class="fix"><b>Fix:</b> give the reviewer the tool results and policy text, and split it into one check per failure type, starting with <q>wrong fact compared with the tool data</q> (the write-judge-prompt skill).</p>
+    </div>
+    <div class="find">
+      <h3><span class="pill bad">Problem</span> Some failures that code could catch have no code check</h3>
+      <p>The leaked <code>[What I did …]</code> note, numbers that differ from the store policy, and <q>tap Pay</q> before Approve can all be checked with simple code, every run, for free. One existing check is too strict and failed a correct reply over <q>include</q> versus <q>included</q>.</p>
+      <p class="fix"><b>Fix:</b> add those three code checks and loosen the delivery pattern (the write-code-eval skill).</p>
+    </div>
+    <div class="find">
+      <h3><span class="pill warn">Problem</span> The newest AI failures aren't written up or tested</h3>
+      <p>The failure log is grounded in real shopper problems, which is good, but its last entries (21 Nov) are about the old rules engine. Problems you found on 22 and 23 Nov, like not asking on a broad request and inventing a reason for its picks, aren't in the log or in the 28 conversations.</p>
+      <p class="fix"><b>Fix:</b> log them, add a conversation for each, and do a fresh review pass of AI-mode chats (the error-discovery skill).</p>
+    </div>
+    <div class="find">
+      <h3><span class="pill warn">Problem</span> Too few, too similar conversations</h3>
+      <p>There are 64 replies across 28 conversations, and 14 of the 28 start with the same sofa search. That's well short of the roughly 100 varied chats where new failure types stop showing up.</p>
+      <p class="fix"><b>Fix:</b> generate varied shopper chats across product types, budgets and moods, then review them (the generate-synthetic-data skill).</p>
+    </div>
+    <div class="find">
+      <h3><span class="pill ok">OK</span> What's already right</h3>
+      <ul class="plain">
+        <li>Every check is a clear pass or fail, with no 1 to 5 scores.</li>
+        <li>Code, not the AI, checks the cart, invented prices and payment refusals.</li>
+        <li>Tests are re-run after changes. This run used today's prompt.</li>
+        <li>The reviewer is a different model from the one that answers.</li>
+        <li>You test in the real store, and the Inspector shows every step of a chat.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>What was run</h2>
+  <ul class="plain">
+    <li><b>28 live conversations</b> (64 replies), run 23 Nov after today's prompt changes, in 9.2 minutes. 61 replies were written by Nemotron 3.5 Super, 1 by Nemotron 3 Ultra, and 2 payment refusals came straight from code.</li>
+    <li><b>Reply time:</b> 3.1 s typical, 6.4 s for the slowest 1 in 10, 54.6 s at most (the bed, mattress and pillows request).</li>
+    <li><b>Automatic checks:</b> expected words, cart contents, invented prices, and that the AI never approves or pays.</li>
+    <li><b>AI reviewer:</b> a separate model marks each reply pass or fail.</li>
+    <li><b>17 automated tests</b> with a stand-in AI also pass.</li>
+    <li><b>Hand review:</b> I read all 64 replies and checked doubtful facts against the store policy.</li>
+  </ul>
+
+  <footer>Results file: evals/results/20261123T064520Z_live_agent.json. Method: eval-audit from github.com/hamelsmu/evals-skills.</footer>
+</div>
