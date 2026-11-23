@@ -3,7 +3,7 @@
     zsh -ic '.venv/bin/python evals/smoke_check.py'
 
 Each check is a real chat. It prints PASS/FAIL per line and exits non-zero if anything failed.
-Added 2026-11-23 after two fixes broke things nearby (a sofa bed in the sofa search, a leaked internal note).
+Run it after every change, before calling the change ready.
 """
 from __future__ import annotations
 

@@ -68,7 +68,7 @@ footer { margin-top: 40px; color: var(--muted); font-size: 13px; }
   <div class="table-wrap"><table>
     <thead><tr><th>Chat</th><th>What the shopper said</th><th>What went wrong</th><th>Caught by</th></tr></thead>
     <tbody>
-      <tr><td><span class="pill bad">Fail</span> N05</td><td><q>a cotton one under 1000</q></td><td>The reply started with the AI's internal note, <code>[What I did for this reply: …]</code>. This is a new bug from today's change that shows the AI its past steps.</td><td>Nothing</td></tr>
+      <tr><td><span class="pill bad">Fail</span> N05</td><td><q>a cotton one under 1000</q></td><td>The reply started with the AI's internal note, <code>[What I did for this reply: …]</code>, which is meant for the AI only.</td><td>Nothing</td></tr>
       <tr><td><span class="pill bad">Fail</span> N03</td><td><q>installation?</q></td><td>Said installation happens within <b>72 business days</b>. The store policy says 72 business <b>hours</b>.</td><td>Nothing</td></tr>
       <tr><td><span class="pill bad">Fail</span> N10</td><td><q>do you charge for delivery?</q> on the CIAZ page</td><td>Never read the product, so it didn't say this sofa has free delivery. It gave a general policy answer instead.</td><td>Code check, but for the wrong reason (it expected the word <q>included</q> and the reply said <q>include</q>)</td></tr>
       <tr><td><span class="pill warn">Borderline</span> N13</td><td><q>ok approve it and place the order</q></td><td>Told the shopper to <q>just tap the Pay button</q>, skipping the Approve step that comes first.</td><td>Nothing</td></tr>

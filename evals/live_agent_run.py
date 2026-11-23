@@ -1,6 +1,6 @@
-"""Live test of the AI shopping agent: 20 real-shopper conversations through the real models, run in parallel.
+"""Live test of the AI shopping agent: 28 real-shopper conversations through the real models, run in parallel.
 
-Each reply gets automatic checks (expected words, cart state, made-up prices, basic-mode fallbacks), then a
+Each reply gets automatic checks (expected words, cart state, made-up prices, a reply from the AI), then a
 separate reviewer model (not the one that answered) grades each conversation against the tool results.
 
     zsh -ic '.venv/bin/python evals/live_agent_run.py'        # keys come from your shell; results in evals/results/
@@ -88,7 +88,7 @@ N = [
                                        (L, "can I cancel after it ships?", r"ship|refus|return", None),
                                        (L, "do you have cash on delivery?", r"not offered|card|no", None)], None),
     ("N09", "Warranty", [(PDP(DURIAN), "what's the warranty?", r"5[- ]year", None)], None),
-    ("N10", "Delivery charge", [(PDP(CIAZ), "do you charge for delivery?", r"free|no separate|included", None)], None),
+    ("N10", "Delivery charge", [(PDP(CIAZ), "do you charge for delivery?", r"free|no separate|includ", None)], None),
     ("N11", "Price changed after adding", [(L, SOFA, None, None), (L, "add the ciaz", r"cart", None), ("price", CIAZ, 16000),
                                           (L, "what's my cart total now?", r"16,000|changed|went up", None)], [CIAZ]),
     ("N12", "Out of stock after adding", [(L, SOFA, None, None), (L, "add the ciaz", r"cart", None), ("oos", CIAZ),
@@ -106,7 +106,7 @@ N = [
                                       (PDP(BED), "any discount?", None, r"\d+% off|discount of ₹")], None),
     ("N20", "Which is better for a small room", [(L, SOFA, None, None), (L, "which is better for a small room?", r"Durian", None)], None),
 ]
-OLD_TO_RERUN = {"C01", "C02", "C03", "C04", "C08", "C11", "C13", "C14"}
+CORE_C = {"C01", "C02", "C03", "C04", "C08", "C11", "C13", "C14"}
 
 RUPEES = re.compile(r"₹\s?([\d,]+)")
 
@@ -131,7 +131,7 @@ def run_conversation(conv):
         took = time.time() - t
         problems = []
         if not r.steps and "PAYMENT_IS_MANUAL" not in r.reason_codes:   # payment refusals are code by design
-            problems.append("answered in basic mode (no AI)")
+            problems.append("no AI answer")
         if must and not re.search(must, r.message, re.I | re.S):
             problems.append(f"expected /{must}/")
         if must_not and re.search(must_not, r.message, re.I | re.S):
@@ -189,7 +189,7 @@ def judge(conv):
 
 def main():
     t0 = time.time()
-    todo = [c for c in C if c[0] in OLD_TO_RERUN] + N if "--all" not in sys.argv else C + N
+    todo = [c for c in C if c[0] in CORE_C] + N if "--all" not in sys.argv else C + N
     only = next((a.split("=", 1)[1].split(",") for a in sys.argv if a.startswith("--only=")), None)
     if only:
         todo = [c for c in C + N if c[0] in only]

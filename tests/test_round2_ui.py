@@ -1,4 +1,5 @@
 """Round 2 evals, section G (UI and the "No returns" label), approved by the PM 2026-11-19."""
+from conftest import agent_adds
 from pathlib import Path
 
 from fastapi.testclient import TestClient
@@ -18,7 +19,7 @@ def test_r2_u01_u03_returnable_flag_on_products():
 
 def test_r2_u02_cart_says_no_returns_before_approve():
     c = TestClient(server.app)
-    c.post("/api/agent/message", json={"text": "buy this", "context": {"page": "product", "product_id": BIRD}})
+    agent_adds(c, BIRD)
     cart = c.get("/api/agent/state").json()["cart"]
     assert cart and cart["returnable"] is False
     js = (ROOT / "web" / "agent.js").read_text()

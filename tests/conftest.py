@@ -1,4 +1,3 @@
-import os
 import sys
 from pathlib import Path
 
@@ -38,10 +37,26 @@ def no_real_payment_keys(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
-def rules_only(monkeypatch, request):
-    """Deterministic tests use the rules extractor unless a test is marked `llm`."""
+def no_real_models(monkeypatch, request):
+    """Tests never call a real AI model; AI-agent tests use a stand-in model (tests/test_ai_agent.py)."""
     if "llm" not in request.keywords:
         monkeypatch.setenv("INTENTGUARD_LLM", "off")
+
+
+def keyboard_search(session):
+    """The requirements the AI's search tool records for KEYBOARD_REQUEST (budget, delivery, Mac, Logitech)."""
+    from intent import Intent
+    session.intent = Intent(intent="PRODUCT_DISCOVERY", category="keyboard_mouse_combo",
+                            product_query="wireless keyboard and mouse combo", max_total_inr=4000, max_delivery_days=5,
+                            required_compatibility=["mac"], preferred_brands=["Logitech"])
+    session.eligible_ids = [pid for pid in getattr(session.catalog, "_products", {}) if pid.startswith("KM-")]
+
+
+def agent_adds(client, pid):
+    """Over HTTP: what the AI's add_to_cart tool does when the shopper says "buy this" on a product page."""
+    import server
+    client.get("/api/agent/state")
+    server._sessions[client.cookies.get(server.COOKIE)].select_product(pid, from_product_page=True)
 
 
 @pytest.fixture

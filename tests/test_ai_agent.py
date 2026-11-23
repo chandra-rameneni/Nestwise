@@ -1,9 +1,7 @@
 """The AI agent loop (agent_llm.py) with a stand-in model, so tests are repeatable and use no AI quota.
 The stand-in returns the tool calls and replies a real model would; the code under test is everything around it:
-running the tools on real store data, the cart, the focus, the price check and the fallback to basic mode."""
+running the tools on real store data, the cart, the focus, the price check and the honest reply when no model answers."""
 import json
-
-import pytest
 
 import agent_llm
 import intent as intent_mod
@@ -65,7 +63,7 @@ def test_invented_price_is_sent_back_then_blocked(monkeypatch):
         {"role": "assistant", "content": "It costs ₹9,999, honestly."}])
     monkeypatch.setattr(llm, "AGENT_BUDGET_S", 1)          # no retry pauses in the test
     r = Session().handle_message("how much is the ciaz?", L)
-    assert "9,999" not in r.message                      # never shown: basic mode answers instead
+    assert "9,999" not in r.message                      # an invented price is never shown
 
 
 def test_invented_price_corrected_after_the_check(monkeypatch):
@@ -257,3 +255,14 @@ def test_reading_a_product_puts_it_in_focus(monkeypatch):
     s.set_focus([])
     r = s.handle_message("more about the hometown one", L)
     assert s.focus == [CIAZ] and [a["product_id"] for a in r.about] == [CIAZ]
+
+
+def test_add_to_cart_button_works_on_products_the_agent_showed(monkeypatch):
+    fake_model(monkeypatch, [
+        {"role": "assistant", "tool_calls": [call("search_products", query="sofa", seats=3, max_total_inr=30000,
+                                                  max_width_cm=200)]},
+        {"role": "assistant", "content": "Here are two sofas."}])
+    s = Session()
+    s.handle_message("3 seater sofa under 30000 that fits 200 cm", L)
+    r = s.select_product(CIAZ)                             # the card's Add to cart button
+    assert r.kind == "CART_PROPOSED" and [ln.product_id for ln in s.cart.lines] == [CIAZ]

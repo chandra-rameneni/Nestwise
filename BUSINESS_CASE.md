@@ -95,11 +95,11 @@ In this demo, we play the store: the agent is embedded in our sample store.
 
 | Measure | Target | How measured |
 |---|---|---|
-| Answers that cite a field the listing doesn't have | 0 | Code check on every answer (`qa.validate`) and evals |
+| Prices in replies that didn't come from the store | 0 | Code check on every reply (`agent_llm._bad_prices`) and evals |
 | Orders placed without approval of the exact current cart | 0 | Checkout gate, tests, evals |
 | "Not sold here" requests answered without a loop | 100% | R1/R2 evals |
 | Recommendations that break a stated requirement | 0 | Policy checks, evals |
-| Scenario evals passing on **held-out** phrasings, with Claude | To be measured | `evals/run_evals.py` (not yet run with Claude) |
+| Live conversations passing, with an independent AI reviewer | 27 of 28 (96%) on 23 Nov | `evals/live_agent_run.py` |
 
 Business measures (conversion, returns, support tickets) can't be measured in a portfolio demo. We list them as what a real pilot would track.
 
@@ -109,7 +109,7 @@ Business measures (conversion, returns, support tickets) can't be measured in a 
 |---|---|---|
 | The product data is good enough to answer from | Answers are only as good as the listing | We say "The listing doesn't say" and flag impossible values (D10) |
 | The data is 2015–16 Flipkart, so prices are old | Not a live store | Labelled historical everywhere; stock and delivery labelled simulated |
-| Claude hasn't been run yet (no API key on the dev machine) | AI quality unmeasured | Rules fallback works; Claude run is the next step |
+| Free AI models can be busy | Slower replies at peak times | Several providers in turn; busy models are retried until the time limit; an honest "try again" if none answers |
 | Strict grounding can feel less helpful | "Is it waterproof?" → "doesn't say" even when care text hints at it (F-014) | Accept for now: honest beats helpful-but-wrong |
 | Competitors move fast | Features overlap | Compete on trust and verification, not feature count |
 
@@ -196,14 +196,14 @@ Update this table when anything changes. It's the reference point for "where are
 
 | Pain point | PRD requirement | Code | Proof | Status |
 |---|---|---|---|---|
-| P1 wrong facts | R5 grounded answers, R6 product text is data | `qa.py`, `prompts/product_qa_v2.txt` | `test_pq01`, `test_pq02`, `test_pq04*` | Built; **Claude path unmeasured** |
-| P2 forgotten requirements | Intent kept across turns; requirement changes reset approval | `intent.py` (`merge`), `agent.py` | `test_ls02`, `test_sofa_without_fit_info_*` | Built |
-| P3 dead-end loops | R1 not sold here, R2 no repeat questions, R3 greeting, R4 one outcome | `agent.py`, `catalog.find_products` | `test_na01–03`, `test_cl01` | Built |
+| P1 wrong facts | R5 grounded answers, R6 product text is data | `agent_llm.py` (tools + price check) | `tests/test_ai_agent.py`, live evals | Built |
+| P2 forgotten requirements | The AI reads the whole chat and the screen; requirement changes reset approval | `agent_llm.py`, `agent.py` | live evals (N05, N06) | Built |
+| P3 dead-end loops | R1 not sold here, R2 no repeat questions, R3 greeting, R4 one outcome | `agent_llm.py`, `catalog.find_products` | live evals (C02, C04, N15) | Built |
 | P4 stale data | Checkout gate rechecks price, stock and data version | `policy.checkout_gate` | `test_px01`, `test_product_page_price_change_*` | Built |
 | P5 unclear authority | R7 no unapproved actions; approval tied to cart, total and data version | `checkout.py` | `test_bt01`, idempotency tests | Built (mock order) |
 | P6 two shoppers, one item | Shared stock, timed cart holds, stock check and decrement at order | — | — | **Not started** |
 | Missing table stakes | Comparison | — | — | **Not started (P1)** |
-| Measurement | Held-out evals with Claude | `evals/run_evals.py` | — | **Blocked on API key** |
+| Measurement | Live conversations with an independent AI reviewer | `evals/live_agent_run.py` | 27 of 28 (23 Nov) | Built |
 
 ## 7. Open questions
 

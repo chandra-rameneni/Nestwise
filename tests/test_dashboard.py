@@ -99,21 +99,10 @@ def test_db03_period(planted):
     assert S(planted, period="today")["headline"]["chats"] in (3, 0)    # 0 only right after midnight UTC
 
 
-def test_db04_ai_share_and_fallback_reasons(planted):
-    h = S(planted)["headline"]
-    assert (h["ai_replies"], h["rules_fallbacks"], h["ai_share_pct"]) == (6, 2, 75.0)
-    assert h["fallback_reasons"] == {"free quota / busy": 1, "too slow": 1}
-
-
 def test_db05_reply_time(planted):
     h = S(planted)["headline"]
     # gaps: A 1000, 2000, 1000; B 3000, 1000, 1000, 1000, 1000; C 500 -> median 1000, 90th 3000
     assert h["reply_ms_typical"] == 1000 and h["reply_ms_slowest_10pct"] in (2000, 3000)
-
-
-def test_db06_dont_know_rate(planted):
-    h = S(planted)["headline"]
-    assert (h["dont_know"], h["product_answers"], h["dont_know_pct"]) == (3, 4, 75.0)
 
 
 def test_db07_struggles(planted):

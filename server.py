@@ -22,7 +22,6 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-import intent as intent_mod
 import dashboard
 import llm
 import payments
@@ -187,13 +186,11 @@ def state(s: Session) -> dict:
                     "total_inr": o.total_inr, "paid": o.paid} for o in s.orders.orders.values()],
         "constraints": s.intent.constraint_fields() if s.intent else None,
         "trace_id": s.tracer.trace_id,
-        "mode": llm.provider() or "rules", "model": llm.model_name(),
+        "mode": llm.provider() or "off", "model": llm.model_name(),
         "payments": payments.mode(), "payments_paused": payments.paused(),
         "shown": [{"product_id": p.product_id, "title": p.title} for p in getattr(s, "shown", [])],
         "focus": [{"product_id": p.product_id, "title": p.title} for p in s._focus_products()]
                  if hasattr(s, "_focus_products") and getattr(s, "focus", None) else [],
-        "last_extractor": next((e["attrs"].get("extractor") for e in reversed(s.tracer.events)
-                                if e["name"] == "intent.extracted"), None),
     }
 
 
@@ -252,7 +249,7 @@ def meta(ig_session: Optional[str] = Cookie(None)):
     c = _catalog(ig_session)
     return {"categories": c.categories(), "source": {k: c.meta.get(k) for k in ("dataset", "licence", "price_note",
                                                                               "simulated", "version")},
-            "mode": llm.provider() or "rules", "model": llm.model_name()}
+            "mode": llm.provider() or "off", "model": llm.model_name()}
 
 
 @app.get("/api/products")

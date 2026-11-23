@@ -1,5 +1,6 @@
 """PRD §13: Razorpay test-mode checkout, evals RZ-01 to RZ-23 (approved by the PM 2026-11-19).
 Razorpay is faked: no network, no real keys. The fake key and secret below are test doubles, not credentials."""
+from conftest import agent_adds
 import hashlib
 import hmac
 import inspect
@@ -62,7 +63,7 @@ def approved_session(qty=1):
         s.select_product(BED, qty=qty, from_product_page=True)
         s.confirm_quantity()
     else:
-        s.handle_message("buy this", {"page": "product", "product_id": BED})
+        s.select_product(BED, from_product_page=True)
     assert s.approve().kind == "APPROVED"
     return s
 
@@ -87,7 +88,7 @@ def test_rz02_price_changed_after_approval_creates_no_order(rzp):
 
 def test_rz03_browser_cannot_set_the_amount(rzp):
     c = TestClient(server.app)
-    c.post("/api/agent/message", json={"text": "buy this", "context": {"page": "product", "product_id": BED}})
+    agent_adds(c, BED)
     c.post("/api/agent/approve")
     out = c.post("/api/pay/start", json={"amount": 100}).json()
     assert out["checkout"]["amount"] == 2499900 and rzp.created[0]["amount"] == 2499900
@@ -156,7 +157,7 @@ def test_rz09b_the_agent_has_no_path_to_the_payment_api():
 
 def test_rz10_secret_never_reaches_the_browser(rzp):
     c = TestClient(server.app)
-    c.post("/api/agent/message", json={"text": "buy this", "context": {"page": "product", "product_id": BED}})
+    agent_adds(c, BED)
     c.post("/api/agent/approve")
     texts = [c.post("/api/pay/start").text, c.get("/api/agent/state").text, c.get("/api/meta").text,
              c.get("/").text, c.get("/static/agent.js").text, c.get("/api/trace").text]
@@ -242,7 +243,7 @@ def test_rz21_change_to_one(rzp):
 
 def test_rz22_quantity_one_asks_nothing_extra(rzp):
     s = Session()
-    r = s.handle_message("buy this", {"page": "product", "product_id": BED})
+    r = s.select_product(BED, from_product_page=True)
     assert "Is 1 right" not in r.message and s.approve().kind == "APPROVED"
 
 

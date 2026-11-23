@@ -61,12 +61,11 @@ The **focus** is the product or products the conversation is about right now. Th
   - the requirements;
   - the last question.
   The screen and the agent read and write the same state.
-- **The AI understands; code checks and acts.** The AI gets the message, the focus, the shown products and the last few turns. It returns one action: search, ask about the focus, buy, compare, show more, change a requirement, store policy, or small talk.
-  - Code checks every product the AI names is shown or in focus, then runs the action. Facts, prices, policy and the cart stay in code, as today.
-- **When the AI isn't available ("basic mode"):**
-  - Taps and buttons work fully, because they need no understanding.
-  - Simple typed questions still work.
-  - Anything unclear gets an honest reply: "I'm in basic mode right now. Tap a product or use the buttons, or try again in a minute." No more confident wrong guesses.
+- **The AI agent decides; the tools act.** The AI gets the message, the focus, the shown products and the recent chat, and calls the store's tools (search, product details, policy, cart, set focus). It moves the focus to the products it's talking about and clears it when the topic changes.
+  - The focus only takes products the shopper has seen. Facts, prices, policy and the cart come from the tools.
+- **When no AI model answers:**
+  - Taps and buttons (checkboxes, Add to cart, Approve, Pay) work fully, because they need no understanding.
+  - A typed message gets an honest reply: "Sorry, I couldn't get an answer from the AI just now. Please try again in a moment."
 
 ## 5. Keeping the AI on (needs your OK)
 
@@ -94,7 +93,7 @@ I'd test which one is fast enough before anything else is built on it.
 | 1 | You approve this design, then I update the PRD | small |
 | 2 | Conversation state + focus (backend), with conversation tests | medium |
 | 3 | Card checkboxes, focus bar, "which one" buttons, "About:" tags (frontend), with browser tests | medium |
-| 4 | Honest basic mode | small |
+| 4 | Honest reply when no AI model answers | small |
 | 5 | Local AI model (after your OK to download) | small to medium |
 
 Steps 1 to 4 should fit before your Sunday 4:30 pm reset. Step 5 can follow.

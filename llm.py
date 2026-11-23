@@ -1,19 +1,9 @@
-"""Which language model (if any) the agent uses, and one call shape for every provider.
+"""The language models behind the AI agent, and the one tool-calling chat it uses (chat_tools).
 
-Providers (decided 2026-11-18, no paid key):
-- Anthropic (Claude), if ANTHROPIC_API_KEY / ANTHROPIC_AUTH_TOKEN is set. Not used in this project by choice,
-  but the code path is kept. When set, it's the only provider used.
-- Otherwise a chain of free providers, tried in order until one answers:
-  1. Google Gemini, if GEMINI_API_KEY is set (free tier; usually the most reliable free option), then a second
-     Gemini key from another account, if GEMINI_API_KEY_2 is set.
-  2. NVIDIA's free developer API (Nemotron Super, Mistral Large), if NVIDIA_API_KEY is set.
-  3. Mistral (mistral-small-latest), if MISTRAL_API_KEY is set (free "Experiment" plan).
-  3. OpenRouter free models, if OPENROUTER_API_KEY is set (often "rate-limited upstream", so several are tried).
-  3. Ollama cloud, if OLLAMA_API_KEY is set (needs credits on the account; HTTP 402 otherwise).
-- None configured: rules mode.
-
-INTENTGUARD_LLM=off forces rules mode. Keys are read from the environment only, never from files in the repo.
-Every call returns (parsed result or None, metadata for the trace); None means "fall back to the rules".
+Free providers only (no paid key), tried in order until one answers: NVIDIA's developer API (two keys), Google
+Gemini (two keys), OpenRouter free models, Mistral, Ollama. A model that fails or is slow rests for a few
+minutes and the next one answers. Keys are read from the environment only, never from files in the repo.
+INTENTGUARD_LLM=off turns the AI off; the store then says it can't answer right now.
 """
 from __future__ import annotations
 
@@ -22,12 +12,10 @@ import os
 import re
 import time
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeout
-from typing import Optional, Type, TypeVar
+from typing import Optional
 
 import httpx
-from pydantic import BaseModel, ValidationError
 
-T = TypeVar("T", bound=BaseModel)
 
 ANTHROPIC_MODEL = "claude-opus-5-5"
 
@@ -60,9 +48,6 @@ OLLAMA_URL = "https://ollama.com/v1/chat/completions"
 OLLAMA_MODELS = ["gpt-oss:20b", "gemma4:31b"]
 
 
-# O-29: a demo can't wait 25 seconds. The whole chain gets one time budget, and a model that says "limit reached"
-# (429), is overloaded (503) or times out is skipped for a few minutes instead of being waited on every message.
-TOTAL_BUDGET_S = float(os.environ.get("INTENTGUARD_LLM_BUDGET_S", "8"))
 COOLDOWN_S = float(os.environ.get("INTENTGUARD_LLM_COOLDOWN_S", "300"))
 _cooling: dict[str, float] = {}              # "provider/model" -> time when it may be tried again
 _pool = ThreadPoolExecutor(max_workers=4)
@@ -145,121 +130,6 @@ def _json_from(text: str) -> Optional[dict]:
         return json.loads(text[start:end + 1])
     except json.JSONDecodeError:
         return None
-
-
-def _validate_lenient(schema: Type[T], obj: dict) -> tuple[Optional[T], list[str]]:
-    """Validate a model reply. If some fields are invalid, drop those fields (they fall back to their defaults)
-    and try again, instead of throwing the whole reply away (O-28). Required fields can't be dropped."""
-    dropped: list[str] = []
-    for _ in range(3):
-        try:
-            return schema.model_validate(obj), dropped
-        except ValidationError as exc:
-            bad = {str(e["loc"][0]) for e in exc.errors() if e.get("loc")}
-            required = {n for n, f in schema.model_fields.items() if f.is_required()}
-            if not bad or bad & required:
-                return None, dropped
-            obj = {k: v for k, v in obj.items() if k not in bad}
-            dropped += sorted(bad)
-    return None, dropped
-
-
-def structured(system: str, user: str, schema: Type[T], max_tokens: int = 1500) -> tuple[Optional[T], dict]:
-    """Ask the configured model for a JSON object matching `schema`. Code validates it before use."""
-    p = provider()
-    meta: dict = {"provider": p, "model": model_name()}
-    if p is None:
-        meta["error"] = "no model configured"
-        return None, meta
-    if p == "anthropic":
-        return _anthropic(system, user, schema, max_tokens, meta)
-    return _free_chain(system, user, schema, max_tokens, meta)
-
-
-def _free_chain(system: str, user: str, schema: Type[T], max_tokens: int, meta: dict) -> tuple[Optional[T], dict]:
-    """Try each free provider and model in order. A busy model, an invalid reply or a reply that doesn't match
-    the schema moves on to the next one; only when all fail does the agent fall back to the rules."""
-    schema_json = json.dumps(schema.model_json_schema(), ensure_ascii=False)
-    sys_prompt = (f"{system}\n\nReply with ONLY one JSON object that matches this JSON Schema. No other text.\n"
-                  f"{schema_json}")
-    tried: list[str] = []
-    deadline = time.monotonic() + TOTAL_BUDGET_S
-    for prov, url, key, models in _chain():
-        headers = {"Authorization": f"Bearer {key}"}
-        if prov == "openrouter":
-            headers["X-Title"] = "Nestwise demo"
-        for m in models:
-            name = f"{prov}/{m}"
-            if _is_cooling(name):
-                tried.append(f"{name}: skipped (busy recently)")
-                continue
-            remaining = deadline - time.monotonic()
-            if remaining < 1:
-                tried.append(f"{name}: skipped (time budget used up)")
-                continue
-            body = {"model": m, "max_tokens": max_tokens, "temperature": 0,
-                    "messages": [{"role": "system", "content": sys_prompt}, {"role": "user", "content": user}],
-                    "response_format": {"type": "json_object"}}
-            try:
-                r = _post_with_deadline(url, body, headers, remaining)
-            except httpx.HTTPError as exc:
-                tried.append(f"{prov}/{m}: {type(exc).__name__}")
-                if isinstance(exc, httpx.TimeoutException):
-                    _cool(name)
-                continue
-            if r.status_code != 200:
-                tried.append(f"{prov}/{m}: HTTP {r.status_code}")
-                if r.status_code in (429, 500, 502, 503, 504):
-                    _cool(name)
-                if r.status_code in (401, 402, 403):
-                    for other in models:            # wrong key or no credits (402): rest this whole provider
-                        _cool(f"{prov}/{other}")
-                    break
-                continue
-            data = r.json()
-            try:
-                content = data["choices"][0]["message"]["content"]
-            except (KeyError, IndexError, TypeError):
-                tried.append(f"{prov}/{m}: no message in response")
-                continue
-            obj = _json_from(content)
-            if obj is None:
-                tried.append(f"{prov}/{m}: reply was not JSON")
-                continue
-            parsed, dropped = _validate_lenient(schema, obj)
-            if parsed is None:
-                tried.append(f"{prov}/{m}: reply didn't match the schema")
-                continue
-            if dropped:
-                meta["dropped_fields"] = dropped           # O-28: keep the valid fields, drop the bad ones
-            meta.update(provider=prov, model=m)
-            if data.get("usage"):
-                meta["usage"] = {k: data["usage"].get(k) for k in ("prompt_tokens", "completion_tokens")}
-            if tried:
-                meta["tried_first"] = tried
-            return parsed, meta
-    meta["tried"] = tried
-    meta["error"] = "no model gave a usable answer"
-    return None, meta
-
-
-def _anthropic(system: str, user: str, schema: Type[T], max_tokens: int, meta: dict) -> tuple[Optional[T], dict]:
-    import anthropic
-
-    client = anthropic.Anthropic()
-    try:
-        response = client.beta.messages.parse(
-            model=ANTHROPIC_MODEL, max_tokens=max_tokens, betas=["server-side-fallback-2026-07-01"],
-            fallbacks="default", output_config={"effort": "low"}, system=system,
-            messages=[{"role": "user", "content": user}], output_format=schema)
-    except (anthropic.APIStatusError, anthropic.APIConnectionError) as exc:
-        meta["error"] = type(exc).__name__
-        return None, meta
-    meta["stop_reason"] = response.stop_reason
-    if response.stop_reason in ("refusal", "max_tokens") or response.parsed_output is None:
-        meta["error"] = f"no parsed output (stop_reason={response.stop_reason})"
-        return None, meta
-    return response.parsed_output, meta
 
 
 # --------------------------------------------------------------------------- tool-using agent calls (2026-11-21)

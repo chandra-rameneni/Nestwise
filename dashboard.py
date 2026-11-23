@@ -75,24 +75,13 @@ def _percentile(values: list[float], q: float) -> Optional[float]:
     return round(v[min(len(v) - 1, int(round(q * (len(v) - 1))))])
 
 
-def _fallback_reason(attrs: dict) -> str:
-    tried = " ".join(attrs.get("tried") or attrs.get("tried_first") or [])
-    if "429" in tried or "busy recently" in tried:
-        return "free quota / busy"
-    if "Timeout" in tried or "time budget" in tried:
-        return "too slow"
-    if "schema" in tried or "not JSON" in tried:
-        return "bad AI reply"
-    return "other"
-
-
 def summary(trace_dir: Optional[Path] = None, period: str = "7d", include_eval: bool = False,
             use_cache: bool = True) -> dict:
     since = {"today": datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0),
              "7d": datetime.now(timezone.utc) - timedelta(days=7), "all": None}.get(period)
     traces = load(trace_dir, include_eval, since, use_cache)
     chats = [t for t in traces if any(e["name"] == "user.message" for e in t)]
-    msgs = ai = fast = fallback = 0
+    msgs = ai = fallback = 0
     reasons = Counter()
     times: list[float] = []
     qa_total = dont_know = 0
@@ -112,22 +101,18 @@ def summary(trace_dir: Optional[Path] = None, period: str = "7d", include_eval: 
             if n == "user.message":
                 msgs += 1
                 last_user, last_user_ts, last_page = a.get("text", ""), _ts(e), a.get("page")
-            elif n == "intent.extracted":
-                ex = a.get("extractor", "")
-                if ex.startswith("llm"):
-                    ai += 1
-                elif ex in ("fast_path:product_question", "rules_policy_route"):
-                    fast += 1
-                elif "fallback" in a:                    # the AI was configured but didn't answer
-                    fallback += 1
-                    reasons[_fallback_reason(a)] += 1
-            elif n in ("answer_about_product",):
+            elif n == "agent:get_product":                 # the AI read a product to answer about it
                 qa_total += 1
             elif n == "agent.response":
                 if last_user_ts is not None:
                     times.append((_ts(e) - last_user_ts).total_seconds() * 1000)
                     last_user_ts = None
                 codes = a.get("reason_codes") or []
+                if "AI_AGENT" in codes:
+                    ai += 1
+                elif "AI_UNAVAILABLE" in codes:              # no model answered in time
+                    fallback += 1
+                    reasons["no model answered"] += 1
                 hit = [STRUGGLE[c] for c in codes if c in STRUGGLE]
                 for label in dict.fromkeys(hit):
                     struggle[label] += 1
@@ -171,8 +156,8 @@ def summary(trace_dir: Optional[Path] = None, period: str = "7d", include_eval: 
     return {
         "period": period, "include_eval": include_eval, "generated_at": datetime.now(timezone.utc).isoformat(),
         "headline": {"chats": len(chats), "messages": msgs,
-                     "ai_share_pct": _pct(ai, understood), "ai_replies": ai, "rules_fallbacks": fallback,
-                     "shortcuts_by_design": fast, "fallback_reasons": dict(reasons),
+                     "ai_share_pct": _pct(ai, understood), "ai_replies": ai, "no_ai_answer": fallback,
+                     "fallback_reasons": dict(reasons),
                      "reply_ms_typical": _percentile(times, 0.5), "reply_ms_slowest_10pct": _percentile(times, 0.9),
                      "dont_know_pct": _pct(dont_know, qa_total), "dont_know": dont_know, "product_answers": qa_total,
                      "orders": orders, "paid_orders": paid_orders, "paid_amount_inr": paid_amount},

@@ -1,8 +1,8 @@
-"""The AI shopping agent (2026-11-21): the model holds the conversation, decides which store tools to call, reads
+"""The AI shopping agent: the model holds the conversation, decides which store tools to call, reads
 the results and writes its own reply. Code provides the tools, keeps the cart, and checks the reply before it's
 shown (every ₹ amount must come from a tool result or the shopper; payment is never a tool).
 
-Used when a model is available; otherwise the Session falls back to basic mode (agent.py).
+Called by Session.handle_message (agent.py) for every chat message.
 """
 from __future__ import annotations
 
@@ -177,8 +177,7 @@ def _search(session, turn: Turn, a: dict) -> dict:
             if in_section or not ids:
                 ids = in_section
             else:
-                # N18 (2026-11-23): mattresses are filed under furniture; a search in home_furnishing found none and
-                # the tool said "not sold here". The store does sell them, so show them and say where they are.
+                # e.g. mattresses are filed under furniture: show them and say they're in another section
                 section_note = (f"None in {cat.replace('_', ' ')}, but the store sells these in another section; "
                                 "these are them.")
     else:
@@ -219,7 +218,7 @@ def _search(session, turn: Turn, a: dict) -> dict:
         ranked = policy.rank(it, [p for p, _ in ok])
         order = {p.product_id: i for i, p in enumerate(ranked)}
         ok.sort(key=lambda pe: order.get(pe[0].product_id, 999))
-    top = ok[:4]                                  # smaller results = faster answers (N18)
+    top = ok[:4]                                  # smaller results = faster answers
     turn.cards, turn.search_intent = top, it
     turn.prices |= {p.total_for() for p, _ in top if p.total_for()} | {p.list_price_inr or 0 for p, _ in top}
     for p, _ in top:
@@ -382,7 +381,7 @@ _RUPEES = re.compile(r"₹\s?([\d,]+)")
 
 
 def _with_sums(prices: set[int]) -> set[int]:
-    """N18 (2026-11-23): "bed + mattress + 2 pillows = ₹33,000" is arithmetic on real prices, not a made-up price.
+    """"bed + mattress + 2 pillows = ₹33,000" is arithmetic on real prices, not a made-up price.
     Accept sums of up to 4 real prices, quantities up to 5, and differences between two real prices."""
     base = sorted({p for p in prices if p and p > 0})[:40]
     out = set(base)
@@ -418,7 +417,7 @@ def _short(title: str) -> str:
 
 
 def _live_label(session, name: str, a: dict) -> Optional[str]:
-    """What the shopper sees while the agent works (PM, 2026-11-23: show the wait, don't give up)."""
+    """What the shopper sees while the agent works, so the wait is visible."""
     if name == "search_products":
         what = a.get("query") or (a.get("category") or "products").replace("_", " ")
         return f"Searching {what}"
@@ -436,7 +435,7 @@ def _live_label(session, name: str, a: dict) -> Optional[str]:
 
 def run(session, text: str, context: dict):
     """Answer one shopper message with the AI agent. Returns an agent.Response, or None if no model answered
-    (the caller then uses basic mode). While it works, session.progress holds the step the screen shows."""
+    (the caller then tells the shopper to try again). While it works, session.progress holds the step the screen shows."""
     session.progress_log = []
     _step(session, "Understanding your request")
     try:
@@ -474,7 +473,7 @@ def _run(session, text: str, context: dict):
         msg, meta = llm.chat_tools(messages, TOOLS, deadline, avoid=empty_models)
         waits = 0
         while msg is None and deadline - time.monotonic() > 15:    # keep trying until the time limit, not 3 tries
-            # PM, 2026-11-23: keep waiting rather than give up. Busy models are tried again after a short pause.
+            # busy models are tried again after a short pause, until the time limit
             waits += 1
             _step(session, "The AI is busy, still working")
             session.tracer.event("model", "agent.retry", status="warn", attempt=waits, why=meta.get("error"))
@@ -492,7 +491,7 @@ def _run(session, text: str, context: dict):
         if not calls:
             reply = (msg.get("content") or "").strip()
             if not reply and len(empty_models) < 3:
-                # N18 (2026-11-23): a thinking model sometimes spends its whole reply on thinking and writes nothing.
+                # a thinking model sometimes spends its whole reply on thinking and writes nothing:
                 # Another model writes the answer from everything already found (the searches aren't repeated).
                 empty_models.add(model)
                 messages.pop()                       # drop the empty reply
@@ -537,7 +536,6 @@ def _run(session, text: str, context: dict):
 
     # what to show next to the reply: product cards from the search, the cart, the focus
     session.tracer.event("model", "intent.extracted", extractor=f"llm-agent:{model}")
-    session._last_extractor = f"llm-agent:{model}"
     recs, kind = [], "ANSWER"
     if turn.cards:
         low = reply.lower()
@@ -546,6 +544,8 @@ def _run(session, text: str, context: dict):
         recs = [session._rec_dict(p, e) for p, e in chosen]
         session.shown = [p for p, _ in chosen]
         session.eligible_ids = [p.product_id for p, _ in chosen]
+        if turn.search_intent is not None:               # the cards' Add to cart buttons check against this search
+            session.intent = turn.search_intent
         kind = "RECOMMEND"
     if turn.cart_changed and session.cart is not None and session.cart.status == "PROPOSED" and session.cart.lines:
         kind = "CART_PROPOSED"

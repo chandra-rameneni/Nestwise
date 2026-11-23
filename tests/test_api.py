@@ -1,4 +1,5 @@
 """Phase 3: the storefront API (server.py) end to end through HTTP, on a freshly built real catalog."""
+from conftest import agent_adds
 import pytest
 from fastapi.testclient import TestClient
 
@@ -50,47 +51,12 @@ def test_meta_lists_the_four_categories(client):
     assert m["source"]["licence"] == "CC BY-SA 4.0, PromptCloud"
 
 
-def test_na02_over_http_same_terminal_answer(client):
-    a, b = say(client, "mobile"), say(client, "mobile")
-    assert a["kind"] == b["kind"] == "NOT_AVAILABLE" and a["message"] == b["message"]
-
-
-def test_listing_journey_to_one_order(client):
-    r = say(client, "Find a 3-seater sofa under ₹30,000 that fits 200 cm")
-    assert {x["product_id"] for x in r["recommendations"]} == {HOMETOWN_3S, DURIAN_BID_3S}
-    assert client.post("/api/agent/select", json={"product_id": HOMETOWN_3S}).json()["kind"] == "CART_PROPOSED"
-    assert client.post("/api/agent/approve").json()["kind"] == "APPROVED"
-    done = client.post("/api/agent/checkout").json()
-    assert done["kind"] == "ORDER_PLACED" and len(done["state"]["orders"]) == 1
-    assert client.post("/api/agent/checkout").json()["state"]["orders"] == done["state"]["orders"]
-
-
-def test_product_journey_with_price_change(client):
-    assert say(client, "How wide is it?", DURIAN_BID_3S)["cited_fields"] == ["Width"]
-    assert say(client, "Buy this", DURIAN_BID_3S)["kind"] == "CART_PROPOSED"
-    client.post("/api/agent/approve")
-    sim = client.post("/api/sim/price", json={"product_id": DURIAN_BID_3S, "price_inr": 18500}).json()
-    assert sim["product"]["price_inr"] == 18500
-    blocked = client.post("/api/agent/checkout").json()
-    assert blocked["kind"] == "BLOCKED" and "PRICE_CHANGED_SINCE_APPROVAL" in blocked["reason_codes"]
-    assert blocked["state"]["approval"]["status"] == "INVALIDATED" and blocked["state"]["orders"] == []
-
-
 def test_sessions_are_isolated_per_browser(client, store_db):
-    say(client, "Buy this", HOMETOWN_3S)
+    agent_adds(client, HOMETOWN_3S)
     client.post("/api/sim/price", json={"product_id": HOMETOWN_3S, "price_inr": 99999})
     with TestClient(server.app) as other:
         assert other.get(f"/api/products/{HOMETOWN_3S}").json()["price_inr"] == 14900
         assert other.get("/api/agent/state").json()["cart"] is None
-
-
-def test_trace_and_state_endpoints(client):
-    say(client, "mobile")
-    t = client.get("/api/trace").json()
-    names = [e["name"] for e in t["events"]]
-    assert "intent.extracted" in names and "search_catalog" in names and "agent.response" in names
-    st = client.get("/api/agent/state").json()
-    assert st["history"][0] == {"role": "user", "text": "mobile"} and st["mode"] in ("rules", "claude")
 
 
 def test_bad_input_rejected(client):

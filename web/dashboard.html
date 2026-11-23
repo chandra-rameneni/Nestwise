@@ -96,7 +96,7 @@
       const why = Object.entries(h.fallback_reasons || {}).map(([k, v]) => `${v} ${k}`).join(", ");
       document.getElementById("tiles").innerHTML =
         tile("Chats", h.chats.toLocaleString("en-IN"), `${h.messages} messages`) +
-        tile("AI share", h.ai_share_pct == null ? "–" : h.ai_share_pct + "%", h.rules_fallbacks ? `${h.rules_fallbacks} fell back to rules${why ? " (" + why + ")" : ""}` : "no fallbacks") +
+        tile("AI share", h.ai_share_pct == null ? "–" : h.ai_share_pct + "%", h.no_ai_answer ? `${h.no_ai_answer} without an AI answer${why ? " (" + why + ")" : ""}` : "every message answered") +
         tile("Reply time", fmtMs(h.reply_ms_typical), h.reply_ms_slowest_10pct == null ? "" : `typical; slowest 1 in 10: ${fmtMs(h.reply_ms_slowest_10pct)}`) +
         tile("“Don't know” rate", h.dont_know_pct == null ? "–" : h.dont_know_pct + "%", `${h.dont_know} of ${h.product_answers} product answers`) +
         tile("Paid orders", h.paid_orders, h.paid_orders ? `${inr(h.paid_amount_inr)} (test mode)` : `${h.orders} orders in total`);
